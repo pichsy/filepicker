@@ -14,6 +14,21 @@
                     android:scheme="filepicker" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".video.VideoPreviewActivity"
+            android:configChanges="orientation|screenSize|keyboardHidden|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density"
+            android:exported="true"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.SelectMedia"
+            android:windowSoftInputMode="stateHidden|adjustResize">
+            <intent-filter>
+                <action android:name="com.filepicker.PLAY_VIDEO" />
+                <data
+                    android:host="com.filepicker"
+                    android:scheme="filepicker" />
+            </intent-filter>
+        </activity>
     </application>
 
 </manifest>

@@ -55,7 +55,7 @@ dependencies {
     // 基础库
     implementation(libs.xbase)
     implementation(project(":filepicker"))
-    implementation("com.github.CarGuo.GSYVideoPlayer:gsyvideoplayer:v10.1.0")
+//    implementation("com.github.CarGuo.GSYVideoPlayer:gsyvideoplayer:v10.1.0")
 
     // brv
     implementation(libs.brv)

@@ -1,3 +1,5 @@
+import org.gradle.kotlin.dsl.implementation
+
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
@@ -45,8 +47,11 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.coroutines.core)
 
+    implementation("androidx.media3:media3-exoplayer:1.7.1")
+    implementation("androidx.media3:media3-ui:1.7.1")
+
     implementation(libs.xwidget)
-    implementation("com.github.CarGuo.GSYVideoPlayer:gsyvideoplayer:v10.1.0")
+//    implementation("com.github.CarGuo.GSYVideoPlayer:gsyvideoplayer:v10.1.0")
 
     // brv
     implementation(libs.brv)

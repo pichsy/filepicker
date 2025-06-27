@@ -67,4 +67,15 @@ object MediaLoader {
             .into(view)
     }
 
+    fun loadVideoCover(path: String, view: ImageView) {
+        Glide.with(view)
+            .load(path)
+            .dontTransform()
+            .error(R.drawable.placeholder_image)
+            .placeholder(R.drawable.placeholder_image)
+            .override(200, -1)
+            .diskCacheStrategy(DiskCacheStrategy.RESOURCE)
+            .into(view)
+    }
+
 }

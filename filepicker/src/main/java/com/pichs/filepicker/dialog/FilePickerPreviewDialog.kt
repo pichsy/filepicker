@@ -9,6 +9,7 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.core.view.isVisible
+import androidx.media3.common.util.UnstableApi
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
 import com.bumptech.glide.Glide
@@ -17,10 +18,10 @@ import com.pichs.filepicker.R
 import com.pichs.filepicker.databinding.DialogFilePickerPreviewBinding
 import com.pichs.filepicker.entity.MediaEntity
 import com.pichs.filepicker.photoview.PhotoView
-import com.shuyu.gsyvideoplayer.GSYVideoManager
-import com.shuyu.gsyvideoplayer.video.StandardGSYVideoPlayer
+import com.pichs.filepicker.video.VideoPlayerView
 import razerdp.basepopup.BasePopupWindow
 
+@UnstableApi
 class FilePickerPreviewDialog(
     val context: Context, val viewModel: FilePickerViewModel, val curIndex: Int, val onSelect: (MediaEntity, Boolean, Int) -> Unit, val onConfirm: (Int) -> Unit
 ) : BasePopupWindow(context) {
@@ -98,14 +99,18 @@ class FilePickerPreviewDialog(
 
         binding.viewPager2.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
             override fun onPageSelected(position: Int) {
-                mCurrentIndex = position
+                if (mCurrentIndex == position) {
+                    return
+                }
+//                // 查找上一个页面的 ViewHolder 并释放播放器
+//                val recyclerView = binding.viewPager2.getChildAt(0) as RecyclerView
+//                val viewHolder = recyclerView.findViewHolderForAdapterPosition(mCurrentIndex)
+//                if (viewHolder is MediaPagerAdapter.VideoViewHolder) {
+//                    viewHolder.videoPlayerView.releasePlayer()
+//                }
                 val item = viewModel.getCurrentFolderDataByPosition(position) ?: return
                 updateIndexUI(item)
-                if (item?.isVideo() == true) {
-                    // 视频预览
-                } else {
-                    GSYVideoManager.releaseAllVideos()
-                }
+                mCurrentIndex = position
             }
         })
 
@@ -194,6 +199,7 @@ class FilePickerPreviewDialog(
 
 }
 
+@UnstableApi
 class MediaPagerAdapter(
     private val context: Context, private val items: List<MediaEntity>
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
@@ -221,35 +227,53 @@ class MediaPagerAdapter(
             }
             ImageViewHolder(photoView)
         } else {
-            val videoPlayer = StandardGSYVideoPlayer(context).apply {
+            val playView = VideoPlayerView(context).apply {
                 layoutParams = ViewGroup.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT
                 )
             }
-            VideoViewHolder(videoPlayer)
+            VideoViewHolder(playView)
         }
     }
 
     override fun getItemCount() = items.size
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        val item = items[position]
+        val item = items.getOrNull(position) ?: return
         if (holder is ImageViewHolder) {
             Glide.with(context).load(item.path).into(holder.photoView)
         } else if (holder is VideoViewHolder) {
-            holder.videoPlayer.setUp(item.path, true, "视频")
-            holder.videoPlayer.apply {
-                // 隐藏顶部标题栏和返回按钮
-                titleTextView.visibility = View.GONE
-                backButton.visibility = View.GONE
-                // 隐藏全屏按钮
-                fullscreenButton.visibility = View.GONE
-            }
-            // 可扩展封面/点击播放控制
-//            MediaLoader.loadImage(item.uri, item.mimeType, holder.videoPlayer.thumbImageView)
+            Log.d("MediaPagerAdapter", "onBindViewHolder: item.path=${item.path}, item.uri=${item.uri}")
+            holder.videoPlayerView.loadCover(item)
+        }
+    }
+
+    override fun onViewDetachedFromWindow(holder: RecyclerView.ViewHolder) {
+        super.onViewDetachedFromWindow(holder)
+        Log.d("MediaPagerAdapter", "onViewDetachedFromWindow11111:positon${holder.absoluteAdapterPosition} ==========")
+        if (holder is VideoViewHolder) {
+            holder.videoPlayerView.releasePlayer()
+        }
+    }
+
+    override fun onViewAttachedToWindow(holder: RecyclerView.ViewHolder) {
+        super.onViewAttachedToWindow(holder)
+        Log.d("MediaPagerAdapter", "onViewAttachedToWindow22222: position=${holder.absoluteAdapterPosition} ==========")
+        if (holder is VideoViewHolder) {
+            // 这里可以根据需要重新加载视频封面或播放器
+            holder.videoPlayerView.loadCover(items.getOrNull(holder.absoluteAdapterPosition))
+        }
+    }
+
+    override fun onViewRecycled(holder: RecyclerView.ViewHolder) {
+        super.onViewRecycled(holder)
+        if (holder is VideoViewHolder) {
+            holder.videoPlayerView.releasePlayer()
         }
     }
 
     class ImageViewHolder(val photoView: PhotoView) : RecyclerView.ViewHolder(photoView)
-    class VideoViewHolder(val videoPlayer: StandardGSYVideoPlayer) : RecyclerView.ViewHolder(videoPlayer)
+
+    @UnstableApi
+    class VideoViewHolder(val videoPlayerView: VideoPlayerView) : RecyclerView.ViewHolder(videoPlayerView)
 }

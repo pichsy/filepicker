@@ -1,7 +1,6 @@
 package com.pichs.filepicker.demo
 
 import android.content.Intent
-import android.util.Log
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
@@ -14,6 +13,7 @@ import com.pichs.filepicker.FilePicker
 import com.pichs.filepicker.databinding.ItemRvAlbumBinding
 import com.pichs.filepicker.demo.databinding.ActivityMainBinding
 import com.pichs.filepicker.entity.MediaEntity
+import com.pichs.filepicker.video.VideoPreviewActivity
 import com.pichs.xbase.binding.BindingActivity
 import com.pichs.xbase.kotlinext.fastClick
 import com.pichs.xbase.xlog.XLog
@@ -53,6 +53,17 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
         }
 
         initRecyclerView()
+
+        initListener()
+    }
+
+    private fun initListener() {
+//        VideoPreviewActivity:
+        binding.previewVideo.fastClick {
+            val intent = Intent(this, VideoPreviewActivity::class.java)
+//            intent.putExtra("videoUrl", "https://jianliu.oss-cn-hangzhou.aliyuncs.com/jianliu/render_video/ed96ba31-6902-4acd-bae6-13a4a9d46fde.mp4")
+            startActivity(intent)
+        }
     }
 
     private fun initRecyclerView() {
@@ -94,6 +105,5 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
         super.onActivityResult(requestCode, resultCode, data)
         FilePicker.get().onActivityResult(requestCode, resultCode, data)
     }
-
 
 }
