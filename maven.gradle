@@ -1,0 +1,117 @@
+apply plugin: 'maven-publish'
+apply plugin: 'signing'
+
+// 参数获取
+ext["signing.keyId"] = ''
+ext["signing.password"] = ''
+ext["signing.secretKeyRingFile"] = ''
+ext["ossrhUsername"] = ''
+ext["ossrhPassword"] = ''
+
+File secretPropsFile = project.rootProject.file('local.properties')
+if (secretPropsFile.exists()) {
+    println "输出 local.properties"
+    Properties p = new Properties()
+    p.load(new FileInputStream(secretPropsFile))
+    p.each { name, value ->
+        ext[name] = value
+        println("输出 local.properties name = $name value = $value")
+    }
+} else {
+    println "No props file, loading env vars"
+}
+
+//打包main目录下代码和资源的 task
+tasks.register('generateSourcesJar', Jar) {
+    from "${projectDir}/src/main/java"
+    exclude "**/R.class"
+    exclude "**/BuildConfig.class"
+    archiveClassifier.set('sources')
+}
+
+def artifactFilePath = "${buildDir}/${PUBLISH_FILE_NAME}"
+
+publishing {
+    publications {
+        release(MavenPublication) {
+
+            groupId PUBLISH_GROUP_ID
+            artifactId PUBLISH_ARTIFACT_ID
+            version PUBLISH_VERSION
+            // 将源码打包到maven仓库
+//            artifact sourceFilePath
+
+            afterEvaluate {
+                artifact(artifactFilePath)
+            }
+            artifact generateSourcesJar
+            artifact androidJavadocsJar
+
+            // Self-explanatory metadata for the most part
+            pom {
+                name = PUBLISH_ARTIFACT_ID
+                description = POM_LICENSE_URL
+                // If your project has a dedicated site, use its URL here
+                url = POM_URL
+                licenses {
+                    license {
+                        //协议类型，一般默认Apache License2.0的话不用改：
+                        name = POM_LICENSE_NAME
+                        url = POM_LICENSE_URL
+                    }
+                }
+                developers {
+                    developer {
+                        id = POM_DEVELOPER_ID
+                        name = POM_DEVELOPER_NAME
+                        email = POM_DEVELOPER_EMAIL
+                    }
+                }
+                // Version control info, if you're using GitHub, follow the format as seen here
+                scm {
+                    //修改成你的Git地址：
+                    connection = POM_SCM_CONNECTION
+                    developerConnection = POM_SCM_DEV_CONNECTION
+                    //分支地址：
+                    url = POM_SCM_URL
+                }
+                // A slightly hacky fix so that your POM will include any transitive dependencies
+                // that your library builds upon
+                withXml {
+//                    def dependenciesNode = asNode().appendNode('dependencies')
+                    project.configurations.implementation.allDependencies.each {
+                        println("MavenallDependencies:${it},group:${it.group},name:${it.name},version:${it.version}")
+//                        def dependencyNode = dependenciesNode.appendNode('dependency')
+//                        dependencyNode.appendNode('groupId', it.group)
+//                        dependencyNode.appendNode('artifactId', it.name)
+//                        dependencyNode.appendNode('version', it.version)
+                    }
+                }
+            }
+        }
+    }
+    repositories {
+        // The repository to publish to, Sonatype/MavenCentral
+        maven {
+            // This is an arbitrary name, you may also use "mavencentral" or
+            // any other name that's descriptive for you
+            name = PUBLISH_NAME
+
+            def releasesRepoUrl = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
+            def snapshotsRepoUrl = "https://s01.oss.sonatype.org/content/repositories/snapshots/"
+            // You only need this if you want to publish snapshots, otherwise just set the URL
+            // to the release repo directly
+            url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+
+            // The username and password we've fetched earlier
+            credentials {
+                username ossrhUsername
+                password ossrhPassword
+            }
+        }
+    }
+}
+
+signing {
+    sign publishing.publications
+}
