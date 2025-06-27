@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Theme.SelectMedia" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Primary brand color. -->
+        <item name="colorPrimary">#121212</item>
+        <item name="colorPrimaryVariant">#fff</item>
+        <item name="colorOnPrimary">#fff</item>
+        <!-- Secondary brand color. -->
+        <item name="colorSecondary">#fff</item>
+        <item name="colorSecondaryVariant">#fff</item>
+        <item name="colorOnSecondary">#fff</item>
+        <item name="windowNoTitle">true</item>
+        <item name="windowActionBar">false</item>
+        <item name="android:windowFullscreen">false</item>
+        <!--    全屏沉浸式状态栏 必要属性  -->
+        <item name="android:statusBarColor">#121212</item>
+        <item name="android:windowTranslucentStatus">true</item>
+        <item name="android:windowTranslucentNavigation">true</item>
+        <!--        <item name="android:windowLayoutInDisplayCutoutMode" tools:targetApi="o_mr1">always</item>-->
+    </style>
+
+
+    <color name="file_picker_index_bg_color">#03C10D</color>
+</resources>

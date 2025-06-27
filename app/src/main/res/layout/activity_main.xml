@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#121212"
+    android:orientation="vertical">
+
+    <com.pichs.xwidget.space.XStatusBarSpace
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <com.pichs.xwidget.view.XConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:background="#121212">
+
+        <com.pichs.xwidget.view.XTextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="图库选择"
+            android:textColor="#fff"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+    </com.pichs.xwidget.view.XConstraintLayout>
+
+
+    <Button
+        android:id="@+id/btn_select_file"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="选择文件" />
+
+
+</LinearLayout>

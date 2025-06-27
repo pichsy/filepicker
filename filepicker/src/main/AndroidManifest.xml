@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <activity
+            android:name=".FilePickerActivity"
+            android:exported="true"
+            android:theme="@style/Theme.SelectMedia"
+            android:windowSoftInputMode="stateHidden|adjustResize">
+            <intent-filter>
+                <action android:name="com.filepicker.PICK_FILE" />
+                <data
+                    android:host="com.filepicker"
+                    android:scheme="filepicker" />
+            </intent-filter>
+        </activity>
+    </application>
+
+</manifest>

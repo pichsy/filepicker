@@ -1,0 +1,169 @@
+[versions]
+# Android官方库
+agentwebCore = "v5.1.1-androidx"
+agentwebFilechooser = "v5.1.1-androidx"
+agp = "8.3.2"
+annotation = "1.7.1"
+agentwebDownloader = "v5.0.4-androidx"
+flexboxVersion = "3.0.0"
+jsbridgeVersion = "1.0.4"
+disklrucacheVersion = "2.0.2"
+nbzxing = "0.2.5"
+nbzxingScale = "0.0.6"
+recyclerview = "1.3.2"
+room = "2.6.1"
+lifecycleRuntimeKtx = "2.7.0"
+activityKtx = "1.9.1"
+fragmentKtx = "1.8.2"
+appcompat = "1.7.0"
+material = "1.12.0"
+kotlin = "1.9.24"
+coreKtx = "1.13.1"
+kotlinxCoroutinesAndroid = "1.8.1"
+kotlinxCoroutinesCore = "1.8.1"
+kotlinxSerializationJson = "1.6.3"
+# 拖拽库 google
+draganddrop = "1.0.0"
+# apache 编码库
+commonsCodec = "1.15"
+# 测试库
+junit = "4.13.2"
+junitVersion = "1.2.1"
+espressoCore = "3.6.1"
+# 网络请求
+okhttp = "4.12.0"
+retrofit = "2.9.0"
+loggingInterceptor = "4.11.0"
+converterGson = "2.9.0"
+gson = "2.10.1"
+okio = "3.9.0"
+glide = "4.16.0"
+# 组件间通信
+liveEventBus = "1.8.0"
+# banner轮播图
+youthBanner = "2.2.3"
+# tencent库
+mmkv = "1.3.2"
+tencentLibpag = "4.2.55"
+# 三方库
+textTicker = "2.0.4"
+
+#xwidget
+xfilechooser = "1.1"
+xwidget = "5.3.0"
+xbase = "3.5.1"
+brv = "1.5.8"
+# 弹窗库
+nicedialog = "1.3.3"
+basepopup = "3.2.1"
+easywindow = "10.6"
+xxpermissions = "18.6"
+toaster = "12.6"
+
+# 刷新库
+refreshLayout = "2.1.0"
+
+#ksp version
+ksp = "1.9.24-1.0.20"
+theRouterPlugin = "1.2.2"
+androidGifDrawable = "1.2.28"
+
+# 蓝牙
+bluetoothBleKtx = "2.7.5"
+bluetoothDfu = "2.5.0"
+bluetoothScanner = "1.6.0"
+
+
+[libraries]
+##官方库
+androidx-draganddrop = { module = "androidx.draganddrop:draganddrop", version.ref = "draganddrop" }
+commons-codec = { module = "commons-codec:commons-codec", version.ref = "commonsCodec" }
+androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
+androidx-annotation = { group = "androidx.annotation", name = "annotation", version.ref = "annotation" }
+androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
+androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
+google-flexbox = { module = "com.google.android.flexbox:flexbox", version.ref = "flexboxVersion" }
+material = { group = "com.google.android.material", name = "material", version.ref = "material" }
+androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+androidx-activity-ktx = { group = "androidx.activity", name = "activity-ktx", version.ref = "activityKtx" }
+androidx-fragment-ktx = { group = "androidx.fragment", name = "fragment-ktx", version.ref = "fragmentKtx" }
+androidx-recyclerview = { group = "androidx.recyclerview", name = "recyclerview", version.ref = "recyclerview" }
+kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "kotlinxCoroutinesAndroid" }
+kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "kotlinxCoroutinesCore" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
+kotlinx-serialization-protobuf = { module = "org.jetbrains.kotlinx:kotlinx-serialization-protobuf", version.ref = "kotlinxSerializationJson" }
+# 测试模块驱动库
+junit = { group = "junit", name = "junit", version.ref = "junit" }
+androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
+androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
+#网络库
+nbzxing-scale = { module = "com.github.ailiwean:NBZxing-Scale", version.ref = "nbzxingScale" }
+nbzxing = { module = "com.github.ailiwean:NBZxing", version.ref = "nbzxing" }
+okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
+retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
+loggingInterceptor = { group = "com.squareup.okhttp3", name = "logging-interceptor", version.ref = "loggingInterceptor" }
+converterGson = { group = "com.squareup.retrofit2", name = "converter-gson", version.ref = "converterGson" }
+gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
+okio = { group = "com.squareup.okio", name = "okio", version.ref = "okio" }
+glide = { group = "com.github.bumptech.glide", name = "glide", version.ref = "glide" }
+
+# 三方库
+tencent-mmkv = { module = "com.tencent:mmkv", version.ref = "mmkv" }
+tencent-libpag = { module = "com.tencent.tav:libpag", version.ref = "tencentLibpag" }
+
+android-gif-drawable = { module = "pl.droidsonroids.gif:android-gif-drawable", version.ref = "androidGifDrawable" }
+youth-banner = { module = "io.github.youth5201314:banner", version.ref = "youthBanner" }
+# 文字变幻
+text-ticker = { module = "com.robinhood.ticker:ticker", version.ref = "textTicker" }
+xfilechooser = { module = "com.gitee.pichs:xfilechooser", version.ref = "xfilechooser" }
+xwidget = { group = "com.gitee.pichs", name = "xwidget", version.ref = "xwidget" }
+xbase = { group = "com.gitee.pichs", name = "xbase", version.ref = "xbase" }
+# recycler-adapter
+brv = { group = "com.github.liangjingkanji", name = "BRV", version.ref = "brv" }
+# 弹窗库
+nicedialog = { module = "com.github.michaellee123:NiceDialog", version.ref = "nicedialog" }
+basepopup = { group = "io.github.razerdp", name = "BasePopup", version.ref = "basepopup" }
+easywindow = { group = "com.github.getActivity", name = "EasyWindow", version.ref = "easywindow" }
+xxpermissions = { group = "com.github.getActivity", name = "XXPermissions", version.ref = "xxpermissions" }
+toaster = { group = "com.github.getActivity", name = "Toaster", version.ref = "toaster" }
+#组件间通信
+liveEventBus = { group = "io.github.jeremyliao", name = "live-event-bus-x", version.ref = "liveEventBus" }
+#核心必须依赖
+refreshLayoutKernel = { group = "io.github.scwang90", name = "refresh-layout-kernel", version.ref = "refreshLayout" }
+#经典刷新头
+refreshHeaderClassics = { group = "io.github.scwang90", name = "refresh-header-classics", version.ref = "refreshLayout" }
+#经典加载
+refreshFooterClassics = { group = "io.github.scwang90", name = "refresh-footer-classics", version.ref = "refreshLayout" }
+#虚拟刷新头
+refreshHeaderFalsify = { group = "io.github.scwang90", name = "refresh-header-falsify", version.ref = "refreshLayout" }
+#谷歌刷新头
+refreshHeaderMaterial = { group = "io.github.scwang90", name = "refresh-header-material", version.ref = "refreshLayout" }
+
+# theRouter 组件化框架
+theRouter = { group = "cn.therouter", name = "router", version.ref = "theRouterPlugin" }
+theRouterCompiler = { group = "cn.therouter", name = "apt", version.ref = "theRouterPlugin" }
+
+# 蓝牙dfu模块三方库
+bluetooth-ble-ktx = { module = "no.nordicsemi.android:ble-ktx", version.ref = "bluetoothBleKtx" }
+bluetooth-dfu = { module = "no.nordicsemi.android:dfu", version.ref = "bluetoothDfu" }
+bluetooth-scanner = { module = "no.nordicsemi.android.support.v18:scanner", version.ref = "bluetoothScanner" }
+
+# webview库
+disklrucache = { module = "com.jakewharton:disklrucache", version.ref = "disklrucacheVersion" }
+jsbridge = { module = "com.github.lzyzsd:JsBridge", version.ref = "jsbridgeVersion" }
+agentweb-downloader = { module = "com.github.Justson:Downloader", version.ref = "agentwebDownloader" }
+agentweb-filechooser = { module = "io.github.justson:agentweb-filechooser", version.ref = "agentwebFilechooser" }
+agentweb-core = { module = "io.github.justson:agentweb-core", version.ref = "agentwebCore" }
+
+
+[plugins]
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+theRouter = { id = "cn.therouter.agp8", version.ref = "theRouterPlugin" }
+android-application = { id = "com.android.application", version.ref = "agp" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+android-library = { id = "com.android.library", version.ref = "agp" }
+androidx-room = { id = "androidx.room", version.ref = "room" }
+
+
