@@ -183,6 +183,7 @@ class FilePickerPreviewDialog(
                 binding.tvSelectNumberHint.text = "已选:"
                 binding.tvSelectNumber.text = "$selectedMergeSize"
                 binding.btnDialogConfirm.alpha = 1f
+                binding.tvSelectNumber.isVisible = true
                 binding.tvMaxSelectNumber.isVisible = false
                 binding.tvSelectNumberSplitLine.isVisible = false
 //                Log.e("FilePickerPreviewDialog", "updateBottomMenuSelectNumberUI:222222 binding.btnConfirm.alpha = 1f")

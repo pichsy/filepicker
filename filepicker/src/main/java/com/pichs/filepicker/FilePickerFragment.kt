@@ -313,21 +313,27 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
 
                 Log.d("FilePickerFragment", "from:$from, to:$to, tempList.size:${tempList.size}, isSelected:$isSelected")
                 if (isSelected) {
+                    // 这里需要区分 viewModel.maxSelectNumber.value==0 的情况。
                     // 如果是选中模式，那么 经过的都要选中。
                     viewModel.tempSelectData.clear()
                     val list = tempList.filter { it !in viewModel.getSelectedDataList() }
 
-                    val dx = list.size + viewModel.getSelectedCount() - viewModel.maxSelectNumber.value
-
-                    Log.d(
-                        "FilePickerFragment",
-                        "dx:$dx, list.size:${list.size}, selectedData.size:${viewModel.getSelectedCount()}, ----x=${viewModel.maxSelectNumber.value - viewModel.getSelectedCount()}"
-                    )
-
-                    if (dx > 0) {
-                        viewModel.tempSelectData.addAll(list.subList(0, list.size - dx))
-                    } else {
+                    if (viewModel.maxSelectNumber.value == 0 || viewModel.maxSelectNumber.value == Int.MAX_VALUE) {
+                        // 如果没有限制选择数量，那么直接添加到临时选择数据中。
                         viewModel.tempSelectData.addAll(list)
+                    } else {
+                        val dx = list.size + viewModel.getSelectedCount() - viewModel.maxSelectNumber.value
+
+                        Log.d(
+                            "FilePickerFragment",
+                            "dx:$dx, list.size:${list.size}, selectedData.size:${viewModel.getSelectedCount()}, ----x=${viewModel.maxSelectNumber.value - viewModel.getSelectedCount()}"
+                        )
+
+                        if (dx > 0) {
+                            viewModel.tempSelectData.addAll(list.subList(0, list.size - dx))
+                        } else {
+                            viewModel.tempSelectData.addAll(list)
+                        }
                     }
                 } else {
                     // 如果是取消选中模式，那么经过的都要取消选中。
@@ -444,6 +450,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                 binding.btnConfirm.alpha = 0.3f
             } else {
                 binding.tvSelectNumberHint.text = "已选:"
+                binding.tvSelectNumber.isVisible = true
                 binding.tvSelectNumber.text = "$selectedMergeSize"
                 binding.btnConfirm.alpha = 1f
                 binding.tvMaxSelectNumber.isVisible = false
