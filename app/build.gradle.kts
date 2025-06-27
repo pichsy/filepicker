@@ -36,7 +36,6 @@ android {
 }
 
 dependencies {
-
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
@@ -56,5 +55,11 @@ dependencies {
     // 基础库
     implementation(libs.xbase)
     implementation(project(":filepicker"))
+    implementation("com.github.CarGuo.GSYVideoPlayer:gsyvideoplayer:v10.1.0")
+
+    // brv
+    implementation(libs.brv)
+    // 弹窗
+    implementation(libs.basepopup)
 
 }
