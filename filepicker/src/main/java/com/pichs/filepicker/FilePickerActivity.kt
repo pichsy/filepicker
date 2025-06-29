@@ -9,6 +9,7 @@ import com.pichs.filepicker.FilePickerFragment.Companion.SELECT_TYPE_IMAGE
 import com.pichs.filepicker.FilePickerFragment.Companion.SELECT_TYPE_VIDEO
 import com.pichs.filepicker.databinding.ActivityFilepickerMainBinding
 import com.pichs.filepicker.entity.MediaEntity
+import com.pichs.filepicker.utils.PadUtils
 import com.pichs.xwidget.utils.XStatusBarHelper
 
 class FilePickerActivity : AppCompatActivity() {
@@ -19,6 +20,14 @@ class FilePickerActivity : AppCompatActivity() {
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
+
+        // 判断一下，如果是是手机，则直接锁定竖屏。
+        if (PadUtils.isTablet(this)) {
+            requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+        } else {
+            requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+        }
+
         XStatusBarHelper.transparentStatusBar(window)
         super.onCreate(savedInstanceState)
         binding = ActivityFilepickerMainBinding.inflate(layoutInflater)

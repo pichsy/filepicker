@@ -2,6 +2,7 @@ package com.pichs.filepicker.video
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.graphics.Color
 import android.os.Handler
 import android.os.Looper
 import android.util.AttributeSet
@@ -77,7 +78,7 @@ class VideoPlayerView @JvmOverloads constructor(
             }
         })
 
-        binding.playerView.setOnTouchListener { _, event ->
+        binding.videoRoot.setOnTouchListener { _, event ->
             gestureDetector.onTouchEvent(event)
             // 返回 true 表示事件已被处理
             true
@@ -241,6 +242,7 @@ class VideoPlayerView @JvmOverloads constructor(
     }
 
     fun releasePlayer() {
+        player?.stop()
         handler.removeCallbacks(updateProgressRunnable)
         player?.release()
         player = null
