@@ -1,21 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#121212"
     android:orientation="vertical">
 
+    <androidx.viewpager2.widget.ViewPager2
+        android:id="@+id/view_pager2"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#000" />
+
     <com.pichs.xwidget.view.XStatusBarView
+        android:id="@+id/status_bar_view"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="#121212" />
+        android:background="#121212"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/cl_toolbar"
         android:layout_width="match_parent"
         android:layout_height="48dp"
-        android:background="#121212">
+        android:background="#121212"
+        app:layout_constraintTop_toBottomOf="@+id/status_bar_view">
 
         <com.pichs.xwidget.view.XImageView
             android:id="@+id/iv_back"
@@ -91,71 +100,44 @@
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <androidx.viewpager2.widget.ViewPager2
-        android:id="@+id/view_pager2"
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rv_selected"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1" />
+        android:layout_height="68dp"
+        android:background="#EA121212"
+        android:visibility="visible"
+        app:layout_constraintBottom_toTopOf="@+id/cl_bottom_bar" />
 
     <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/cl_bottom_bar"
         android:layout_width="match_parent"
         android:layout_height="48dp"
-        android:background="#121212">
+        android:background="#121212"
+        app:layout_constraintBottom_toBottomOf="parent">
 
-        <LinearLayout
+        <View
+            android:id="@+id/view_line"
+            android:layout_width="match_parent"
+            android:layout_height="0.7dp"
+            android:background="#20ffffff"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <com.pichs.xwidget.view.XTextView
+            android:id="@+id/tv_edit"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
+            android:paddingStart="16dp"
+            android:paddingTop="8dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="8dp"
+            android:text="编辑"
+            android:textColor="#fff"
+            android:textSize="15dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent">
-
-            <com.pichs.xwidget.view.XTextView
-                android:id="@+id/tv_select_number_hint"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="12dp"
-                android:text="至少选择一个"
-                android:textColor="#fff"
-                android:textSize="15dp" />
-
-            <com.pichs.xwidget.view.XTextView
-                android:id="@+id/tv_select_number"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="4dp"
-                android:text="8"
-                android:textColor="#05CA0C"
-                android:textSize="15dp"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-
-            <com.pichs.xwidget.view.XTextView
-                android:id="@+id/tv_select_number_split_line"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="1dp"
-                android:text="/"
-                android:textColor="#fff"
-                android:textSize="15dp"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-
-            <com.pichs.xwidget.view.XTextView
-                android:id="@+id/tv_max_select_number"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="1dp"
-                android:text="20"
-                android:textColor="#fff"
-                android:textSize="15dp"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-
-        </LinearLayout>
+            app:layout_constraintTop_toTopOf="parent" />
 
         <com.pichs.xwidget.roundview.XRoundButton
             android:id="@+id/btn_dialog_confirm"
@@ -167,7 +149,7 @@
             android:paddingTop="6dp"
             android:paddingEnd="16dp"
             android:paddingBottom="6dp"
-            android:text="上传"
+            android:text="发送(1)"
             android:textColor="#ffffff"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
@@ -176,4 +158,4 @@
             app:xp_radius="8dp" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
-</LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

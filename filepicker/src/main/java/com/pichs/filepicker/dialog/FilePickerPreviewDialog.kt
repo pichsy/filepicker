@@ -8,7 +8,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.Toast
-import androidx.core.view.isVisible
 import androidx.media3.common.util.UnstableApi
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
@@ -21,7 +20,13 @@ import com.pichs.filepicker.photoview.PhotoView
 import com.pichs.filepicker.video.VideoPlayerView
 import razerdp.basepopup.BasePopupWindow
 import androidx.lifecycle.viewModelScope
+import com.drake.brv.utils.linear
+import com.drake.brv.utils.models
+import com.drake.brv.utils.setup
+import com.pichs.filepicker.databinding.FilePickerItemRvAlbumSelectedBinding
+import com.pichs.filepicker.loader.MediaLoader
 import com.pichs.filepicker.utils.FilePickerClickHelper
+import com.pichs.filepicker.utils.FilePickerTimeFormatUtils
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
@@ -52,10 +57,10 @@ class FilePickerPreviewDialog(
         setBackgroundColor(Color.TRANSPARENT)
         mCurrentItem = curItem
         mCurrentIndex = itemIndexOfList(mCurrentItem)
-        binding.tvMaxSelectNumber.text = "${viewModel.maxSelectNumber.value}"
-        updateBottomMenuSelectNumberUI()
         initViewPager2()
+        initSelectedRecyclerView()
         initListener()
+        updateBottomMenuSelectNumberUI()
 
         job = viewModel.viewModelScope.launch {
             launch {
@@ -71,6 +76,44 @@ class FilePickerPreviewDialog(
                 }
             }
         }
+    }
+
+    private fun initSelectedRecyclerView() {
+        binding.rvSelected.itemAnimator = null
+        binding.rvSelected.linear(RecyclerView.HORIZONTAL).setup {
+            addType<MediaEntity>(R.layout.file_picker_item_rv_album_selected)
+
+            onBind {
+                val item = getModel<MediaEntity>()
+                val itemBinding = getBinding<FilePickerItemRvAlbumSelectedBinding>()
+
+                MediaLoader.loadImage(item.uri, item.mimeType, itemBinding.ivCoverImage)
+
+                if (mCurrentItem == item) {
+                    itemBinding.ivCoverImage.isSelected = true
+                } else {
+                    itemBinding.ivCoverImage.isSelected = false
+                }
+
+                if (item.isVideo()) {
+                    itemBinding.tvDuration.visibility = View.VISIBLE
+                    itemBinding.tvDuration.text = FilePickerTimeFormatUtils.formatTimeMillSeconds(item.duration)
+                } else if (item.isGif()) {
+                    itemBinding.tvDuration.visibility = View.VISIBLE
+                    itemBinding.tvDuration.text = "GIF"
+                } else {
+                    itemBinding.tvDuration.visibility = View.GONE
+                    itemBinding.tvDuration.text = ""
+                }
+
+                itemBinding.clSelectDelete.setOnClickListener {
+                    // 删除选中项
+                    viewModel.removeSelectedData(item)
+                    onSelect(item, false, itemIndexOfList(item))
+                    updateBottomMenuSelectNumberUI()
+                }
+            }
+        }.models = viewModel.getSelectedDataList()
     }
 
     fun itemIndexOfList(item: MediaEntity?): Int {
@@ -221,47 +264,52 @@ class FilePickerPreviewDialog(
 //    }
 
 
+    @SuppressLint("SetTextI18n")
     private fun updateBottomMenuSelectNumberUI() {
         val selectedMergeSize = viewModel.getSelectedCount() + viewModel.tempSelectData.size
         Log.e("FilePickerPreviewDialog", "updateBottomMenuSelectNumberUI: selectedMergeSize=${selectedMergeSize}")
-        if (viewModel.maxSelectNumber.value > 0) {
-            if (selectedMergeSize <= 0) {
-                binding.tvSelectNumberHint.text = "至少选择一个"
-                binding.tvSelectNumber.text = ""
-                binding.tvSelectNumber.isVisible = false
-                binding.tvSelectNumberSplitLine.isVisible = false
-                binding.tvMaxSelectNumber.isVisible = false
-                binding.btnDialogConfirm.alpha = 0.3f
-//                Log.e("FilePickerPreviewDialog", "updateBottomMenuSelectNumberUI: binding.btnConfirm.alpha = 0.3f")
-            } else {
-                binding.tvSelectNumberHint.text = "已选:"
-                binding.tvSelectNumber.text = "$selectedMergeSize"
-                binding.tvSelectNumber.isVisible = true
-                binding.tvSelectNumberSplitLine.isVisible = true
-                binding.tvMaxSelectNumber.isVisible = true
-                binding.btnDialogConfirm.alpha = 1f
-//                Log.e("FilePickerPreviewDialog", "updateBottomMenuSelectNumberUI: binding.btnConfirm.alpha = 1f")
-            }
-        } else {
-            if (selectedMergeSize <= 0) {
-                binding.tvSelectNumberHint.text = "至少选择一个"
-                binding.tvSelectNumber.text = ""
-                binding.tvSelectNumber.isVisible = false
-                binding.tvSelectNumberSplitLine.isVisible = false
-                binding.tvMaxSelectNumber.isVisible = false
-                binding.btnDialogConfirm.alpha = 0.3f
-//                Log.e("FilePickerPreviewDialog", "updateBottomMenuSelectNumberUI:222222 binding.btnConfirm.alpha = 0.3f")
-            } else {
-                binding.tvSelectNumberHint.text = "已选:"
-                binding.tvSelectNumber.text = "$selectedMergeSize"
-                binding.btnDialogConfirm.alpha = 1f
-                binding.tvSelectNumber.isVisible = true
-                binding.tvMaxSelectNumber.isVisible = false
-                binding.tvSelectNumberSplitLine.isVisible = false
-//                Log.e("FilePickerPreviewDialog", "updateBottomMenuSelectNumberUI:222222 binding.btnConfirm.alpha = 1f")
+        binding.rvSelected.models = viewModel.getSelectedDataList()
 
-            }
-        }
+        binding.btnDialogConfirm.text = "发送(${selectedMergeSize})"
+
+//        if (viewModel.maxSelectNumber.value > 0) {
+//            if (selectedMergeSize <= 0) {
+//                binding.tvSelectNumberHint.text = "至少选择一个"
+//                binding.tvSelectNumber.text = ""
+//                binding.tvSelectNumber.isVisible = false
+//                binding.tvSelectNumberSplitLine.isVisible = false
+//                binding.tvMaxSelectNumber.isVisible = false
+//                binding.btnDialogConfirm.alpha = 0.3f
+//                Log.e("FilePickerPreviewDialog", "updateBottomMenuSelectNumberUI: binding.btnConfirm.alpha = 0.3f")
+//            } else {
+//                binding.tvSelectNumberHint.text = "已选:"
+//                binding.tvSelectNumber.text = "$selectedMergeSize"
+//                binding.tvSelectNumber.isVisible = true
+//                binding.tvSelectNumberSplitLine.isVisible = true
+//                binding.tvMaxSelectNumber.isVisible = true
+//                binding.btnDialogConfirm.alpha = 1f
+//                Log.e("FilePickerPreviewDialog", "updateBottomMenuSelectNumberUI: binding.btnConfirm.alpha = 1f")
+//            }
+//        } else {
+//            if (selectedMergeSize <= 0) {
+//                binding.tvSelectNumberHint.text = "至少选择一个"
+//                binding.tvSelectNumber.text = ""
+//                binding.tvSelectNumber.isVisible = false
+//                binding.tvSelectNumberSplitLine.isVisible = false
+//                binding.tvMaxSelectNumber.isVisible = false
+//                binding.btnDialogConfirm.alpha = 0.3f
+////                Log.e("FilePickerPreviewDialog", "updateBottomMenuSelectNumberUI:222222 binding.btnConfirm.alpha = 0.3f")
+//            } else {
+//                binding.tvSelectNumberHint.text = "已选:"
+//                binding.tvSelectNumber.text = "$selectedMergeSize"
+//                binding.btnDialogConfirm.alpha = 1f
+//                binding.tvSelectNumber.isVisible = true
+//                binding.tvMaxSelectNumber.isVisible = false
+//                binding.tvSelectNumberSplitLine.isVisible = false
+////                Log.e("FilePickerPreviewDialog", "updateBottomMenuSelectNumberUI:222222 binding.btnConfirm.alpha = 1f")
+//
+//            }
+//        }
     }
 
     companion object {

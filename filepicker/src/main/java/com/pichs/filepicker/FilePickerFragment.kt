@@ -24,8 +24,8 @@ import com.drake.brv.utils.bindingAdapter
 import com.drake.brv.utils.grid
 import com.drake.brv.utils.models
 import com.drake.brv.utils.setup
+import com.pichs.filepicker.databinding.FilePickerItemRvAlbumBinding
 import com.pichs.filepicker.databinding.FragmentFilepickerHomeBinding
-import com.pichs.filepicker.databinding.ItemRvAlbumBinding
 import com.pichs.filepicker.dialog.FilePickerPreviewDialog
 import com.pichs.filepicker.dialog.FolderChooseDialog
 import com.pichs.filepicker.entity.MediaEntity
@@ -229,10 +229,10 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
 
         binding.recyclerView.itemAnimator = null
         binding.recyclerView.grid(4).setup {
-            addType<MediaEntity>(R.layout.item_rv_album)
+            addType<MediaEntity>(R.layout.file_picker_item_rv_album)
             onBind {
                 val item = getModel<MediaEntity>()
-                val itemBinding = getBinding<ItemRvAlbumBinding>()
+                val itemBinding = getBinding<FilePickerItemRvAlbumBinding>()
 
                 itemBinding.clSelectArea.updateLayoutParams {
                     width = screenWidth / 7

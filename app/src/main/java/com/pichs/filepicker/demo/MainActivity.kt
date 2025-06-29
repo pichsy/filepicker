@@ -10,7 +10,7 @@ import com.drake.brv.utils.setup
 import com.hjq.permissions.Permission
 import com.hjq.permissions.XXPermissions
 import com.pichs.filepicker.FilePicker
-import com.pichs.filepicker.databinding.ItemRvAlbumBinding
+import com.pichs.filepicker.databinding.FilePickerItemRvAlbumBinding
 import com.pichs.filepicker.demo.databinding.ActivityMainBinding
 import com.pichs.filepicker.entity.MediaEntity
 import com.pichs.filepicker.video.VideoPreviewActivity
@@ -69,11 +69,11 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
     private fun initRecyclerView() {
 
         binding.recyclerView.linear(RecyclerView.HORIZONTAL).setup {
-            addType<MediaEntity>(com.pichs.filepicker.R.layout.item_rv_album)
+            addType<MediaEntity>(com.pichs.filepicker.R.layout.file_picker_item_rv_album)
 
             onBind {
                 val mediaEntity = getModel<MediaEntity>()
-                val binding = getBinding<ItemRvAlbumBinding>()
+                val binding = getBinding<FilePickerItemRvAlbumBinding>()
                 binding.clSelectArea.isVisible = false
                 Glide.with(this@MainActivity)
                     .load(mediaEntity.path)
