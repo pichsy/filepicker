@@ -2,6 +2,7 @@ package com.pichs.filepicker.video
 
 import android.net.Uri
 import android.os.Bundle
+import android.widget.Toast
 import androidx.annotation.OptIn
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
@@ -27,13 +28,11 @@ class VideoPreviewActivity : AppCompatActivity() {
 
         videoUrl = intent.getStringExtra("videoUrl") ?: ""
 
-        videoUrl = if (videoUrl.isEmpty()) {
-            "/sdcard/DCIM/Camera/VID_20250627_183943.mp4" // 默认测试视频路径
-        } else {
-            videoUrl
+        if (videoUrl.isNotEmpty()) {
+            Toast.makeText(applicationContext, "请传入正确的视频地址", Toast.LENGTH_SHORT).show()
+            finish()
+            return
         }
-
-        videoUrl = "/sdcard/DCIM/Camera/VID_20250627_183943.mp4"
 
         binding.videoPlayerView.loadCover(
             MediaEntity(
@@ -43,7 +42,6 @@ class VideoPreviewActivity : AppCompatActivity() {
             )
         )
 
-//        binding.videoPlayerView.loadVideoAndPlay(videoUrl)
         binding.videoPlayerView.setOnControllerVisibilityChangedListener {
             binding.clToolbar.isVisible = it
         }

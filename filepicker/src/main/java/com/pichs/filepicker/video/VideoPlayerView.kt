@@ -25,6 +25,7 @@ import androidx.core.net.toUri
 import androidx.core.view.isVisible
 import com.pichs.filepicker.entity.MediaEntity
 import com.pichs.filepicker.loader.MediaLoader
+import com.pichs.filepicker.utils.FilePickerClickHelper
 import com.pichs.filepicker.widget.OnItemSelectionChangedListener
 
 @SuppressLint("ClickableViewAccessibility")
@@ -53,9 +54,14 @@ class VideoPlayerView @JvmOverloads constructor(
     }
 
     init {
+        FilePickerClickHelper.clicks(binding.ivPlayBtn) {
+            togglePlayPause()
+        }
+
         binding.controller.exoPlay.setOnClickListener {
             togglePlayPause()
         }
+
         binding.controller.exoPlayPause.setOnClickListener {
             togglePlayPause()
         }
@@ -215,9 +221,11 @@ class VideoPlayerView @JvmOverloads constructor(
 
     private fun updatePlayPauseButtons(isPlaying: Boolean) {
         if (isPlaying) {
+            binding.ivPlayBtn.isVisible = false
             binding.controller.exoPlay.visibility = View.GONE
             binding.controller.exoPlayPause.visibility = View.VISIBLE
         } else {
+            binding.ivPlayBtn.isVisible = true
             binding.controller.exoPlay.visibility = View.VISIBLE
             binding.controller.exoPlayPause.visibility = View.GONE
         }
