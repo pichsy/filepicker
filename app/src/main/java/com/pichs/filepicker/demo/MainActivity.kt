@@ -1,7 +1,7 @@
 package com.pichs.filepicker.demo
 
 import android.content.Intent
-import androidx.core.view.isVisible
+import android.graphics.Color
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.drake.brv.utils.linear
@@ -10,8 +10,9 @@ import com.drake.brv.utils.setup
 import com.hjq.permissions.Permission
 import com.hjq.permissions.XXPermissions
 import com.pichs.filepicker.FilePicker
-import com.pichs.filepicker.databinding.FilePickerItemRvAlbumBinding
+import com.pichs.filepicker.FilePickerUIConfig
 import com.pichs.filepicker.demo.databinding.ActivityMainBinding
+import com.pichs.filepicker.demo.databinding.ItemImageBinding
 import com.pichs.filepicker.entity.MediaEntity
 import com.pichs.filepicker.video.VideoPreviewActivity
 import com.pichs.xbase.binding.BindingActivity
@@ -20,8 +21,12 @@ import com.pichs.xbase.xlog.XLog
 
 class MainActivity : BindingActivity<ActivityMainBinding>() {
 
-
     override fun afterOnCreate() {
+
+        binding.previewFragment.fastClick {
+            startActivity(Intent(this, TestActivity::class.java))
+        }
+
         // 开始按钮点击事件
         binding.btnStart.fastClick {
             // 获取最大选择数量
@@ -53,12 +58,10 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
         }
 
         initRecyclerView()
-
         initListener()
     }
 
     private fun initListener() {
-//        VideoPreviewActivity:
         binding.previewVideo.fastClick {
             val intent = Intent(this, VideoPreviewActivity::class.java)
 //            intent.putExtra("videoUrl", "https://jianliu.oss-cn-hangzhou.aliyuncs.com/jianliu/render_video/ed96ba31-6902-4acd-bae6-13a4a9d46fde.mp4")
@@ -69,15 +72,15 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
     private fun initRecyclerView() {
 
         binding.recyclerView.linear(RecyclerView.HORIZONTAL).setup {
-            addType<MediaEntity>(com.pichs.filepicker.R.layout.file_picker_item_rv_album)
+            addType<MediaEntity>(R.layout.item_image)
 
             onBind {
                 val mediaEntity = getModel<MediaEntity>()
-                val binding = getBinding<FilePickerItemRvAlbumBinding>()
-                binding.clSelectArea.isVisible = false
+                val itemBinding = getBinding<ItemImageBinding>()
+                itemBinding.tvIndex.text = "${modelPosition + 1}"
                 Glide.with(this@MainActivity)
                     .load(mediaEntity.path)
-                    .into(binding.ivCoverImage)
+                    .into(itemBinding.ivImg)
             }
         }
     }
@@ -97,7 +100,18 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
             .setOnSelectCallback {
                 XLog.d("FilePicker", "Selected files: ${it.size}")
                 binding.recyclerView.models = it
-            }.build().start()
+            }
+            .setUiConfig(
+                FilePickerUIConfig(
+                    confirmBtnText = "下一步",
+                    isShowOriginal = false,
+                    isShowPreviewPageSelectedIndex = true,
+                    isShowSelectedListDeleteIcon = true,
+                    selectedListDeleteIconBackgroundColor = Color.BLUE
+                )
+            )
+            .build()
+            .start()
     }
 
 

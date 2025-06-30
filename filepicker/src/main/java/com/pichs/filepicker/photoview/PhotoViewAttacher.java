@@ -98,8 +98,14 @@ public class PhotoViewAttacher implements View.OnTouchListener,
     private OnGestureListener onGestureListener = new OnGestureListener() {
         @Override
         public void onDrag(float dx, float dy) {
+            // 缩放时不处理拖动
             if (mScaleDragDetector.isScaling()) {
-                return; // Do not drag if we are already scaling
+                // 缩放时禁止父布局拦截
+                ViewParent parent = mImageView.getParent();
+                if (parent != null) {
+                    parent.requestDisallowInterceptTouchEvent(true);
+                }
+                return;
             }
             if (mOnViewDragListener != null) {
                 mOnViewDragListener.onDrag(dx, dy);
@@ -107,17 +113,9 @@ public class PhotoViewAttacher implements View.OnTouchListener,
             mSuppMatrix.postTranslate(dx, dy);
             checkAndDisplayMatrix();
 
-            /*
-             * Here we decide whether to let the ImageView's parent to start taking
-             * over the touch event.
-             *
-             * First we check whether this function is enabled. We never want the
-             * parent to take over if we're scaling. We then check the edge we're
-             * on, and the direction of the scroll (i.e. if we're pulling against
-             * the edge, aka 'overscrolling', let the parent take over).
-             */
             ViewParent parent = mImageView.getParent();
             if (mAllowParentInterceptOnEdge && !mScaleDragDetector.isScaling() && !mBlockParentIntercept) {
+                // 只有单指拖动且到达边缘时才允许父布局拦截
                 if (mHorizontalScrollEdge == HORIZONTAL_EDGE_BOTH
                         || (mHorizontalScrollEdge == HORIZONTAL_EDGE_LEFT && dx >= 1f)
                         || (mHorizontalScrollEdge == HORIZONTAL_EDGE_RIGHT && dx <= -1f)
@@ -125,6 +123,10 @@ public class PhotoViewAttacher implements View.OnTouchListener,
                         || (mVerticalScrollEdge == VERTICAL_EDGE_BOTTOM && dy <= -1f)) {
                     if (parent != null) {
                         parent.requestDisallowInterceptTouchEvent(false);
+                    }
+                } else {
+                    if (parent != null) {
+                        parent.requestDisallowInterceptTouchEvent(true);
                     }
                 }
             } else {

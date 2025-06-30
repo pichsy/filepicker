@@ -60,6 +60,9 @@ class FilePicker {
         private var mActivity: Activity? = null
         private var mFragment: Fragment? = null
 
+        var mUiConfig: FilePickerUIConfig = FilePickerUIConfig()
+            private set
+
         constructor(activity: Activity) {
             this.mActivity = activity
         }
@@ -74,6 +77,11 @@ class FilePicker {
 
         fun getFragment(): Fragment? {
             return mFragment
+        }
+
+        fun setUiConfig(uiConfig: FilePickerUIConfig): Builder {
+            this.mUiConfig = uiConfig
+            return this
         }
 
         var mSelectedList: MutableList<MediaEntity> = mutableListOf()
@@ -164,6 +172,7 @@ class FilePicker {
                     intent.putExtra("selectType", bd.mSelectType)
                     intent.putExtra("maxFileSize", bd.mMaxFileSize)
                     intent.putExtra("minFileSize", bd.mMinFileSize)
+                    intent.putExtra("uiConfig", bd.mUiConfig)
                     intent.putParcelableArrayListExtra("selectedDataList", ArrayList(bd.mSelectedList))
                     bd.getFragment()?.startActivityForResult(intent, bd.mRequestCode)
                 }
@@ -174,6 +183,7 @@ class FilePicker {
                     intent.putExtra("selectType", bd.mSelectType)
                     intent.putExtra("maxFileSize", bd.mMaxFileSize)
                     intent.putExtra("minFileSize", bd.mMinFileSize)
+                    intent.putExtra("uiConfig", bd.mUiConfig)
                     intent.putParcelableArrayListExtra("selectedDataList", ArrayList(bd.mSelectedList))
                     act.startActivityForResult(intent, bd.mRequestCode)
                 }

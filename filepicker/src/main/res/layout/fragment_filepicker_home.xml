@@ -159,6 +159,7 @@
         android:background="#121212">
 
         <LinearLayout
+            android:id="@+id/ll_preview"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
@@ -167,49 +168,91 @@
             app:layout_constraintTop_toTopOf="parent">
 
             <com.pichs.xwidget.view.XTextView
-                android:id="@+id/tv_select_number_hint"
+                android:id="@+id/tv_preview"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="12dp"
-                android:text="至少选择一个"
+                android:paddingStart="16dp"
+                android:paddingTop="8dp"
+                android:paddingEnd="16dp"
+                android:paddingBottom="8dp"
+                android:text="预览"
                 android:textColor="#fff"
-                android:textSize="15dp" />
+                android:textSize="14dp"
+                app:xp_disabledTextColor="#555" />
+
+            <!--            <com.pichs.xwidget.view.XTextView-->
+            <!--                android:id="@+id/tv_select_number"-->
+            <!--                android:layout_width="wrap_content"-->
+            <!--                android:layout_height="wrap_content"-->
+            <!--                android:layout_marginStart="4dp"-->
+            <!--                android:text="8"-->
+            <!--                android:textColor="#05CA0C"-->
+            <!--                android:textSize="15dp"-->
+            <!--                app:layout_constraintBottom_toBottomOf="parent"-->
+            <!--                app:layout_constraintStart_toStartOf="parent"-->
+            <!--                app:layout_constraintTop_toTopOf="parent" />-->
+
+            <!--            <com.pichs.xwidget.view.XTextView-->
+            <!--                android:id="@+id/tv_select_number_split_line"-->
+            <!--                android:layout_width="wrap_content"-->
+            <!--                android:layout_height="wrap_content"-->
+            <!--                android:layout_marginStart="1dp"-->
+            <!--                android:text="/"-->
+            <!--                android:textColor="#fff"-->
+            <!--                android:textSize="15dp"-->
+            <!--                app:layout_constraintBottom_toBottomOf="parent"-->
+            <!--                app:layout_constraintStart_toStartOf="parent"-->
+            <!--                app:layout_constraintTop_toTopOf="parent" />-->
+
+            <!--            <com.pichs.xwidget.view.XTextView-->
+            <!--                android:id="@+id/tv_max_select_number"-->
+            <!--                android:layout_width="wrap_content"-->
+            <!--                android:layout_height="wrap_content"-->
+            <!--                android:layout_marginStart="1dp"-->
+            <!--                android:text="20"-->
+            <!--                android:textColor="#fff"-->
+            <!--                android:textSize="15dp"-->
+            <!--                app:layout_constraintBottom_toBottomOf="parent"-->
+            <!--                app:layout_constraintStart_toStartOf="parent"-->
+            <!--                app:layout_constraintTop_toTopOf="parent" />-->
+
+        </LinearLayout>
+
+
+        <LinearLayout
+            android:id="@+id/ll_original"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:paddingStart="12dp"
+            android:paddingTop="8dp"
+            android:paddingEnd="12dp"
+            android:paddingBottom="8dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <com.pichs.xwidget.roundview.XRoundFrameLayout
+                android:id="@+id/cbox_original"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:background="#00000000"
+                android:checked="false"
+                app:xp_borderColor="#fff"
+                app:xp_borderWidth="1dp"
+                app:xp_checkedBackground="#04AD0C"
+                app:xp_radius="25dp" />
 
             <com.pichs.xwidget.view.XTextView
-                android:id="@+id/tv_select_number"
+                android:id="@+id/tv_original"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="4dp"
-                android:text="8"
-                android:textColor="#05CA0C"
-                android:textSize="15dp"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-
-            <com.pichs.xwidget.view.XTextView
-                android:id="@+id/tv_select_number_split_line"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="1dp"
-                android:text="/"
+                android:layout_marginStart="5dp"
+                android:text="原图"
                 android:textColor="#fff"
-                android:textSize="15dp"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-
-            <com.pichs.xwidget.view.XTextView
-                android:id="@+id/tv_max_select_number"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="1dp"
-                android:text="20"
-                android:textColor="#fff"
-                android:textSize="15dp"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+                android:textSize="14dp" />
 
         </LinearLayout>
 
@@ -223,11 +266,14 @@
             android:paddingTop="6dp"
             android:paddingEnd="16dp"
             android:paddingBottom="6dp"
-            android:text="上传"
+            android:text="确定"
             android:textColor="#fff"
+            android:textSize="15dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
+            app:xp_disabledBackground="#8004AD0C"
+            app:xp_disabledTextColor="#80ffffff"
             app:xp_pressedAlpha="0.8"
             app:xp_radius="8dp" />
 

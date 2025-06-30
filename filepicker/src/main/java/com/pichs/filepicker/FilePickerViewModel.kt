@@ -10,6 +10,13 @@ import java.util.concurrent.CopyOnWriteArrayList
 
 class FilePickerViewModel : ViewModel() {
 
+    var uiConfig: FilePickerUIConfig = FilePickerUIConfig()
+
+    /**
+     * 原图是否勾选，默认不勾选
+     */
+    val originalCheckedFlow = MutableStateFlow(false)
+
     val maxSelectNumber = MutableStateFlow(0)
     val selectType = MutableStateFlow("all")
     val maxFileSize = MutableStateFlow(0L)
@@ -65,7 +72,8 @@ class FilePickerViewModel : ViewModel() {
     var selectedData = CopyOnWriteArrayList<MediaEntity>()
     var tempSelectData = CopyOnWriteArrayList<MediaEntity>()
 
-    fun indexOfSelected(item: MediaEntity): Int {
+    fun indexOfSelected(item: MediaEntity?): Int {
+        if (item == null) return -1
         return (selectedData + tempSelectData).indexOfFirst { it.path == item.path }
     }
 

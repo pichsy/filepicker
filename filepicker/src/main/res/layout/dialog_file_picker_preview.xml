@@ -63,19 +63,21 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent">
 
-            <!--            <com.pichs.xwidget.cardview.XCardTextView-->
-            <!--                android:id="@+id/tv_select_index"-->
-            <!--                android:layout_width="22dp"-->
-            <!--                android:layout_height="22dp"-->
-            <!--                android:gravity="center"-->
-            <!--                android:textColor="#fff"-->
-            <!--                android:textSize="10dp"-->
-            <!--                app:layout_constraintBottom_toBottomOf="parent"-->
-            <!--                app:layout_constraintEnd_toEndOf="parent"-->
-            <!--                app:layout_constraintTop_toTopOf="parent"-->
-            <!--                app:xp_borderColor="#fff"-->
-            <!--                app:xp_borderWidth="2dp"-->
-            <!--                app:xp_radius="30dp" />-->
+            <com.pichs.xwidget.cardview.XCardTextView
+                android:id="@+id/tv_select_index"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:background="#00000000"
+                android:checked="false"
+                android:gravity="center"
+                android:text=""
+                android:textColor="#fff"
+                android:textSize="11dp"
+                android:visibility="visible"
+                app:xp_borderColor="#fff"
+                app:xp_borderWidth="2dp"
+                app:xp_checkedBackground="#04AD0C"
+                app:xp_radius="30dp" />
 
             <com.pichs.xwidget.view.XCheckedImageView
                 android:id="@+id/iv_select_state"
@@ -83,15 +85,14 @@
                 android:layout_height="18dp"
                 android:checked="true"
                 android:src="@drawable/ic_file_picker_unselected"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
+                android:visibility="gone"
                 app:xp_checked_src="@drawable/ic_file_picker_selected" />
 
             <androidx.appcompat.widget.AppCompatTextView
+                android:id="@+id/tv_select"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
+                android:layout_marginStart="6dp"
                 android:text="选择"
                 android:textColor="#fff"
                 android:textSize="14dp" />
@@ -100,13 +101,12 @@
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rv_selected"
         android:layout_width="match_parent"
         android:layout_height="68dp"
         android:background="#EA121212"
-        android:visibility="visible"
+        android:visibility="gone"
         app:layout_constraintBottom_toTopOf="@+id/cl_bottom_bar" />
 
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -135,12 +135,50 @@
             android:text="编辑"
             android:textColor="#fff"
             android:textSize="15dp"
+            android:visibility="gone"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
+        <LinearLayout
+            android:id="@+id/ll_original"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:paddingStart="12dp"
+            android:paddingTop="8dp"
+            android:paddingEnd="12dp"
+            android:paddingBottom="8dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <com.pichs.xwidget.roundview.XRoundFrameLayout
+                android:id="@+id/cbox_original"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:background="#00000000"
+                android:checked="false"
+                app:xp_borderColor="#fff"
+                app:xp_borderWidth="1dp"
+                app:xp_checkedBackground="#04AD0C"
+                app:xp_radius="25dp" />
+
+            <com.pichs.xwidget.view.XTextView
+                android:id="@+id/tv_original"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="5dp"
+                android:text="原图"
+                android:textColor="#fff"
+                android:textSize="14dp" />
+
+        </LinearLayout>
+
         <com.pichs.xwidget.roundview.XRoundButton
-            android:id="@+id/btn_dialog_confirm"
+            android:id="@+id/btn_confirm"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginEnd="12dp"
@@ -149,11 +187,14 @@
             android:paddingTop="6dp"
             android:paddingEnd="16dp"
             android:paddingBottom="6dp"
-            android:text="发送(1)"
-            android:textColor="#ffffff"
+            android:text="确定"
+            android:textColor="#fff"
+            android:textSize="15dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
+            app:xp_disabledBackground="#8004AD0C"
+            app:xp_disabledTextColor="#80ffffff"
             app:xp_pressedAlpha="0.8"
             app:xp_radius="8dp" />
 

@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#121212"
+    android:orientation="vertical">
+
+    <com.pichs.xwidget.space.XStatusBarSpace
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <com.pichs.xwidget.view.XConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:background="#121212">
+
+        <com.pichs.xwidget.view.XTextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="图库选择"
+            android:textColor="#fff"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+    </com.pichs.xwidget.view.XConstraintLayout>
+
+    <!-- 数量 maxSelectCount 输入框 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="16dp">
+
+        <androidx.appcompat.widget.AppCompatTextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="最大选择数量："
+            android:textColor="#fff" />
+
+        <androidx.appcompat.widget.AppCompatEditText
+            android:id="@+id/et_max_select_count"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:hint="请输入数量"
+            android:inputType="number"
+            android:textColor="#fff"
+            android:textColorHint="#888" />
+    </LinearLayout>
+
+    <!-- 类型选择 RadioGroup -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="16dp">
+
+        <androidx.appcompat.widget.AppCompatTextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="类型："
+            android:textColor="#fff" />
+
+        <RadioGroup
+            android:id="@+id/rg_type"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <RadioButton
+                android:id="@+id/rb_all"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="全部"
+                android:textColor="#fff" />
+
+            <RadioButton
+                android:id="@+id/rb_image"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="图片"
+                android:textColor="#fff" />
+
+            <RadioButton
+                android:id="@+id/rb_video"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="视频"
+                android:textColor="#fff" />
+        </RadioGroup>
+    </LinearLayout>
+
+    <!-- 最大文件大小输入框 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="16dp">
+
+        <androidx.appcompat.widget.AppCompatTextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="最大文件大小(M)："
+            android:textColor="#fff" />
+
+        <androidx.appcompat.widget.AppCompatEditText
+            android:id="@+id/et_max_file_size"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:hint="如200"
+            android:inputType="number"
+            android:textColor="#fff"
+            android:textColorHint="#888" />
+    </LinearLayout>
+
+    <!-- 开始按钮 -->
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btn_start"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:layout_marginStart="56dp"
+        android:layout_marginEnd="56dp"
+        android:backgroundTint="#E60B4D"
+        android:text="开始"
+        android:textColor="#fff" />
+
+
+    <!-- 开始按钮 -->
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/preview_video"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:layout_marginStart="56dp"
+        android:layout_marginEnd="56dp"
+        android:backgroundTint="#E60B4D"
+        android:text="预览视频"
+        android:textColor="#fff" />
+
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recycler_view"
+        android:layout_width="match_parent"
+        android:layout_height="120dp"
+        android:layout_marginTop="20dp" />
+
+</LinearLayout>

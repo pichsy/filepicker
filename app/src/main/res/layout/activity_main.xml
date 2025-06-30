@@ -146,6 +146,18 @@
         android:text="预览视频"
         android:textColor="#fff" />
 
+    <!-- 开始按钮 -->
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/preview_fragment"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:layout_marginStart="56dp"
+        android:layout_marginEnd="56dp"
+        android:backgroundTint="#E60B4D"
+        android:text="Fragment"
+        android:textAllCaps="false"
+        android:textColor="#fff" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recycler_view"

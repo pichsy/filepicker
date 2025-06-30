@@ -12,6 +12,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.annotation.OptIn
+import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.core.content.ContextCompat
 import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
@@ -24,6 +25,9 @@ import com.drake.brv.utils.bindingAdapter
 import com.drake.brv.utils.grid
 import com.drake.brv.utils.models
 import com.drake.brv.utils.setup
+import com.pichs.filepicker.FilePickerFragment.Companion.TAB_TYPE_ALL
+import com.pichs.filepicker.FilePickerFragment.Companion.TAB_TYPE_IMAGE
+import com.pichs.filepicker.FilePickerFragment.Companion.TAB_TYPE_VIDEO
 import com.pichs.filepicker.databinding.FilePickerItemRvAlbumBinding
 import com.pichs.filepicker.databinding.FragmentFilepickerHomeBinding
 import com.pichs.filepicker.dialog.FilePickerPreviewDialog
@@ -32,10 +36,12 @@ import com.pichs.filepicker.entity.MediaEntity
 import com.pichs.filepicker.entity.MediaFolder
 import com.pichs.filepicker.loader.MediaLoader
 import com.pichs.filepicker.scanner.MediaScanner
+import com.pichs.filepicker.utils.FilePickerClickHelper
 import com.pichs.filepicker.utils.FilePickerTimeFormatUtils
 import com.pichs.filepicker.widget.OnItemSelectionChangedListener
 import com.pichs.xwidget.utils.XDisplayHelper
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import razerdp.basepopup.BasePopupWindow
 
@@ -89,10 +95,52 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
             // 隐藏掉tab切换。
             binding.llSelectType.isVisible = false
         }
+        initConfigUI()
+
         initTab()
         initRecycler()
         initDataFlow()
         loadData()
+        initListener()
+    }
+
+    private fun initListener() {
+        FilePickerClickHelper.clicks(binding.llPreview) {
+            // 预览按钮点击事件
+            Log.d("FilePickerFragment", "Preview clicked, selectedDataList size: ${viewModel.getSelectedDataList().size}")
+            if (viewModel.getSelectedDataList().isEmpty()) {
+                Toast.makeText(requireContext(), "至少选择一个", Toast.LENGTH_SHORT).show()
+                return@clicks
+            }
+            // todo 进入 展示界面弹窗，这里仅展示固定个数，不参与展示。
+
+
+        }
+
+        FilePickerClickHelper.clicks(binding.llOriginal) {
+            viewModel.originalCheckedFlow.update { !viewModel.originalCheckedFlow.value }
+        }
+    }
+
+    @SuppressLint("SetTextI18n")
+    private fun initConfigUI() {
+        if (viewModel.getSelectedCount() <= 0) {
+            binding.btnConfirm.text = viewModel.uiConfig.confirmBtnText
+            binding.tvPreview.text = viewModel.uiConfig.previewText
+            binding.btnConfirm.isEnabled = false
+            binding.llPreview.isEnabled = false
+            binding.tvPreview.isEnabled = false
+        } else {
+            binding.btnConfirm.isEnabled = true
+            binding.llPreview.isEnabled = true
+            binding.tvPreview.isEnabled = true
+            binding.btnConfirm.text = "${viewModel.uiConfig.confirmBtnText}(${viewModel.getSelectedCount()})"
+            binding.tvPreview.text = "${viewModel.uiConfig.previewText}(${viewModel.getSelectedCount()})"
+        }
+
+        binding.llOriginal.isVisible = viewModel.uiConfig.isShowOriginal
+        binding.tvOriginal.text = viewModel.uiConfig.originalText
+        binding.cboxOriginal.isChecked = viewModel.originalCheckedFlow.value
     }
 
     private fun initTab() {
@@ -160,6 +208,13 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                     binding.recyclerView.models = list
                 }
             }
+
+            launch {
+                viewModel.originalCheckedFlow.collectLatest {
+                    Log.d("FilePickerFragment", "initDataFlow originalCheckedFlow: $it")
+                    binding.cboxOriginal.isChecked = it
+                }
+            }
         }
     }
 
@@ -225,7 +280,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
 
     @SuppressLint("SetTextI18n")
     private fun initRecycler() {
-        binding.tvMaxSelectNumber.text = "${viewModel.maxSelectNumber.value}"
+//        binding.tvMaxSelectNumber.text = "${viewModel.maxSelectNumber.value}"
 
         binding.recyclerView.itemAnimator = null
         binding.recyclerView.grid(4).setup {
@@ -390,14 +445,15 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                 updateSelectDataUI()
             }
             updateBottomMenuSelectNumberUI()
-        }, onConfirm = { position ->
+        }, onConfirm = { pos ->
             val finalList = ArrayList(viewModel.getSelectedDataList())
             // 确认
             if (finalList.isEmpty()) {
-                viewModel.currentFolder.value?.mediaEntityList?.getOrNull(position)?.let { item ->
+                viewModel.getCurrentFolderDataList().getOrNull(pos)?.let { item ->
                     finalList.add(item)
                 }
             }
+            Log.d("FilePickerFragment", "onConfirm: finalList=${finalList.size}")
             callbackToChooser(finalList)
         }).showPopupWindow()
     }
@@ -406,8 +462,9 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
      * 选择数据返回
      */
     private fun callbackToChooser(selectList: ArrayList<MediaEntity>) {
+        Log.d("FilePickerFragment", "1111callbackToChooser: selectList size:${selectList.size}, selectType:${viewModel.selectType.value}")
         // 这里可以回调到选择器，通知选择完成。
-        if (viewModel.getSelectedCount() <= 0 && viewModel.tempSelectData.isEmpty()) {
+        if (selectList.isEmpty()) {
             Toast.makeText(context, "至少选择一个", Toast.LENGTH_SHORT).show()
             return
         }
@@ -427,38 +484,22 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
     @SuppressLint("SetTextI18n")
     private fun updateBottomMenuSelectNumberUI() {
         val selectedMergeSize = viewModel.getSelectedCount() + viewModel.tempSelectData.size
-        if (viewModel.maxSelectNumber.value > 0) {
-            if (selectedMergeSize <= 0) {
-                binding.tvSelectNumberHint.text = "至少选择一个"
-                binding.tvSelectNumber.text = ""
-                binding.tvSelectNumber.isVisible = false
-                binding.tvSelectNumberSplitLine.isVisible = false
-                binding.tvMaxSelectNumber.isVisible = false
-                binding.btnConfirm.alpha = 0.3f
-            } else {
-                binding.tvSelectNumberHint.text = "已选:"
-                binding.tvSelectNumber.text = "$selectedMergeSize"
-                binding.tvSelectNumber.isVisible = true
-                binding.tvSelectNumberSplitLine.isVisible = true
-                binding.tvMaxSelectNumber.isVisible = true
-                binding.btnConfirm.alpha = 1f
-            }
+        if (selectedMergeSize > 0) {
+            binding.llPreview.isEnabled = true
+            binding.tvPreview.isEnabled = true
+
+            binding.btnConfirm.isEnabled = true
+
+            binding.btnConfirm.text = "${viewModel.uiConfig.confirmBtnText}(${selectedMergeSize})"
+            binding.tvPreview.text = "${viewModel.uiConfig.previewText}(${selectedMergeSize})"
+
         } else {
-            if (selectedMergeSize <= 0) {
-                binding.tvSelectNumberHint.text = "至少选择一个"
-                binding.tvSelectNumber.text = ""
-                binding.tvSelectNumber.isVisible = false
-                binding.tvSelectNumberSplitLine.isVisible = false
-                binding.tvMaxSelectNumber.isVisible = false
-                binding.btnConfirm.alpha = 0.3f
-            } else {
-                binding.tvSelectNumberHint.text = "已选:"
-                binding.tvSelectNumber.isVisible = true
-                binding.tvSelectNumber.text = "$selectedMergeSize"
-                binding.btnConfirm.alpha = 1f
-                binding.tvMaxSelectNumber.isVisible = false
-                binding.tvSelectNumberSplitLine.isVisible = false
-            }
+            binding.llPreview.isEnabled = false
+            binding.tvPreview.isEnabled = false
+            binding.btnConfirm.isEnabled = false
+
+            binding.btnConfirm.text = viewModel.uiConfig.confirmBtnText
+            binding.tvPreview.text = viewModel.uiConfig.previewText
         }
     }
 

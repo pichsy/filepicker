@@ -101,22 +101,37 @@ class CustomGestureDetector {
         }
     }
 
+    private int pointerCount = 0;
+
     public boolean isScaling() {
-        return mDetector.isInProgress();
+        // 只要有两个及以上手指就认为在缩放
+        return pointerCount >= 2 || mDetector.isInProgress();
     }
+
+//    public boolean isScaling() {
+//        return mDetector.isInProgress();
+//    }
 
     public boolean isDragging() {
         return mIsDragging;
     }
 
     public boolean onTouchEvent(MotionEvent ev) {
-        try {
-            mDetector.onTouchEvent(ev);
-            return processTouchEvent(ev);
-        } catch (IllegalArgumentException e) {
-            // Fix for support lib bug, happening when onDestroy is called
-            return true;
+        // 更新 pointerCount
+        switch (ev.getActionMasked()) {
+            case MotionEvent.ACTION_DOWN:
+            case MotionEvent.ACTION_POINTER_DOWN:
+                pointerCount = ev.getPointerCount();
+                break;
+            case MotionEvent.ACTION_UP:
+            case MotionEvent.ACTION_POINTER_UP:
+            case MotionEvent.ACTION_CANCEL:
+                pointerCount = ev.getPointerCount() - 1;
+                if (pointerCount < 0) pointerCount = 0;
+                break;
         }
+        mDetector.onTouchEvent(ev);
+        return processTouchEvent(ev);
     }
 
     private boolean processTouchEvent(MotionEvent ev) {

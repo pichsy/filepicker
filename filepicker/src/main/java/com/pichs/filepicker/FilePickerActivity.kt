@@ -11,6 +11,7 @@ import com.pichs.filepicker.databinding.ActivityFilepickerMainBinding
 import com.pichs.filepicker.entity.MediaEntity
 import com.pichs.filepicker.utils.PadUtils
 import com.pichs.xwidget.utils.XStatusBarHelper
+import kotlinx.coroutines.flow.update
 
 class FilePickerActivity : AppCompatActivity() {
 
@@ -39,6 +40,13 @@ class FilePickerActivity : AppCompatActivity() {
         var selectType = intent.getStringExtra("selectType") ?: SELECT_TYPE_ALL
         var selectDataList = intent.getParcelableArrayListExtra<MediaEntity>("selectedDataList") ?: mutableListOf()
 
+        val uiConfig = intent.getParcelableExtra<FilePickerUIConfig>("uiConfig")
+
+        if (uiConfig != null) {
+            viewModel.uiConfig = uiConfig
+        }
+
+        viewModel.originalCheckedFlow.update { viewModel.uiConfig.isOriginalChecked }
         Log.d(
             "FilePickerActivity", """
             maxSelectNumber: $maxSelectNumber, 
