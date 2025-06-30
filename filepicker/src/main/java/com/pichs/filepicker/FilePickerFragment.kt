@@ -12,7 +12,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.annotation.OptIn
-import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.core.content.ContextCompat
 import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
@@ -25,9 +24,6 @@ import com.drake.brv.utils.bindingAdapter
 import com.drake.brv.utils.grid
 import com.drake.brv.utils.models
 import com.drake.brv.utils.setup
-import com.pichs.filepicker.FilePickerFragment.Companion.TAB_TYPE_ALL
-import com.pichs.filepicker.FilePickerFragment.Companion.TAB_TYPE_IMAGE
-import com.pichs.filepicker.FilePickerFragment.Companion.TAB_TYPE_VIDEO
 import com.pichs.filepicker.databinding.FilePickerItemRvAlbumBinding
 import com.pichs.filepicker.databinding.FragmentFilepickerHomeBinding
 import com.pichs.filepicker.dialog.FilePickerPreviewDialog
@@ -109,11 +105,10 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
             // 预览按钮点击事件
             Log.d("FilePickerFragment", "Preview clicked, selectedDataList size: ${viewModel.getSelectedDataList().size}")
             if (viewModel.getSelectedDataList().isEmpty()) {
-                Toast.makeText(requireContext(), "至少选择一个", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), viewModel.uiConfig.atLeastSelectOneToastContent, Toast.LENGTH_SHORT).show()
                 return@clicks
             }
             // todo 进入 展示界面弹窗，这里仅展示固定个数，不参与展示。
-
 
         }
 
@@ -331,7 +326,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                         updateSelectDataUI()
                     } else {
                         if (isOverMaxSelectNumber(viewModel.getSelectedDataList().size + viewModel.tempSelectData.size)) {
-                            Toast.makeText(requireContext(), "已达到最大选择数量", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(requireContext(), viewModel.uiConfig.selectMaxNumberOverToastContent, Toast.LENGTH_SHORT).show()
                             return@setOnClickListener
                         }
                         viewModel.addSelectedData(item)
@@ -421,7 +416,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
 
             override fun onSelectionMaxStopped(maxCount: Int) {
                 // 达到最大选择数量，提示用户可以弹窗。
-                Toast.makeText(requireContext(), "已达到最大选择数量", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), viewModel.uiConfig.selectMaxNumberOverToastContent, Toast.LENGTH_SHORT).show()
             }
         })
     }
@@ -465,7 +460,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
         Log.d("FilePickerFragment", "1111callbackToChooser: selectList size:${selectList.size}, selectType:${viewModel.selectType.value}")
         // 这里可以回调到选择器，通知选择完成。
         if (selectList.isEmpty()) {
-            Toast.makeText(context, "至少选择一个", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, viewModel.uiConfig.atLeastSelectOneToastContent, Toast.LENGTH_SHORT).show()
             return
         }
         activity?.apply {

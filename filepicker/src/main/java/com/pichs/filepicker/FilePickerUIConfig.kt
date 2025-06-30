@@ -51,5 +51,15 @@ data class FilePickerUIConfig(
     /**
      * 选中列表item中删除按钮的背景色
      */
-    var selectedListDeleteIconBackgroundColor: Int = XColorHelper.parseColor("#FA4B3A")
+    var selectedListDeleteIconBackgroundColor: Int = XColorHelper.parseColor("#FA4B3A"),
+
+    /**
+     * 至少选择一个 toast
+     */
+    var atLeastSelectOneToastContent: String = "至少选择一个",
+
+    /**
+     * 已达到最大选择数量
+     */
+    var selectMaxNumberOverToastContent: String = "已达到最大选择数量",
 ) : Parcelable
