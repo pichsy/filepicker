@@ -1,0 +1,7 @@
+jreleaser {
+    gitRootSearch = true
+//    commitAuthor {
+//        name = 'pichs'
+//        email = 'sywubo789@163.com'
+//    }
+}

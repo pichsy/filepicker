@@ -11,8 +11,8 @@ android {
         applicationId = "com.pichs.filepicker.demo"
         minSdk = 24
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 300
+        versionName = "3.0.0"
     }
 
     buildTypes {
@@ -55,7 +55,6 @@ dependencies {
     // 基础库
     implementation(libs.xbase)
     implementation(project(":filepicker"))
-//    implementation("com.github.CarGuo.GSYVideoPlayer:gsyvideoplayer:v10.1.0")
 
     // brv
     implementation(libs.brv)

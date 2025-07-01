@@ -4,6 +4,9 @@ plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
     id("kotlin-parcelize")
+
+    id("maven-publish")
+    id("org.jreleaser") version "1.19.0"
 }
 
 android {
@@ -89,3 +92,5 @@ tasks.register<Jar>("androidJavadocsJar") {
 
 // 此写法可忽略文件夹层级带来的影响
 apply(from = "${rootProject.rootDir}/maven.gradle")
+
+apply(from = "${rootProject.rootDir}/jrelease.gradle")
