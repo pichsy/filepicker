@@ -77,12 +77,30 @@ fi
 zip -r "$ZIP_NAME" *
 
 # Step 5: 上传 zip 文件
-echo "上传 $ZIP_FILE 到 Sonatype..."
+echo "上传 $ZIP_FILE 到 Sonatype==> https://central.sonatype.com/api/v1/publisher/upload"
 
-curl --request POST \
-  --verbose \
-  --header "Authorization: Bearer $TOKEN" \
-  --form "bundle=@$ZIP_FILE" \
-  https://central.sonatype.com/api/v1/publisher/upload
+#curl --request POST \
+#  --verbose \
+#  --header "Authorization: Bearer $TOKEN" \
+#  --form "bundle=@$ZIP_FILE" \
+#  https://central.sonatype.com/api/v1/publisher/upload
+# 先输出参数。
+echo curl -X 'POST' \
+  "https://central.sonatype.com/api/v1/publisher/upload?name=$MODULE_NAME%3A${PUBLISH_VERSION}&publishingType=AUTOMATIC" \
+  -H 'accept: text/plain' \
+  -H 'Authorization: Bearer VGpKQUlQZ3U6OGd5bEVPa1krbXBYQmdCWjM2ZWczWEVueTdmMGI4Q0c4akdZa0lkQnlyeEQ=' \
+  -H 'Content-Type: multipart/form-data' \
+  -F "bundle=@$ZIP_FILE;type=application/zip"
 
+curl -X 'POST' \
+  "https://central.sonatype.com/api/v1/publisher/upload?name=$MODULE_NAME%3A${PUBLISH_VERSION}&publishingType=AUTOMATIC" \
+  -H 'accept: text/plain' \
+  -H 'Authorization: Bearer VGpKQUlQZ3U6OGd5bEVPa1krbXBYQmdCWjM2ZWczWEVueTdmMGI4Q0c4akdZa0lkQnlyeEQ=' \
+  -H 'Content-Type: multipart/form-data' \
+  -F "bundle=@$ZIP_FILE;type=application/zip"
+
+echo "  <<<<<< 上传的id在前面。"
+echo ""
+echo ""
+echo ""
 echo "========== 上传完成 =========="
