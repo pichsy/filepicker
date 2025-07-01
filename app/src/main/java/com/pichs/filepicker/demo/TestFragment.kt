@@ -97,11 +97,10 @@ class TestFragment : BindingFragment<FragmentMainBinding>() {
         FilePicker.with(this)
             .setMaxSelectNumber(maxSelectCount)
             .setMaxFileSize(maxFileSize.toLong())
-            .setRequestCode(1029)
             .setSelectType(selectType)
-            .setOnSelectCallback {
-                XLog.d("FilePicker", "Selected files: ${it.size}")
-                binding.recyclerView.models = it
+            .setOnSelectCallback { isUseOriginal, list ->
+                XLog.d("FilePicker", "Selected files: ${list.size}")
+                binding.recyclerView.models = list
             }
             .start()
     }

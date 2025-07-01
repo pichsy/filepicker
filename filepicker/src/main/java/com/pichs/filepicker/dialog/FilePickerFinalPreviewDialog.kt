@@ -25,6 +25,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.drake.brv.utils.linear
 import com.drake.brv.utils.setup
+import com.pichs.filepicker.databinding.DialogFilePickerSelectedPreviewBinding
 import com.pichs.filepicker.databinding.FilePickerItemRvAlbumJustSelectedBinding
 import com.pichs.filepicker.entity.FilePickerTempSelected
 import com.pichs.filepicker.loader.MediaLoader
@@ -41,20 +42,22 @@ class FilePickerFinalPreviewDialog(
     val context: Context,
     val viewModel: FilePickerViewModel,
     val onDismissDataDelete: (deleteList: MutableList<MediaEntity>) -> Unit,
-    val onConfirm: (Int) -> Unit
+    val onConfirm: (ArrayList<MediaEntity>) -> Unit
 ) : BasePopupWindow(context) {
 
-    lateinit var binding: DialogFilePickerPreviewBinding
+    lateinit var binding: DialogFilePickerSelectedPreviewBinding
 
     private var isShowToolBar = MutableStateFlow(true)
 
-    private val tempSelectDataList = mutableListOf<FilePickerTempSelected>()
+    private val tempSelectDataList = viewModel.getSelectedDataList().map { FilePickerTempSelected(false, it) }.toMutableList()
 
     private var mCurrentItem: FilePickerTempSelected? = null
+
     private var mCurrentIndex: Int = 0
 
     init {
-        tempSelectDataList.addAll(viewModel.getSelectedDataList().map { FilePickerTempSelected(true, it) })
+        mCurrentItem = tempSelectDataList.firstOrNull()
+        mCurrentIndex = 0
         setContentView(R.layout.dialog_file_picker_selected_preview)
     }
 
@@ -63,10 +66,9 @@ class FilePickerFinalPreviewDialog(
     @SuppressLint("NotifyDataSetChanged")
     override fun onViewCreated(contentView: View) {
         super.onViewCreated(contentView)
-        binding = DialogFilePickerPreviewBinding.bind(contentView)
+        binding = DialogFilePickerSelectedPreviewBinding.bind(contentView)
         setBackgroundColor(Color.TRANSPARENT)
-        mCurrentItem = tempSelectDataList.firstOrNull()
-        mCurrentIndex = 0
+        // 初始化其他的。
         initConfigUI()
         initViewPager2()
         initSelectedRecyclerView()
@@ -114,16 +116,13 @@ class FilePickerFinalPreviewDialog(
 
     @SuppressLint("SetTextI18n")
     private fun initConfigUI() {
-        FilePickerClickHelper.clicks(binding.llOriginal) {
-            viewModel.originalCheckedFlow.update { !viewModel.originalCheckedFlow.value }
-        }
 
         if (tempSelectDataList.isEmpty()) {
 //            binding.btnConfirm.isEnabled = false
             binding.btnConfirm.text = viewModel.uiConfig.confirmBtnText
         } else {
             binding.btnConfirm.isEnabled = true
-            binding.btnConfirm.text = "${viewModel.uiConfig.confirmBtnText}(${tempSelectDataList.filter { it.isSelected }.size})"
+            binding.btnConfirm.text = "${viewModel.uiConfig.confirmBtnText}(${tempSelectDataList.filter { !it.isDelete }.size})"
         }
 
         binding.llOriginal.isVisible = viewModel.uiConfig.isShowOriginal
@@ -162,7 +161,7 @@ class FilePickerFinalPreviewDialog(
                     itemBinding.ivCoverImage.isSelected = false
                 }
 
-                if (item.isSelected) {
+                if (item.isDelete) {
                     itemBinding.ivCoverImage.foreground = ContextCompat.getDrawable(context, R.drawable.item_filepicker_delete_preview_select_mask)
                 } else {
                     itemBinding.ivCoverImage.foreground = null
@@ -180,7 +179,7 @@ class FilePickerFinalPreviewDialog(
                 }
 
                 itemBinding.clSelectDelete.setOnClickListener {
-                    item.isSelected = false
+                    item.isDelete = true
                     // 删除选中项
                     binding.tvSelectIndex.text = ""
                     binding.tvSelectIndex.isChecked = false
@@ -213,6 +212,11 @@ class FilePickerFinalPreviewDialog(
 
     @SuppressLint("SetTextI18n")
     private fun initListener() {
+
+        FilePickerClickHelper.clicks(binding.llOriginal) {
+            viewModel.originalCheckedFlow.update { !viewModel.originalCheckedFlow.value }
+        }
+
         FilePickerClickHelper.clicks(binding.ivBack) {
             dismiss()
         }
@@ -223,16 +227,22 @@ class FilePickerFinalPreviewDialog(
 //                Toast.makeText(context, "至少选择一个", Toast.LENGTH_SHORT).show()
 //                return@clicks
 //            }
-            onConfirm(mCurrentIndex)
+            val list = tempSelectDataList.filter { !it.isDelete }.map { it.mediaEntity }.toMutableList()
+            if (list.isEmpty()) {
+                mCurrentItem?.mediaEntity?.let {
+                    list.add(it)
+                }
+            }
+            onConfirm(ArrayList(list))
         }
 
         FilePickerClickHelper.clicks(binding.flSelectIndex) {
             val item = tempSelectDataList.getOrNull(mCurrentIndex)
             if (item == null) return@clicks
 
-            item.isSelected = item.isSelected.not()
+            item.isDelete = item.isDelete.not()
 
-            if (item.isSelected) {
+            if (item.isDelete.not()) {
                 // 进行选中
                 binding.ivSelectState.isChecked = true
                 updateBottomMenuSelectNumberUI()
@@ -260,8 +270,13 @@ class FilePickerFinalPreviewDialog(
         layoutManager.scrollToPositionWithOffset(position, offset)
     }
 
+    override fun onBeforeDismiss(): Boolean {
+        val deleteList = tempSelectDataList.filter { it.isDelete }.map { it.mediaEntity }.toMutableList()
+        onDismissDataDelete(deleteList)
+        return super.onBeforeDismiss()
+    }
+
     override fun onDismiss() {
-        super.onDismiss()
         Log.d("FilePickerPreviewDialog", "onDismiss: releasing player for position=$mCurrentIndex")
         // 释放当前页面的播放器
 
@@ -278,8 +293,7 @@ class FilePickerFinalPreviewDialog(
 
         job?.cancel()
         job = null
-        val deleteList = tempSelectDataList.filter { it.isSelected }.map { it.mediaEntity }.toMutableList()
-        onDismissDataDelete(deleteList)
+        super.onDismiss()
     }
 
     @SuppressLint("SetTextI18n")
@@ -337,7 +351,7 @@ class FilePickerFinalPreviewDialog(
         }
         binding.tvIndex.text = "${itemIndexOfList(item) + 1}/${tempSelectDataList.size}"
         // 这里需要根据是否选中来右上角角标。
-        if (item.isSelected) {
+        if (item.isDelete) {
             // 未选中
             binding.ivSelectState.isChecked = false
             binding.tvSelectIndex.text = ""
@@ -354,10 +368,10 @@ class FilePickerFinalPreviewDialog(
 
     @SuppressLint("SetTextI18n")
     private fun updateBottomMenuSelectNumberUI() {
-        val selectedMergeSize = tempSelectDataList.filter { it.isSelected }.size
+        val selectedMergeSize = tempSelectDataList.filter { !it.isDelete }.size
         Log.e("FilePickerPreviewDialog", "updateBottomMenuSelectNumberUI: selectedMergeSize=${selectedMergeSize}")
         if (selectedMergeSize > 0) {
-            binding.rvSelected.isVisible = true
+//            binding.rvSelected.isVisible = true
             binding.btnConfirm.isEnabled = true
             binding.btnConfirm.text = "${viewModel.uiConfig.confirmBtnText}(${selectedMergeSize})"
 //            binding.rvSelected.models = tempSelectDataList
@@ -365,7 +379,7 @@ class FilePickerFinalPreviewDialog(
             binding.rvSelected.adapter?.notifyItemRangeChanged(0, binding.rvSelected.adapter?.itemCount ?: 0)
             scrollItemToCenter(binding.rvSelected, itemIndexOfList(mCurrentItem))
         } else {
-            binding.rvSelected.isVisible = false
+//            binding.rvSelected.isVisible = false
 //            binding.rvSelected.models = tempSelectDataList
 //            binding.btnConfirm.isEnabled = false
             binding.rvSelected.adapter?.notifyItemRangeChanged(0, binding.rvSelected.adapter?.itemCount ?: 0)

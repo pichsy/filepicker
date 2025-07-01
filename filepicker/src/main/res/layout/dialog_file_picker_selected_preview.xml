@@ -17,12 +17,14 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="#121212"
+        android:clickable="true"
         app:layout_constraintTop_toTopOf="parent" />
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/cl_toolbar"
         android:layout_width="match_parent"
         android:layout_height="48dp"
+        android:clickable="true"
         android:background="#121212"
         app:layout_constraintTop_toBottomOf="@+id/status_bar_view">
 
@@ -106,7 +108,7 @@
         android:layout_width="match_parent"
         android:layout_height="68dp"
         android:background="#EA121212"
-        android:visibility="gone"
+        android:visibility="visible"
         app:layout_constraintBottom_toTopOf="@+id/cl_bottom_bar" />
 
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -114,6 +116,7 @@
         android:layout_width="match_parent"
         android:layout_height="48dp"
         android:background="#121212"
+        android:clickable="true"
         app:layout_constraintBottom_toBottomOf="parent">
 
         <View

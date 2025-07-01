@@ -16,7 +16,8 @@
         android:id="@+id/cl_toolbar"
         android:layout_width="match_parent"
         android:layout_height="48dp"
-        android:background="#121212">
+        android:background="#121212"
+        android:clickable="true">
 
         <com.pichs.xwidget.view.XImageView
             android:id="@+id/iv_back"
@@ -156,7 +157,8 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="48dp"
-        android:background="#121212">
+        android:background="#121212"
+        android:clickable="true">
 
         <LinearLayout
             android:id="@+id/ll_preview"

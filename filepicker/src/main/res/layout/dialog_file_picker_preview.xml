@@ -15,6 +15,7 @@
     <com.pichs.xwidget.view.XStatusBarView
         android:id="@+id/status_bar_view"
         android:layout_width="match_parent"
+        android:clickable="true"
         android:layout_height="wrap_content"
         android:background="#121212"
         app:layout_constraintTop_toTopOf="parent" />
@@ -23,6 +24,7 @@
         android:id="@+id/cl_toolbar"
         android:layout_width="match_parent"
         android:layout_height="48dp"
+        android:clickable="true"
         android:background="#121212"
         app:layout_constraintTop_toBottomOf="@+id/status_bar_view">
 
@@ -112,6 +114,7 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/cl_bottom_bar"
         android:layout_width="match_parent"
+        android:clickable="true"
         android:layout_height="48dp"
         android:background="#121212"
         app:layout_constraintBottom_toBottomOf="parent">

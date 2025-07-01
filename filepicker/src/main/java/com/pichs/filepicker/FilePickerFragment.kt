@@ -113,9 +113,19 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
 
             // todo 进入 展示界面弹窗，这里仅展示固定个数，不参与展示。
             FilePickerFinalPreviewDialog(requireContext(), viewModel, onDismissDataDelete = { deleteList ->
-                Toast.makeText(requireContext(), "删除了 ${deleteList.size} 个文件", Toast.LENGTH_SHORT).show()
-            }, onConfirm = { size ->
-                Toast.makeText(requireContext(), "确定了 ${size} 个", Toast.LENGTH_SHORT).show()
+                viewModel.removeSelectedDataAll(deleteList)
+//                Toast.makeText(requireContext(), "删除了 ${deleteList.size} 个文件", Toast.LENGTH_SHORT).show()
+                updateSelectDataUI()
+                updateBottomMenuSelectNumberUI()
+            }, onConfirm = { resultList ->
+//                Toast.makeText(requireContext(), "确定了 ${resultList?.path}", Toast.LENGTH_SHORT).show()
+                Log.d("FilePickerFragment", "onConfirm: resultList size:${resultList.size}")
+                if (resultList.isEmpty()) {
+                    Log.d("FilePickerFragment", "item is null, return")
+                    Toast.makeText(requireContext(), "未选择文件", Toast.LENGTH_SHORT).show()
+                    return@FilePickerFinalPreviewDialog
+                }
+                callbackToChooser(resultList)
             }).showPopupWindow()
         }
 
@@ -473,7 +483,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
         activity?.apply {
             setResult(RESULT_OK, Intent().apply {
                 putParcelableArrayListExtra("selectedDataList", selectList)
-                putExtra("selectType", viewModel.selectType.value)
+                putExtra("isUseOriginal", viewModel.originalCheckedFlow.value)
             })
             finish()
         }

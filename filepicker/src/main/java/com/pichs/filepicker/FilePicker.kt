@@ -9,7 +9,7 @@ import com.pichs.filepicker.entity.MediaEntity
 import kotlin.collections.toMutableList
 
 fun interface OnSelectCallback {
-    fun onCallback(list: MutableList<MediaEntity>)
+    fun onCallback(isUseOriginal: Boolean, list: MutableList<MediaEntity>)
 }
 
 class FilePicker {
@@ -63,6 +63,12 @@ class FilePicker {
         fun convertToPathList(list: MutableList<MediaEntity>): MutableList<String> {
             return list.map { it ->
                 it.path ?: ""
+            }.toMutableList()
+        }
+
+        fun convertToEntityList(list: List<String>): MutableList<MediaEntity> {
+            return list.map { it ->
+                MediaEntity.fromPath(it)
             }.toMutableList()
         }
     }
@@ -127,15 +133,6 @@ class FilePicker {
             return this
         }
 
-        var mRequestCode: Int = DEFAULT_REQUEST_CODE
-            private set
-
-        fun setRequestCode(requestCode: Int): Builder {
-            this.mRequestCode = requestCode
-            return this
-        }
-
-
         var mMaxFileSize = 0L
             private set
 
@@ -181,8 +178,9 @@ class FilePicker {
                         onResult = { resultCode: Int, data: Intent? ->
                             if (resultCode == RESULT_OK) {
                                 val resultData = data?.getParcelableArrayListExtra<MediaEntity>("selectedDataList")?.toMutableList()
+                                val isUseOriginal = data?.getBooleanExtra("isUseOriginal", false) == true
                                 if (resultData != null) {
-                                    builder?.mOnSelectCallback?.onCallback(resultData)
+                                    builder?.mOnSelectCallback?.onCallback(isUseOriginal, resultData)
                                 }
                             }
                         }
@@ -197,7 +195,6 @@ class FilePicker {
                         intent.putParcelableArrayListExtra("selectedDataList", ArrayList(bd.mSelectedList))
                         launch(intent)
                     }
-//                    bd.getFragment()?.startActivityForResult(intent, bd.mRequestCode)
                 }
             } else {
                 bd.getActivity()?.let { act ->
@@ -211,8 +208,9 @@ class FilePicker {
                         onResult = { resultCode: Int, data: Intent? ->
                             if (resultCode == RESULT_OK) {
                                 val resultData = data?.getParcelableArrayListExtra<MediaEntity>("selectedDataList")?.toMutableList()
+                                val isUseOriginal = data?.getBooleanExtra("isUseOriginal", false) == true
                                 if (resultData != null) {
-                                    builder?.mOnSelectCallback?.onCallback(resultData)
+                                    builder?.mOnSelectCallback?.onCallback(isUseOriginal, resultData)
                                 }
                             }
                         }
@@ -231,16 +229,4 @@ class FilePicker {
             }
         }
     }
-
-//    fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-//        if (requestCode == builder?.mRequestCode && resultCode == Activity.RESULT_OK) {
-//            val resultData = data?.getParcelableArrayListExtra<MediaEntity>("selectedDataList")?.toMutableList()
-//            if (resultData != null) {
-//                // Handle the result data
-//                // For example, you can pass it to a callback or update the UI
-//                builder?.mOnSelectCallback?.onCallback(resultData)
-//            }
-//        }
-//    }
-
 }
