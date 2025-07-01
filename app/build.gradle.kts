@@ -11,8 +11,8 @@ android {
         applicationId = "com.pichs.filepicker.demo"
         minSdk = 24
         targetSdk = 35
-        versionCode = 300
-        versionName = "3.0.0"
+        versionCode = 400
+        versionName = "4.0.0"
     }
 
     buildTypes {
