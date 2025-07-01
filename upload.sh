@@ -79,6 +79,7 @@ zip -r "$ZIP_NAME" *
 # Step 5: 上传 zip 文件
 echo "上传 $ZIP_FILE 到 Sonatype==> https://central.sonatype.com/api/v1/publisher/upload"
 
+# 废弃
 #curl --request POST \
 #  --verbose \
 #  --header "Authorization: Bearer $TOKEN" \
@@ -88,14 +89,14 @@ echo "上传 $ZIP_FILE 到 Sonatype==> https://central.sonatype.com/api/v1/publi
 echo curl -X 'POST' \
   "https://central.sonatype.com/api/v1/publisher/upload?name=$MODULE_NAME%3A${PUBLISH_VERSION}&publishingType=AUTOMATIC" \
   -H 'accept: text/plain' \
-  -H 'Authorization: Bearer VGpKQUlQZ3U6OGd5bEVPa1krbXBYQmdCWjM2ZWczWEVueTdmMGI4Q0c4akdZa0lkQnlyeEQ=' \
+  -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: multipart/form-data' \
   -F "bundle=@$ZIP_FILE;type=application/zip"
 
 curl -X 'POST' \
   "https://central.sonatype.com/api/v1/publisher/upload?name=$MODULE_NAME%3A${PUBLISH_VERSION}&publishingType=AUTOMATIC" \
   -H 'accept: text/plain' \
-  -H 'Authorization: Bearer VGpKQUlQZ3U6OGd5bEVPa1krbXBYQmdCWjM2ZWczWEVueTdmMGI4Q0c4akdZa0lkQnlyeEQ=' \
+  -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: multipart/form-data' \
   -F "bundle=@$ZIP_FILE;type=application/zip"
 
