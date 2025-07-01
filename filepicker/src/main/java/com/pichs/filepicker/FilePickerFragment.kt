@@ -88,10 +88,15 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
 
         currentTabType = viewModel.selectType.value
 
-        if (currentTabType != TAB_TYPE_ALL) {
+        if (currentTabType != TAB_TYPE_ALL || viewModel.uiConfig.isHideSelectTab) {
             // 隐藏掉tab切换。
             binding.llSelectType.isVisible = false
+        } else {
+            binding.llSelectType.isVisible = true
         }
+
+        binding.tvAlbum.text = viewModel.uiConfig.allAlbumName
+
         initConfigUI()
 
         initTab()
@@ -159,6 +164,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
         binding.ivBack.setOnClickListener {
             activity?.finish()
         }
+
 
         binding.tvAlbum.setOnClickListener(this)
         binding.ivArrowDown.setOnClickListener(this)
@@ -626,9 +632,9 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
     override fun onClick(v: View?) {
         when (v?.id) {
             binding.tvAlbum.id, binding.ivArrowDown.id -> {
-                FolderChooseDialog(requireContext(), viewModel.getAllDataList(), viewModel.currentFolder.value) { folder ->
+                FolderChooseDialog(requireContext(), viewModel.uiConfig.allAlbumName, viewModel.getAllDataList(), viewModel.currentFolder.value) { folder ->
                     viewModel.updateCurrentFolder(folder)
-                    binding.tvAlbum.text = folder?.name ?: "全部"
+                    binding.tvAlbum.text = folder?.name ?: viewModel.uiConfig.allAlbumName
                     resetListDataWithSelectData()
                 }.setOnDismissListener(object : BasePopupWindow.OnDismissListener() {
                     override fun onDismiss() {

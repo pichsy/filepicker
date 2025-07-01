@@ -19,7 +19,7 @@ import razerdp.basepopup.BasePopupWindow
 import razerdp.util.animation.AnimationHelper
 import razerdp.util.animation.TranslationConfig
 
-class FolderChooseDialog(mCtx: Context, val list: MutableList<MediaFolder>, val currentFolder: MediaFolder?, val onSelectCallback: (MediaFolder?) -> Unit) :
+class FolderChooseDialog(mCtx: Context, val allAlbumName:String, val list: MutableList<MediaFolder>, val currentFolder: MediaFolder?, val onSelectCallback: (MediaFolder?) -> Unit) :
     BasePopupWindow(mCtx) {
 
     private lateinit var binding: FilePickerFolderChooseDialogBinding
@@ -58,7 +58,7 @@ class FolderChooseDialog(mCtx: Context, val list: MutableList<MediaFolder>, val 
                 val itemBinding = getBinding<FilePickerFolderChooseDialogItemBinding>()
 
                 itemBinding.tvAlbum.text = item.name ?: ""
-                if (item.name == "全部") {
+                if (item.name == allAlbumName) {
                     itemBinding.tvAlbumNumber.text = "(${list.sumOf { it.mediaEntityList.size }})"
                     if (currentFolder == null) {
                         itemBinding.ivSelect.isVisible = true
@@ -79,7 +79,7 @@ class FolderChooseDialog(mCtx: Context, val list: MutableList<MediaFolder>, val 
                 }
 
                 itemBinding.root.setOnClickListener {
-                    if (item.name == "全部") {
+                    if (item.name == allAlbumName) {
                         onSelectCallback(null)
                     } else {
                         onSelectCallback(item)
@@ -88,7 +88,7 @@ class FolderChooseDialog(mCtx: Context, val list: MutableList<MediaFolder>, val 
                 }
             }
         }.models = list.toMutableList().apply {
-            add(0, MediaFolder("全部", null))
+            add(0, MediaFolder(allAlbumName, null))
         }
     }
 

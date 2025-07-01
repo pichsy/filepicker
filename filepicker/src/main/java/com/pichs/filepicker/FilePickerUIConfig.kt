@@ -1,12 +1,20 @@
 package com.pichs.filepicker
 
-import android.graphics.Color
 import android.os.Parcelable
 import com.pichs.xwidget.utils.XColorHelper
 import kotlinx.parcelize.Parcelize
 
 @Parcelize
 data class FilePickerUIConfig(
+
+    /**
+     * 是否隐藏选择标签页
+     * 仅在 在 ofAll() 时 隐藏和显示有用。
+     * ofImage() 和 ofVideo() 时，怎么都不会显示。因为只有一种选择类型。没必要展示一个tab。
+     * tips：如果你非要展示，请下载源码处理。
+     */
+    var isHideSelectTab: Boolean = false,
+
     /**
      * 确定按钮文本
      * 默认值为 "确定(1)"
@@ -17,6 +25,11 @@ data class FilePickerUIConfig(
      * 预览页面是否显示选中索引。显示顶部的就是 index号，不选就是对号✅
      */
     var isShowPreviewPageSelectedIndex: Boolean = true,
+
+    /**
+     * 全部文件夹的文本名字
+     */
+    var allAlbumName: String = "全部",
 
     /**
      * 预览页面的标题

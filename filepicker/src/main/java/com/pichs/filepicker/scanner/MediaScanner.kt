@@ -45,12 +45,12 @@ object MediaScanner {
                 )
 
                 val selection = if (type == "image") {
-                    "${MediaStore.MediaColumns.SIZE}>0 and ${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE}".trimIndent()
+                    "${MediaStore.MediaColumns.SIZE}>0 and (${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE} and ${MediaStore.Files.FileColumns.MIME_TYPE} != 'image/gif')".trimIndent()
                 } else if (type == "video") {
                     "${MediaStore.MediaColumns.SIZE}>0 and ${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO}".trimIndent()
                 } else {
                     """
-                   ${MediaStore.MediaColumns.SIZE}>0 and (${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE} 
+                   ${MediaStore.MediaColumns.SIZE}>0 and ((${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE} and ${MediaStore.Files.FileColumns.MIME_TYPE}!= 'image/gif')
                     OR ${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO})
                     """.trimIndent()
                 }

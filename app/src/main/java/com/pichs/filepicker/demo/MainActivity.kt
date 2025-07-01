@@ -21,7 +21,6 @@ import com.pichs.filepicker.common.VideoPreviewDialog
 import com.pichs.xbase.binding.BindingActivity
 import com.pichs.xbase.kotlinext.fastClick
 import com.pichs.xbase.xlog.XLog
-import com.pichs.xwidget.utils.XStatusBarHelper
 
 class MainActivity : BindingActivity<ActivityMainBinding>() {
 
@@ -125,6 +124,8 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
                 binding.recyclerView.models = list
             }.setUiConfig(
                 FilePickerUIConfig(
+                    isHideSelectTab = true,
+                    allAlbumName = "全部相册",
                     confirmBtnText = "下一步",
                     isShowOriginal = false,
                     isShowPreviewPageSelectedIndex = true,
