@@ -4,5 +4,4 @@ plugins {
     alias(libs.plugins.kotlin.android) apply false
     alias(libs.plugins.android.library) apply false
     id("maven-publish")
-//    id("org.jreleaser") version "1.19.0" apply false
 }
