@@ -6,13 +6,13 @@
     android:background="#000"
     android:orientation="vertical">
 
-    <com.pichs.filepicker.video.VideoPlayerView
-        android:id="@+id/video_player_view"
+    <com.pichs.filepicker.photoview.PhotoView
+        android:id="@+id/photo_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
     <com.pichs.xwidget.view.XStatusBarView
-        android:id="@+id/status_bar_space"
+        android:id="@+id/status_bar_view"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="#000"
@@ -23,7 +23,7 @@
         android:layout_width="match_parent"
         android:layout_height="48dp"
         android:background="#000"
-        app:layout_constraintTop_toBottomOf="@+id/status_bar_space">
+        app:layout_constraintTop_toBottomOf="@+id/status_bar_view">
 
         <androidx.appcompat.widget.AppCompatImageView
             android:id="@+id/iv_back"
@@ -39,7 +39,7 @@
             android:id="@+id/tv_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="视频预览"
+            android:text="图片预览"
             android:textColor="#fff"
             android:textSize="17dp"
             app:layout_constraintBottom_toBottomOf="parent"

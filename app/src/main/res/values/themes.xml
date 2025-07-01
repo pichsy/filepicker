@@ -14,8 +14,8 @@
         <item name="android:windowFullscreen">false</item>
         <!--    全屏沉浸式状态栏 必要属性  -->
         <item name="android:statusBarColor">#121212</item>
-        <item name="android:windowTranslucentStatus">true</item>
-        <item name="android:windowTranslucentNavigation">true</item>
+<!--        <item name="android:windowTranslucentStatus">true</item>-->
+<!--        <item name="android:windowTranslucentNavigation">true</item>-->
         <!--        <item name="android:windowLayoutInDisplayCutoutMode" tools:targetApi="o_mr1">always</item>-->
     </style>
 

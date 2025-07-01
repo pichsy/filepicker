@@ -2,7 +2,6 @@ package com.pichs.filepicker.demo
 
 import android.content.Intent
 import android.view.View
-import androidx.core.view.isVisible
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.drake.brv.utils.linear
@@ -11,12 +10,12 @@ import com.drake.brv.utils.setup
 import com.hjq.permissions.Permission
 import com.hjq.permissions.XXPermissions
 import com.pichs.filepicker.FilePicker
-import com.pichs.filepicker.databinding.FilePickerItemRvAlbumBinding
-import com.pichs.filepicker.demo.MainActivity
+import com.pichs.filepicker.common.ImagePreviewDialog
 import com.pichs.filepicker.demo.databinding.FragmentMainBinding
 import com.pichs.filepicker.demo.databinding.ItemImageBinding
 import com.pichs.filepicker.entity.MediaEntity
-import com.pichs.filepicker.video.VideoPreviewActivity
+import com.pichs.filepicker.common.VideoPreviewActivity
+import com.pichs.filepicker.common.VideoPreviewDialog
 import com.pichs.xbase.binding.BindingFragment
 import com.pichs.xbase.kotlinext.fastClick
 import com.pichs.xbase.xlog.XLog
@@ -84,6 +83,18 @@ class TestFragment : BindingFragment<FragmentMainBinding>() {
                 Glide.with(this@TestFragment)
                     .load(mediaEntity.path)
                     .into(itemBinding.ivImg)
+
+                itemBinding.ivImg.setOnClickListener {
+                    XLog.d("MainActivity", "Clicked on image: ${mediaEntity.path}")
+                    if (mediaEntity.isVideo()) {
+                        VideoPreviewDialog(
+                            requireContext(),
+                            mediaEntity.path,
+                        ).showPopupWindow()
+                    } else {
+                        ImagePreviewDialog(requireContext(), mediaEntity.path).showPopupWindow()
+                    }
+                }
             }
         }
     }

@@ -136,14 +136,14 @@ class VideoPlayerView @JvmOverloads constructor(
      * 设置视频封面
      * @param url 图片的URL
      */
-    fun loadCover(entity: MediaEntity?) {
+    fun loadCover(entity: MediaEntity?, coverUrl: String? = null) {
         this.mediaEntity = entity
         resetProgress()
         if (mediaEntity?.path.isNullOrEmpty()) {
             binding.ivCover.visibility = View.GONE
             return
         }
-        val uri = mediaEntity?.path ?: return
+        val uri = coverUrl ?: mediaEntity?.path ?: return
         Log.d("VideoPlayerView", "loadCover: uri=${mediaEntity?.uri}, path=${mediaEntity?.path}, uri=${uri}")
         // 在这里使用您项目中的图片加载库（如 Glide, Coil 等）
         MediaLoader.loadVideoCover(uri, binding.ivCover)
