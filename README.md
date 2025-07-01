@@ -2,11 +2,12 @@
 
 ### 最新版本 ![](https://img.shields.io/maven-metadata/v.svg?label=maven-central&metadataUrl=https%3A%2F%2Frepo1.maven.org%2Fmaven2%2Fcom%2Fgitee%2Fpichs%2Ffilepicker%2Fmaven-metadata.xml)
 
+- 用了很多，都没有丝滑的选择效果的开源库，滑动选择丝滑。闲来没事，随手写一个吧。
 - 图库选择，
 - 仿华为相册滑动选择手势逻辑，
 - 微信选择库样式风格
-- 支持多选、单选
-- 支持拍照、拍视频
+- 支持多选，限制数量，不限制数量。
+- 使用场景，多用于 视频剪辑选择库，相册管理选择库。那去玩吧。
 
 ### 好不好用，直接安装。
 - 扫码：![filepicker](https://www.pgyer.com/app/qrcode/CdA0TDQB)
