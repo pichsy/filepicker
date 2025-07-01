@@ -47,10 +47,10 @@ class VideoPlayerView @JvmOverloads constructor(
 
     private var mediaEntity: MediaEntity? = null
 
-    private var onControllerVisibilityChanged: ((Boolean) -> Unit)? = null
+    private var onSingleClick: (() -> Unit)? = null
 
-    fun setOnControllerVisibilityChangedListener(listener: (Boolean) -> Unit) {
-        onControllerVisibilityChanged = listener
+    fun setOnSingleClickListener(listener: () -> Unit) {
+        onSingleClick = listener
     }
 
     init {
@@ -74,12 +74,12 @@ class VideoPlayerView @JvmOverloads constructor(
 
             override fun onSingleTapConfirmed(e: MotionEvent): Boolean {
                 // 切换控制器的可见性
-                if (binding.controller.root.isVisible) {
-                    binding.controller.root.visibility = View.GONE
-                } else {
-                    binding.controller.root.visibility = View.VISIBLE
-                }
-                onControllerVisibilityChanged?.invoke(binding.controller.root.isVisible)
+//                if (binding.controller.root.isVisible) {
+//                    binding.controller.root.visibility = View.GONE
+//                } else {
+//                    binding.controller.root.visibility = View.VISIBLE
+//                }
+                onSingleClick?.invoke()
                 return true
             }
         })

@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="50dp"
+    android:layout_height="50dp"
+    android:layout_margin="8dp"
+    android:background="#121212">
+
+    <!--  高度match_parent 设置1：1宽高图片  -->
+    <com.pichs.xwidget.cardview.XCardImageView
+        android:id="@+id/iv_cover_image"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:background="#000"
+        android:scaleType="centerCrop"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:xp_borderColor="#0000"
+        app:xp_borderWidth="3dp"
+        app:xp_selectedBorderColor="#06B10D"
+        app:xp_selectedBorderWidth="3dp" />
+
+    <!--    左上角 红色圆形背景数字-->
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/cl_select_delete"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:visibility="visible"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <com.pichs.xwidget.cardview.XCardImageView
+            android:id="@+id/tv_delete"
+            android:layout_width="14dp"
+            android:layout_height="14dp"
+            android:layout_marginTop="2dp"
+            android:layout_marginEnd="2dp"
+            android:background="#FA4B3A"
+            android:gravity="center"
+            android:padding="1dp"
+            android:src="@drawable/ic_file_picker_delete"
+            android:textColor="#fff"
+            android:textSize="12dp"
+            app:layout_constraintDimensionRatio="H,1:1"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:xp_radius="30dp" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!--  右下角是个时长展示  -->
+    <com.pichs.xwidget.cardview.XCardTextView
+        android:id="@+id/tv_duration"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="2dp"
+        android:layout_marginBottom="2dp"
+        android:background="#50000000"
+        android:gravity="center"
+        android:paddingStart="8dp"
+        android:paddingTop="3dp"
+        android:paddingEnd="8dp"
+        android:paddingBottom="3dp"
+        android:text="00:00"
+        android:textColor="#c1c1c1"
+        android:textSize="10dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:xp_radius="4dp" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

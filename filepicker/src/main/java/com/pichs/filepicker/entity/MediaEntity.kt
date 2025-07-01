@@ -19,7 +19,9 @@ data class MediaEntity(
     var duration: Long = 0,
     var time: Long? = null,
     var selectedCount: Int = 0,
-) : Parcelable, Serializable {
+) : Parcelable {
+
+    var tempSelected: Boolean = false
 
     companion object {
         fun fromPath(path: String): MediaEntity {
@@ -80,4 +82,20 @@ data class MediaEntity(
 
 }
 
+
+data class FilePickerTempSelected(
+    var isDelete: Boolean = false,
+    val mediaEntity: MediaEntity,
+) : Serializable {
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is FilePickerTempSelected) return false
+        return mediaEntity == other.mediaEntity
+    }
+
+    override fun hashCode(): Int {
+        return mediaEntity?.path?.hashCode() ?: 0
+    }
+}
 

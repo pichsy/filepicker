@@ -1,4 +1,4 @@
-package com.pichs.filepicker
+package com.pichs.filepicker.utils
 
 import android.annotation.SuppressLint
 import android.content.ContentResolver
@@ -23,6 +23,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.io.InputStream
+import java.lang.Long
 import java.net.URI
 import java.net.URISyntaxException
 
@@ -176,7 +177,7 @@ object FilePickerUriUtils {
                         )
                         for (download_uri in contentUriPrefixesToTry) {
                             try {
-                                val contentUri = ContentUris.withAppendedId(Uri.parse(download_uri), java.lang.Long.valueOf(id))
+                                val contentUri = ContentUris.withAppendedId(Uri.parse(download_uri), Long.valueOf(id))
                                 realPath = getDataColumn(context, contentUri, null, null)
                             } catch (e: Exception) {
                                 e.printStackTrace()

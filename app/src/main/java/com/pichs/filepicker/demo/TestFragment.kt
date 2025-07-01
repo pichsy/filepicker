@@ -89,28 +89,20 @@ class TestFragment : BindingFragment<FragmentMainBinding>() {
     }
 
     fun selectFile(type: String, maxSelectCount: Int, maxFileSize: Int) {
+        val selectType = when (type) {
+            "image" -> FilePicker.ofImage()
+            "video" -> FilePicker.ofVideo()
+            else -> FilePicker.ofAll()
+        }
         FilePicker.with(this)
             .setMaxSelectNumber(maxSelectCount)
             .setMaxFileSize(maxFileSize.toLong())
             .setRequestCode(1029)
-            .apply {
-                when (type) {
-                    "all" -> selectAll()
-                    "image" -> selectImage()
-                    "video" -> selectVideo()
-                }
-            }
+            .setSelectType(selectType)
             .setOnSelectCallback {
                 XLog.d("FilePicker", "Selected files: ${it.size}")
                 binding.recyclerView.models = it
-            }.build().start()
+            }
+            .start()
     }
-
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        FilePicker.get().onActivityResult(requestCode, resultCode, data)
-    }
-
-
 }

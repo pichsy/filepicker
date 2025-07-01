@@ -42,8 +42,7 @@ class VideoPreviewActivity : AppCompatActivity() {
             )
         )
 
-        binding.videoPlayerView.setOnControllerVisibilityChangedListener {
-            binding.clToolbar.isVisible = it
+        binding.videoPlayerView.setOnSingleClickListener {
         }
     }
 

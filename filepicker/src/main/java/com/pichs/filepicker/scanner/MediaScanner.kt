@@ -121,8 +121,6 @@ object MediaScanner {
                             MediaFolder(
                                 name = bucketName,
                                 folderPath = filePath?.substringBeforeLast("/"),
-                                coverImagePath = filePath,
-                                coverImageUri = contentUri,
                                 mediaEntityList = arrayListOf()
                             )
                         }

@@ -140,8 +140,6 @@ class FilePickerViewModel : ViewModel() {
             MediaFolder(
                 folderPath = folder.folderPath,
                 name = folder.name,
-                coverImagePath = folder.coverImagePath,
-                coverImageUri = folder.coverImageUri,
                 mediaEntityList = filteredMediaList
             )
         }.filter { it.mediaEntityList.isNotEmpty() }.toMutableList()

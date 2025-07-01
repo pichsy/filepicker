@@ -7,7 +7,8 @@ import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
-import android.widget.Toast
+import androidx.annotation.OptIn
+import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.media3.common.util.UnstableApi
 import androidx.recyclerview.widget.RecyclerView
@@ -23,9 +24,9 @@ import razerdp.basepopup.BasePopupWindow
 import androidx.lifecycle.viewModelScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.drake.brv.utils.linear
-import com.drake.brv.utils.models
 import com.drake.brv.utils.setup
-import com.pichs.filepicker.databinding.FilePickerItemRvAlbumSelectedBinding
+import com.pichs.filepicker.databinding.FilePickerItemRvAlbumJustSelectedBinding
+import com.pichs.filepicker.entity.FilePickerTempSelected
 import com.pichs.filepicker.loader.MediaLoader
 import com.pichs.filepicker.utils.FilePickerClickHelper
 import com.pichs.filepicker.utils.FilePickerTimeFormatUtils
@@ -35,12 +36,11 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-@UnstableApi
-class FilePickerPreviewDialog(
+@OptIn(UnstableApi::class)
+class FilePickerFinalPreviewDialog(
     val context: Context,
     val viewModel: FilePickerViewModel,
-    val curItem: MediaEntity,
-    val onSelect: (MediaEntity, Boolean, Int) -> Unit,
+    val onDismissDataDelete: (deleteList: MutableList<MediaEntity>) -> Unit,
     val onConfirm: (Int) -> Unit
 ) : BasePopupWindow(context) {
 
@@ -48,11 +48,14 @@ class FilePickerPreviewDialog(
 
     private var isShowToolBar = MutableStateFlow(true)
 
-    private var mCurrentItem: MediaEntity? = null
+    private val tempSelectDataList = mutableListOf<FilePickerTempSelected>()
+
+    private var mCurrentItem: FilePickerTempSelected? = null
     private var mCurrentIndex: Int = 0
 
     init {
-        setContentView(R.layout.dialog_file_picker_preview)
+        tempSelectDataList.addAll(viewModel.getSelectedDataList().map { FilePickerTempSelected(true, it) })
+        setContentView(R.layout.dialog_file_picker_selected_preview)
     }
 
     private var job: Job? = null
@@ -62,28 +65,16 @@ class FilePickerPreviewDialog(
         super.onViewCreated(contentView)
         binding = DialogFilePickerPreviewBinding.bind(contentView)
         setBackgroundColor(Color.TRANSPARENT)
-        mCurrentItem = curItem
-        mCurrentIndex = itemIndexOfList(mCurrentItem)
+        mCurrentItem = tempSelectDataList.firstOrNull()
+        mCurrentIndex = 0
         initConfigUI()
         initViewPager2()
         initSelectedRecyclerView()
         initListener()
+        updateIndexUI(mCurrentItem)
         updateBottomMenuSelectNumberUI()
 
         job = viewModel.viewModelScope.launch {
-            launch {
-                viewModel.currentFolderDataList.collectLatest {
-                    Log.d("FilePickerFragment", "initDataFlow currentFolderDataList: size:${it.size}")
-                    mCurrentIndex = viewModel.getCurrentFolderDataList().indexOf(mCurrentItem)
-
-                    binding.viewPager2.adapter?.notifyDataSetChanged()
-
-                    binding.viewPager2.setCurrentItem(mCurrentIndex, false)
-                    updateIndexUI(mCurrentItem)
-                    updateBottomMenuSelectNumberUI()
-                }
-            }
-
             launch {
                 viewModel.originalCheckedFlow.collectLatest {
                     Log.d("FilePickerPreviewDialog", "initDataFlow-----dialog originalCheckedFlow: isChecked:${it}")
@@ -100,21 +91,21 @@ class FilePickerPreviewDialog(
 //                    binding.clBottomBar.isVisible = isShow
                     // 使用动画渐隐渐显。
                     if (isShow) {
-                        binding.statusBarView.animate().alpha(1f).setDuration(300).start()
-                        binding.clToolbar.animate().alpha(1f).setDuration(300).start()
-                        binding.rvSelected.animate().alpha(1f).setDuration(300).start()
-                        binding.clBottomBar.animate().alpha(1f).setDuration(300).start()
+                        binding.statusBarView.animate().alpha(1f).setDuration(250).start()
+                        binding.clToolbar.animate().alpha(1f).setDuration(250).start()
+                        binding.rvSelected.animate().alpha(1f).setDuration(250).start()
+                        binding.clBottomBar.animate().alpha(1f).setDuration(250).start()
                     } else {
-                        binding.statusBarView.animate().alpha(0f).setDuration(300).start()
-                        binding.clToolbar.animate().alpha(0f).setDuration(300).start()
-                        binding.rvSelected.animate().alpha(0f).setDuration(300).start()
-                        binding.clBottomBar.animate().alpha(0f).setDuration(300).start()
+                        binding.statusBarView.animate().alpha(0f).setDuration(250).start()
+                        binding.clToolbar.animate().alpha(0f).setDuration(250).start()
+                        binding.rvSelected.animate().alpha(0f).setDuration(250).start()
+                        binding.clBottomBar.animate().alpha(0f).setDuration(250).start()
                     }
                 }
             }
         }
 
-        if (viewModel.getSelectedCount() > 0) {
+        if (tempSelectDataList.isNotEmpty()) {
             binding.rvSelected.isVisible = true
         } else {
             binding.rvSelected.isVisible = false
@@ -127,12 +118,12 @@ class FilePickerPreviewDialog(
             viewModel.originalCheckedFlow.update { !viewModel.originalCheckedFlow.value }
         }
 
-        if (viewModel.getSelectedCount() <= 0) {
+        if (tempSelectDataList.isEmpty()) {
 //            binding.btnConfirm.isEnabled = false
             binding.btnConfirm.text = viewModel.uiConfig.confirmBtnText
         } else {
             binding.btnConfirm.isEnabled = true
-            binding.btnConfirm.text = "${viewModel.uiConfig.confirmBtnText}(${viewModel.getSelectedCount()})"
+            binding.btnConfirm.text = "${viewModel.uiConfig.confirmBtnText}(${tempSelectDataList.filter { it.isSelected }.size})"
         }
 
         binding.llOriginal.isVisible = viewModel.uiConfig.isShowOriginal
@@ -149,17 +140,18 @@ class FilePickerPreviewDialog(
         }
     }
 
-
     private fun initSelectedRecyclerView() {
         binding.rvSelected.itemAnimator = null
         binding.rvSelected.linear(RecyclerView.HORIZONTAL).setup {
-            addType<MediaEntity>(R.layout.file_picker_item_rv_album_selected)
+            addType<FilePickerTempSelected>(R.layout.file_picker_item_rv_album_just_selected)
 
             onBind {
-                val item = getModel<MediaEntity>()
-                val itemBinding = getBinding<FilePickerItemRvAlbumSelectedBinding>()
+                val item = getModel<FilePickerTempSelected>()
+                val itemBinding = getBinding<FilePickerItemRvAlbumJustSelectedBinding>()
 
-                MediaLoader.loadImage(item.uri, item.mimeType, itemBinding.ivCoverImage)
+                val itemEntity = item.mediaEntity
+
+                MediaLoader.loadImage(itemEntity.uri, itemEntity.mimeType, itemBinding.ivCoverImage)
 
                 itemBinding.clSelectDelete.isVisible = viewModel.uiConfig.isShowSelectedListDeleteIcon
                 itemBinding.tvDelete.setBackgroundColor(viewModel.uiConfig.selectedListDeleteIconBackgroundColor)
@@ -170,10 +162,16 @@ class FilePickerPreviewDialog(
                     itemBinding.ivCoverImage.isSelected = false
                 }
 
-                if (item.isVideo()) {
+                if (item.isSelected) {
+                    itemBinding.ivCoverImage.foreground = ContextCompat.getDrawable(context, R.drawable.item_filepicker_delete_preview_select_mask)
+                } else {
+                    itemBinding.ivCoverImage.foreground = null
+                }
+
+                if (itemEntity.isVideo()) {
                     itemBinding.tvDuration.visibility = View.VISIBLE
-                    itemBinding.tvDuration.text = FilePickerTimeFormatUtils.formatTimeMillSeconds(item.duration)
-                } else if (item.isGif()) {
+                    itemBinding.tvDuration.text = FilePickerTimeFormatUtils.formatTimeMillSeconds(itemEntity.duration)
+                } else if (itemEntity.isGif()) {
                     itemBinding.tvDuration.visibility = View.VISIBLE
                     itemBinding.tvDuration.text = "GIF"
                 } else {
@@ -182,12 +180,13 @@ class FilePickerPreviewDialog(
                 }
 
                 itemBinding.clSelectDelete.setOnClickListener {
+                    item.isSelected = false
                     // 删除选中项
-                    viewModel.removeSelectedData(item)
                     binding.tvSelectIndex.text = ""
                     binding.tvSelectIndex.isChecked = false
                     binding.ivSelectState.isChecked = false
-                    onSelect(item, false, itemIndexOfList(item))
+                    notifyItemChanged(modelPosition)
+//                    onSelect(item, false, itemIndexOfList(itemEntity))
                     updateBottomMenuSelectNumberUI()
                 }
 
@@ -204,12 +203,12 @@ class FilePickerPreviewDialog(
                     }
                 }
             }
-        }.models = viewModel.getSelectedDataList()
+        }.models = tempSelectDataList
     }
 
-    fun itemIndexOfList(item: MediaEntity?): Int {
+    fun itemIndexOfList(item: FilePickerTempSelected?): Int {
         if (item == null) return 0
-        return viewModel.getCurrentFolderDataList().indexOf(item)
+        return tempSelectDataList.indexOf(item)
     }
 
     @SuppressLint("SetTextI18n")
@@ -228,36 +227,23 @@ class FilePickerPreviewDialog(
         }
 
         FilePickerClickHelper.clicks(binding.flSelectIndex) {
-            val item = viewModel.getCurrentFolderDataByPosition(mCurrentIndex)
+            val item = tempSelectDataList.getOrNull(mCurrentIndex)
             if (item == null) return@clicks
 
-            val indexOfSelect = viewModel.indexOfSelected(item)
+            item.isSelected = item.isSelected.not()
 
-            if (indexOfSelect == -1) {
-                // 未选中，添加到选中列表
-                val listSize = viewModel.getSelectedCount() + viewModel.tempSelectData.size
-                if (viewModel.isOverMaxSelectNumber(listSize)) {
-                    Toast.makeText(context, "已达到最大选择数量", Toast.LENGTH_SHORT).show()
-                    updateBottomMenuSelectNumberUI()
-                    return@clicks
-                }
+            if (item.isSelected) {
                 // 进行选中
-                viewModel.addSelectedData(item)
                 binding.ivSelectState.isChecked = true
                 updateBottomMenuSelectNumberUI()
-                val indexNow = viewModel.indexOfSelected(item)
+                val indexNow = tempSelectDataList.indexOf(item)
                 binding.tvSelectIndex.text = "${indexNow + 1}"
                 binding.tvSelectIndex.isChecked = true
-                onSelect(item, true, mCurrentIndex)
             } else {
-                viewModel.removeSelectedData(item)
                 binding.tvSelectIndex.text = ""
                 binding.tvSelectIndex.isChecked = false
                 binding.ivSelectState.isChecked = false
                 updateBottomMenuSelectNumberUI()
-                onSelect(item, false, mCurrentIndex)
-
-
             }
         }
     }
@@ -279,7 +265,7 @@ class FilePickerPreviewDialog(
         Log.d("FilePickerPreviewDialog", "onDismiss: releasing player for position=$mCurrentIndex")
         // 释放当前页面的播放器
 
-        if (mCurrentIndex >= 0 && mCurrentIndex < viewModel.getCurrentFolderDataList().size) {
+        if (mCurrentIndex >= 0 && mCurrentIndex < tempSelectDataList.size) {
             // 释放上一个页面的播放器
             Log.d("FilePickerPreviewDialog", "onPageSelected: releasing player for position=$mCurrentIndex")
 //                // 查找上一个页面的 ViewHolder 并释放播放器
@@ -292,6 +278,8 @@ class FilePickerPreviewDialog(
 
         job?.cancel()
         job = null
+        val deleteList = tempSelectDataList.filter { it.isSelected }.map { it.mediaEntity }.toMutableList()
+        onDismissDataDelete(deleteList)
     }
 
     @SuppressLint("SetTextI18n")
@@ -302,11 +290,12 @@ class FilePickerPreviewDialog(
         binding.viewPager2.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
             @SuppressLint("NotifyDataSetChanged")
             override fun onPageSelected(position: Int) {
+
                 if (mCurrentIndex == position) {
                     return
                 }
 
-                if (mCurrentIndex >= 0 && mCurrentIndex < viewModel.getCurrentFolderDataList().size) {
+                if (mCurrentIndex >= 0 && mCurrentIndex < tempSelectDataList.size) {
                     // 释放上一个页面的播放器
                     Log.d("FilePickerPreviewDialog", "onPageSelected: releasing player for position=$mCurrentIndex")
 //                // 查找上一个页面的 ViewHolder 并释放播放器
@@ -317,7 +306,7 @@ class FilePickerPreviewDialog(
                     }
                 }
                 Log.d("FilePickerPreviewDialog", "onPageSelected: position=$position, mCurrentIndex=$mCurrentIndex")
-                val item = viewModel.getCurrentFolderDataByPosition(position) ?: return
+                val item = tempSelectDataList.getOrNull(position) ?: return
                 mCurrentItem = item
                 updateIndexUI(item)
                 mCurrentIndex = position
@@ -325,7 +314,7 @@ class FilePickerPreviewDialog(
                 binding.rvSelected.post {
                     // refresh select rv
                     binding.rvSelected.adapter?.notifyItemRangeChanged(0, binding.rvSelected.adapter?.itemCount ?: 0)
-                    val indexOfSelect = viewModel.indexOfSelected(item)
+                    val indexOfSelect = tempSelectDataList.indexOf(item)
                     scrollItemToCenter(binding.rvSelected, indexOfSelect)
                 }
             }
@@ -335,26 +324,26 @@ class FilePickerPreviewDialog(
 
         binding.viewPager2.setCurrentItem(index, false)
 
-        binding.tvIndex.text = "${index + 1}/${viewModel.getCurrentFolderDataList().size}"
+        binding.tvIndex.text = "${index + 1}/${tempSelectDataList.size}"
 
         updateIndexUI(mCurrentItem)
     }
 
 
     @SuppressLint("SetTextI18n")
-    private fun updateIndexUI(item: MediaEntity?) {
+    private fun updateIndexUI(item: FilePickerTempSelected?) {
         if (item == null) {
             return
         }
-        binding.tvIndex.text = "${itemIndexOfList(item) + 1}/${viewModel.getCurrentFolderDataList().size}"
+        binding.tvIndex.text = "${itemIndexOfList(item) + 1}/${tempSelectDataList.size}"
         // 这里需要根据是否选中来右上角角标。
-        val indexOfSelect = viewModel.indexOfSelected(item)
-        if (indexOfSelect == -1) {
+        if (item.isSelected) {
             // 未选中
             binding.ivSelectState.isChecked = false
             binding.tvSelectIndex.text = ""
             binding.tvSelectIndex.isChecked = false
         } else {
+            val indexOfSelect = itemIndexOfList(item)
             // 已选中
             binding.tvSelectIndex.text = "${indexOfSelect + 1}"
             binding.tvSelectIndex.isChecked = true
@@ -365,18 +354,21 @@ class FilePickerPreviewDialog(
 
     @SuppressLint("SetTextI18n")
     private fun updateBottomMenuSelectNumberUI() {
-        val selectedMergeSize = viewModel.getSelectedCount() + viewModel.tempSelectData.size
+        val selectedMergeSize = tempSelectDataList.filter { it.isSelected }.size
         Log.e("FilePickerPreviewDialog", "updateBottomMenuSelectNumberUI: selectedMergeSize=${selectedMergeSize}")
         if (selectedMergeSize > 0) {
             binding.rvSelected.isVisible = true
             binding.btnConfirm.isEnabled = true
             binding.btnConfirm.text = "${viewModel.uiConfig.confirmBtnText}(${selectedMergeSize})"
-            binding.rvSelected.models = viewModel.getSelectedDataList()
-            scrollItemToCenter(binding.rvSelected, viewModel.indexOfSelected(mCurrentItem))
+//            binding.rvSelected.models = tempSelectDataList
+            // 重新刷新列表
+            binding.rvSelected.adapter?.notifyItemRangeChanged(0, binding.rvSelected.adapter?.itemCount ?: 0)
+            scrollItemToCenter(binding.rvSelected, itemIndexOfList(mCurrentItem))
         } else {
             binding.rvSelected.isVisible = false
-            binding.rvSelected.models = viewModel.getSelectedDataList()
+//            binding.rvSelected.models = tempSelectDataList
 //            binding.btnConfirm.isEnabled = false
+            binding.rvSelected.adapter?.notifyItemRangeChanged(0, binding.rvSelected.adapter?.itemCount ?: 0)
             binding.btnConfirm.text = viewModel.uiConfig.confirmBtnText
         }
     }
@@ -392,7 +384,7 @@ class FilePickerPreviewDialog(
     ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
         override fun getItemViewType(position: Int): Int {
-            return if (viewModel.getCurrentFolderDataList().getOrNull(position)?.isVideo() == true) {
+            return if (tempSelectDataList.getOrNull(position)?.mediaEntity?.isVideo() == true) {
                 TYPE_VIDEO
             } else {
                 TYPE_IMAGE
@@ -425,19 +417,20 @@ class FilePickerPreviewDialog(
                 playView.setOnSingleClickListener {
                     isShowToolBar.update { isShowToolBar.value.not() }
                 }
+
                 VideoViewHolder(playView)
             }
         }
 
-        override fun getItemCount() = viewModel.getCurrentFolderDataList().size
+        override fun getItemCount() = tempSelectDataList.size
 
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-            val item = viewModel.getCurrentFolderDataList().getOrNull(position) ?: return
+            val item = tempSelectDataList.getOrNull(position) ?: return
             if (holder is ImageViewHolder) {
-                Glide.with(context).load(item.path).into(holder.photoView)
+                Glide.with(context).load(item.mediaEntity.path).into(holder.photoView)
             } else if (holder is VideoViewHolder) {
-                Log.d("MediaPagerAdapter", "onBindViewHolder: item.path=${item.path}, item.uri=${item.uri}")
-                holder.videoPlayerView.loadCover(item)
+                Log.d("MediaPagerAdapter", "onBindViewHolder: item.path=${item.mediaEntity.path}, item.uri=${item.mediaEntity.uri}")
+                holder.videoPlayerView.loadCover(item.mediaEntity)
             }
         }
 
@@ -454,7 +447,7 @@ class FilePickerPreviewDialog(
             Log.d("MediaPagerAdapter", "onViewAttachedToWindow22222: position=${holder.absoluteAdapterPosition} ==========")
             if (holder is VideoViewHolder) {
                 // 这里可以根据需要重新加载视频封面或播放器
-                holder.videoPlayerView.loadCover(viewModel.getCurrentFolderDataList().getOrNull(holder.absoluteAdapterPosition))
+                holder.videoPlayerView.loadCover(tempSelectDataList.getOrNull(holder.absoluteAdapterPosition)?.mediaEntity)
             }
         }
 

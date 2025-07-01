@@ -42,19 +42,17 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
                 else -> "all"
             }
             // 权限请求
-            XXPermissions.with(this)
-                .unchecked()
-                .permission(
-                    Permission.READ_MEDIA_IMAGES,
-                    Permission.READ_MEDIA_VIDEO,
-                    Permission.READ_MEDIA_AUDIO,
-                ).request { permissions, all ->
-                    if (all) {
-                        selectFile(type, maxSelectCount, maxFileSize)
-                    } else {
-                        XXPermissions.startPermissionActivity(this, permissions)
-                    }
+            XXPermissions.with(this).unchecked().permission(
+                Permission.READ_MEDIA_IMAGES,
+                Permission.READ_MEDIA_VIDEO,
+                Permission.READ_MEDIA_AUDIO,
+            ).request { permissions, all ->
+                if (all) {
+                    selectFile(type, maxSelectCount, maxFileSize)
+                } else {
+                    XXPermissions.startPermissionActivity(this, permissions)
                 }
+            }
         }
 
         initRecyclerView()
@@ -78,30 +76,26 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
                 val mediaEntity = getModel<MediaEntity>()
                 val itemBinding = getBinding<ItemImageBinding>()
                 itemBinding.tvIndex.text = "${modelPosition + 1}"
-                Glide.with(this@MainActivity)
-                    .load(mediaEntity.path)
-                    .into(itemBinding.ivImg)
+                Glide.with(this@MainActivity).load(mediaEntity.path).into(itemBinding.ivImg)
             }
         }
     }
 
     fun selectFile(type: String, maxSelectCount: Int, maxFileSize: Int) {
+        val selectType = when (type) {
+            "image" -> FilePicker.ofImage()
+            "video" -> FilePicker.ofVideo()
+            else -> FilePicker.ofAll()
+        }
         FilePicker.with(this)
             .setMaxSelectNumber(maxSelectCount)
             .setMaxFileSize(maxFileSize.toLong())
             .setRequestCode(1029)
-            .apply {
-                when (type) {
-                    "all" -> selectAll()
-                    "image" -> selectImage()
-                    "video" -> selectVideo()
-                }
-            }
+            .setSelectType(selectType)
             .setOnSelectCallback {
                 XLog.d("FilePicker", "Selected files: ${it.size}")
                 binding.recyclerView.models = it
-            }
-            .setUiConfig(
+            }.setUiConfig(
                 FilePickerUIConfig(
                     confirmBtnText = "下一步",
                     isShowOriginal = false,
@@ -109,15 +103,6 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
                     isShowSelectedListDeleteIcon = true,
                     selectedListDeleteIconBackgroundColor = Color.BLUE
                 )
-            )
-            .build()
-            .start()
+            ).start()
     }
-
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        FilePicker.get().onActivityResult(requestCode, resultCode, data)
-    }
-
 }

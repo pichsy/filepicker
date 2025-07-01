@@ -1,8 +1,10 @@
 package com.pichs.filepicker
 
-import android.app.Activity
+import android.app.Activity.RESULT_OK
 import android.content.Intent
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentActivity
+import com.pichs.filepicker.empty.CallbackFragment
 import com.pichs.filepicker.entity.MediaEntity
 import kotlin.collections.toMutableList
 
@@ -31,7 +33,7 @@ class FilePicker {
             return _instance
         }
 
-        fun with(activity: Activity): Builder {
+        fun with(activity: FragmentActivity): Builder {
             return Builder(activity).apply {
                 get().setBuilder(this)
             }
@@ -43,6 +45,17 @@ class FilePicker {
             }
         }
 
+        fun ofImage(): String {
+            return FilePickerFragment.SELECT_TYPE_IMAGE
+        }
+
+        fun ofVideo(): String {
+            return FilePickerFragment.SELECT_TYPE_VIDEO
+        }
+
+        fun ofAll(): String {
+            return FilePickerFragment.SELECT_TYPE_ALL
+        }
 
         /**
          * 将 MediaEntity 列表转换为路径列表
@@ -52,18 +65,17 @@ class FilePicker {
                 it.path ?: ""
             }.toMutableList()
         }
-
     }
 
 
     class Builder {
-        private var mActivity: Activity? = null
+        private var mActivity: FragmentActivity? = null
         private var mFragment: Fragment? = null
 
         var mUiConfig: FilePickerUIConfig = FilePickerUIConfig()
             private set
 
-        constructor(activity: Activity) {
+        constructor(activity: FragmentActivity) {
             this.mActivity = activity
         }
 
@@ -71,7 +83,7 @@ class FilePicker {
             this.mFragment = fragment
         }
 
-        fun getActivity(): Activity? {
+        fun getActivity(): FragmentActivity? {
             return mActivity
         }
 
@@ -102,18 +114,8 @@ class FilePicker {
         var mSelectType: String = FilePickerFragment.SELECT_TYPE_ALL
             private set
 
-        fun selectAll(): Builder {
-            this.mSelectType = FilePickerFragment.SELECT_TYPE_ALL
-            return this
-        }
-
-        fun selectImage(): Builder {
-            this.mSelectType = FilePickerFragment.SELECT_TYPE_IMAGE
-            return this
-        }
-
-        fun selectVideo(): Builder {
-            this.mSelectType = FilePickerFragment.SELECT_TYPE_VIDEO
+        fun setSelectType(selectType: String): Builder {
+            this.mSelectType = selectType
             return this
         }
 
@@ -158,48 +160,87 @@ class FilePicker {
             return this
         }
 
-        fun build(): FilePicker {
-            return FilePicker._instance
+        fun start() {
+            FilePicker.get().start()
         }
     }
+
+    private var existingFragment: CallbackFragment? = null
 
     fun start() {
         builder?.let { bd ->
             if (bd.getFragment() != null) {
                 bd.getFragment()?.context?.let { ctx ->
-                    val intent = Intent(ctx, FilePickerActivity::class.java)
-                    intent.putExtra("maxSelectNumber", bd.mMaxSelectNumber)
-                    intent.putExtra("selectType", bd.mSelectType)
-                    intent.putExtra("maxFileSize", bd.mMaxFileSize)
-                    intent.putExtra("minFileSize", bd.mMinFileSize)
-                    intent.putExtra("uiConfig", bd.mUiConfig)
-                    intent.putParcelableArrayListExtra("selectedDataList", ArrayList(bd.mSelectedList))
-                    bd.getFragment()?.startActivityForResult(intent, bd.mRequestCode)
+                    val fm = bd.getFragment()!!.childFragmentManager
+                    val tag = "CallbackFragment"
+                    existingFragment = fm.findFragmentByTag(tag) as? CallbackFragment
+                    if (existingFragment == null) {
+                        existingFragment = CallbackFragment()
+                    }
+                    existingFragment?.apply {
+                        onResult = { resultCode: Int, data: Intent? ->
+                            if (resultCode == RESULT_OK) {
+                                val resultData = data?.getParcelableArrayListExtra<MediaEntity>("selectedDataList")?.toMutableList()
+                                if (resultData != null) {
+                                    builder?.mOnSelectCallback?.onCallback(resultData)
+                                }
+                            }
+                        }
+                        fm.beginTransaction().add(this, tag).commitNowAllowingStateLoss()
+
+                        val intent = Intent(ctx, FilePickerActivity::class.java)
+                        intent.putExtra("maxSelectNumber", bd.mMaxSelectNumber)
+                        intent.putExtra("selectType", bd.mSelectType)
+                        intent.putExtra("maxFileSize", bd.mMaxFileSize)
+                        intent.putExtra("minFileSize", bd.mMinFileSize)
+                        intent.putExtra("uiConfig", bd.mUiConfig)
+                        intent.putParcelableArrayListExtra("selectedDataList", ArrayList(bd.mSelectedList))
+                        launch(intent)
+                    }
+//                    bd.getFragment()?.startActivityForResult(intent, bd.mRequestCode)
                 }
             } else {
                 bd.getActivity()?.let { act ->
-                    val intent = Intent(act, FilePickerActivity::class.java)
-                    intent.putExtra("maxSelectNumber", bd.mMaxSelectNumber)
-                    intent.putExtra("selectType", bd.mSelectType)
-                    intent.putExtra("maxFileSize", bd.mMaxFileSize)
-                    intent.putExtra("minFileSize", bd.mMinFileSize)
-                    intent.putExtra("uiConfig", bd.mUiConfig)
-                    intent.putParcelableArrayListExtra("selectedDataList", ArrayList(bd.mSelectedList))
-                    act.startActivityForResult(intent, bd.mRequestCode)
+                    val fm = act.supportFragmentManager
+                    val tag = "CallbackFragment"
+                    existingFragment = fm.findFragmentByTag(tag) as? CallbackFragment
+                    if (existingFragment == null) {
+                        existingFragment = CallbackFragment()
+                    }
+                    existingFragment?.apply {
+                        onResult = { resultCode: Int, data: Intent? ->
+                            if (resultCode == RESULT_OK) {
+                                val resultData = data?.getParcelableArrayListExtra<MediaEntity>("selectedDataList")?.toMutableList()
+                                if (resultData != null) {
+                                    builder?.mOnSelectCallback?.onCallback(resultData)
+                                }
+                            }
+                        }
+
+                        fm.beginTransaction().add(this, tag).commitNowAllowingStateLoss()
+                        val intent = Intent(act, FilePickerActivity::class.java)
+                        intent.putExtra("maxSelectNumber", bd.mMaxSelectNumber)
+                        intent.putExtra("selectType", bd.mSelectType)
+                        intent.putExtra("maxFileSize", bd.mMaxFileSize)
+                        intent.putExtra("minFileSize", bd.mMinFileSize)
+                        intent.putExtra("uiConfig", bd.mUiConfig)
+                        intent.putParcelableArrayListExtra("selectedDataList", ArrayList(bd.mSelectedList))
+                        launch(intent)
+                    }
                 }
             }
         }
     }
 
-    fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        if (requestCode == builder?.mRequestCode && resultCode == Activity.RESULT_OK) {
-            val resultData = data?.getParcelableArrayListExtra<MediaEntity>("selectedDataList")?.toMutableList()
-            if (resultData != null) {
-                // Handle the result data
-                // For example, you can pass it to a callback or update the UI
-                builder?.mOnSelectCallback?.onCallback(resultData)
-            }
-        }
-    }
+//    fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+//        if (requestCode == builder?.mRequestCode && resultCode == Activity.RESULT_OK) {
+//            val resultData = data?.getParcelableArrayListExtra<MediaEntity>("selectedDataList")?.toMutableList()
+//            if (resultData != null) {
+//                // Handle the result data
+//                // For example, you can pass it to a callback or update the UI
+//                builder?.mOnSelectCallback?.onCallback(resultData)
+//            }
+//        }
+//    }
 
 }

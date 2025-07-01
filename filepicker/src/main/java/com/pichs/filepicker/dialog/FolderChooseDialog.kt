@@ -88,7 +88,7 @@ class FolderChooseDialog(mCtx: Context, val list: MutableList<MediaFolder>, val 
                 }
             }
         }.models = list.toMutableList().apply {
-            add(0, MediaFolder("全部", null, null, null))
+            add(0, MediaFolder("全部", null))
         }
     }
 

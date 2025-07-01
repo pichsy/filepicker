@@ -26,6 +26,7 @@ import com.drake.brv.utils.models
 import com.drake.brv.utils.setup
 import com.pichs.filepicker.databinding.FilePickerItemRvAlbumBinding
 import com.pichs.filepicker.databinding.FragmentFilepickerHomeBinding
+import com.pichs.filepicker.dialog.FilePickerFinalPreviewDialog
 import com.pichs.filepicker.dialog.FilePickerPreviewDialog
 import com.pichs.filepicker.dialog.FolderChooseDialog
 import com.pichs.filepicker.entity.MediaEntity
@@ -100,6 +101,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
         initListener()
     }
 
+
     private fun initListener() {
         FilePickerClickHelper.clicks(binding.llPreview) {
             // 预览按钮点击事件
@@ -108,8 +110,13 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                 Toast.makeText(requireContext(), viewModel.uiConfig.atLeastSelectOneToastContent, Toast.LENGTH_SHORT).show()
                 return@clicks
             }
-            // todo 进入 展示界面弹窗，这里仅展示固定个数，不参与展示。
 
+            // todo 进入 展示界面弹窗，这里仅展示固定个数，不参与展示。
+            FilePickerFinalPreviewDialog(requireContext(), viewModel, onDismissDataDelete = { deleteList ->
+                Toast.makeText(requireContext(), "删除了 ${deleteList.size} 个文件", Toast.LENGTH_SHORT).show()
+            }, onConfirm = { size ->
+                Toast.makeText(requireContext(), "确定了 ${size} 个", Toast.LENGTH_SHORT).show()
+            }).showPopupWindow()
         }
 
         FilePickerClickHelper.clicks(binding.llOriginal) {
