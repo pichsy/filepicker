@@ -129,16 +129,16 @@ FilePicker.with(this) // this: Fragment
 
 ## 常用配置参数
 
-| 配置方法                                              | 说明                             | 默认值  |
-| ------------------------------------------------- | ------------------------------ | ---- |
-| `setSelectType(type: String)`                     | 选择类型：图片、视频、全部                  | 全部   |
-| `setMaxSelectNumber(number: Int)`                 | 最大可选数量，0为不限制                   | 0    |
-| `setMaxFileSize(size: Long)`                      | 文件最大大小（字节）                     | 不限制  |
-| `setMinFileSize(size: Long)`                      | 文件最小大小（字节）                     | 1    |
-| `setSelectedList(list: MutableList<MediaEntity>)` | 已选择的文件列表，初始化用                  | 空列表  |
-| `setSelectedPathList(list: List<String>)`         | 已选择的文件路径列表，自动转换为 `MediaEntity` | 空列表  |
-| `setUiConfig(config: FilePickerUIConfig)`         | 界面文案与UI配置                      | 默认配置 |
-| `setOnSelectCallback(callback: OnSelectCallback)` | 选择完成回调                         | 必填   |
+| 配置方法                                          | 说明                           | 默认值                           |
+| --------------------------------------------- | ---------------------------- |-------------------------------|
+| `setSelectType(type: String)`                 | 选择类型：图片、视频、全部                | 全部                            |
+| `setMaxSelectNumber(number: Int)`             | 最大可选数量，0为不限制                 | 0                             |
+| `setMaxFileSize(size: Long)`                  | 文件最大大小（字节）                   | 不限制                           |
+| `setMinFileSize(size: Long)`                  | 文件最小大小（字节）                   | 1                             |
+| `setSelectedList(list: MutableList<MediaEntity>)` | 已选择的文件列表，初始化用                | 空列表                           |
+| `setSelectedPathList(list: List<String>)`     | 已选择的文件路径列表，自动转换为 `MediaEntity` | 空列表                           |
+| `setUiConfig(config: FilePickerUIConfig)`     | 界面文案与UI配置                    | 默认配置                          |
+| `setOnSelectCallback(callback: OnSelectCallback)` | 选择完成回调                       | 必填                            |
 
 ---
 
@@ -157,10 +157,10 @@ fun interface OnSelectCallback {
 
 ## 工具方法
 
-| 方法                                                             | 说明                         |
-| -------------------------------------------------------------- | -------------------------- |
-| `FilePicker.convertToPathList(list: MutableList<MediaEntity>)` | 将选中的 `MediaEntity` 转换为路径列表 |
-| `FilePicker.convertToEntityList(list: List<String>)`           | 路径列表转换为 `MediaEntity` 列表   |
+| 方法 | 说明   |
+| ------------- | -------------- |
+| `FilePicker.convertToPathList(list: MutableList<MediaEntity>)` | 将选中的 `MediaEntity` 转换为路径列表                             |
+| `FilePicker.convertToEntityList(list: List<String>)`           | 路径列表转换为 `MediaEntity` 列表                               |
 
 ---
 
@@ -222,19 +222,19 @@ FilePicker.with(this)
 </br>
 ### 三、UIConfig解释
 
-| 字段名                                     | 类型        | 默认值                                  | 说明                                      |
-| --------------------------------------- | --------- | ------------------------------------ | --------------------------------------- |
-| `confirmBtnText`                        | `String`  | `"确定"`                               | 确认按钮文本，默认 "确定"                          |
-| `isShowPreviewPageSelectedIndex`        | `Boolean` | `true`                               | 预览页面是否显示选中索引。`true` 显示序号，`false` 显示对号 ✅ |
-| `previewText`                           | `String`  | `"预览"`                               | 预览页面标题文本                                |
-| `previewSelectText`                     | `String`  | `"选择"`                               | 预览页面的选择按钮文本                             |
-| `originalText`                          | `String`  | `"原图"`                               | 原图选项的文本内容                               |
-| `isShowOriginal`                        | `Boolean` | `true`                               | 是否显示原图选项                                |
-| `isOriginalChecked`                     | `Boolean` | `false`                              | 原图选项是否默认勾选                              |
-| `isShowSelectedListDeleteIcon`          | `Boolean` | `false`                              | 是否展示选中列表中的删除按钮                          |
-| `selectedListDeleteIconBackgroundColor` | `Int`     | `XColorHelper.parseColor("#FA4B3A")` | 选中列表中删除按钮的背景颜色                          |
-| `atLeastSelectOneToastContent`          | `String`  | `"至少选择一个"`                           | 最少选择一个文件时的提示文本                          |
-| `selectMaxNumberOverToastContent`       | `String`  | `"已达到最大选择数量"`                        | 达到最大选择数量限制时的提示文本                        |
+| 字段名  | 类型  | 默认值 | 说明  |
+| --------- | --------- | ------ | ----------------- |
+| `confirmBtnText`                        | `String`  | `"确定"`                               | 确认按钮文本，默认 "确定"                              |
+| `isShowPreviewPageSelectedIndex`        | `Boolean` | `true`                               | 预览页面是否显示选中索引。`true` 显示序号，`false` 显示对号 ✅     |
+| `previewText`                           | `String`  | `"预览"`                               | 预览页面标题文本                                    |
+| `previewSelectText`                     | `String`  | `"选择"`                               | 预览页面的选择按钮文本                                 |
+| `originalText`                          | `String`  | `"原图"`                               | 原图选项的文本内容                                   |
+| `isShowOriginal`                        | `Boolean` | `true`                               | 是否显示原图选项                                    |
+| `isOriginalChecked`                     | `Boolean` | `false`                              | 原图选项是否默认勾选                                  |
+| `isShowSelectedListDeleteIcon`          | `Boolean` | `false`                              | 是否展示选中列表中的删除按钮                              |
+| `selectedListDeleteIconBackgroundColor` | `Int`     | `"#FA4B3A"` | 选中列表中删除按钮的背景颜色                              |
+| `atLeastSelectOneToastContent`          | `String`  | `"至少选择一个"`                           | 最少选择一个文件时的提示文本                              |
+| `selectMaxNumberOverToastContent`       | `String`  | `"已达到最大选择数量"`                        | 达到最大选择数量限制时的提示文本                            |
 
 
 
