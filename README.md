@@ -200,16 +200,16 @@ FilePicker.with(this)
 ## 典型示例
 
 ```kotlin
-FilePicker.with(this)
-    .setSelectType(FilePicker.ofImage())
-    .setMaxSelectNumber(5)
-    .setMinFileSize(1024) // 最小1KB
-    .setMaxFileSize(10 * 1024 * 1024) // 最大10MB
-    .setOnSelectCallback { isUseOriginal, list ->
-        val paths = FilePicker.convertToPathList(list)
-        println("选中文件路径: $paths")
-    }
-    .start()
+    FilePicker.with(this)
+        .setSelectType(FilePicker.ofImage())
+        .setMaxSelectNumber(5)
+        .setMinFileSize(1024) // 最小1KB
+        .setMaxFileSize(10 * 1024 * 1024) // 最大10MB
+        .setOnSelectCallback { isUseOriginal, list ->
+            val paths = FilePicker.convertToPathList(list)
+            println("选中文件路径: $paths")
+        }
+        .start()
 ```
 
 ---
@@ -243,3 +243,17 @@ FilePicker.with(this)
 `FilePicker` 旨在提供简洁、灵活、可定制的文件选择功能，广泛适用于相册、文件管理、视频选择等场景。
 
 如需深入定制或遇到问题，欢迎补充需求，我可以帮您生成对应的开发指导。
+
+
+
+## 特别鸣谢
+
+本项目在开发过程中参考和使用了以下优秀的开源项目，特此致谢：
+
+- [xwidget](https://github.com/pichsy/xwidget) - 提供了超级方便的基础组件。
+- [BRV](https://github.com/liangjingkanji/BRV) —— 便捷的 RecyclerView 适配器库
+- [BasePopup](https://github.com/razerdp/BasePopup) —— 强大的弹窗库
+- [Glide](https://github.com/bumptech/glide) —— 高效的图片加载库
+- [androidx.media3](https://developer.android.com/jetpack/androidx/releases/media3) —— 官方视频播放组件
+
+感谢你们的无私奉献，让开发变得更加高效和有趣！
