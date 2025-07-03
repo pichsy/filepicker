@@ -2,14 +2,18 @@ package com.pichs.filepicker
 
 import android.os.Bundle
 import android.util.Log
+import android.view.ViewGroup
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.updateLayoutParams
 import com.pichs.filepicker.FilePickerFragment.Companion.SELECT_TYPE_ALL
 import com.pichs.filepicker.FilePickerFragment.Companion.SELECT_TYPE_IMAGE
 import com.pichs.filepicker.FilePickerFragment.Companion.SELECT_TYPE_VIDEO
 import com.pichs.filepicker.databinding.ActivityFilepickerMainBinding
 import com.pichs.filepicker.entity.MediaEntity
+import com.pichs.filepicker.utils.NavigationBarUtils
 import com.pichs.filepicker.utils.PadUtils
+import com.pichs.xwidget.utils.XDisplayHelper
 import com.pichs.xwidget.utils.XStatusBarHelper
 import kotlinx.coroutines.flow.update
 
@@ -33,6 +37,8 @@ class FilePickerActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityFilepickerMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        checkNavigationBar()
 
         var maxSelectNumber = intent.getIntExtra("maxSelectNumber", 0)
         var maxFileSize = intent.getLongExtra("maxFileSize", 0L)
@@ -85,7 +91,22 @@ class FilePickerActivity : AppCompatActivity() {
         val fragment = FilePickerFragment.newInstance()
 
         supportFragmentManager.beginTransaction().add(binding.flContainer.id, fragment).show(fragment).commitAllowingStateLoss()
+
+        addOnNewIntentListener {
+            checkNavigationBar()
+        }
     }
 
+    private fun checkNavigationBar() {
+        if (NavigationBarUtils.hasNavigationBar(this)) {
+            binding.flContainer.updateLayoutParams<ViewGroup.MarginLayoutParams> {
+                bottomMargin = XDisplayHelper.getNavigationBarHeight(this@FilePickerActivity)
+            }
+        } else {
+            binding.flContainer.updateLayoutParams<ViewGroup.MarginLayoutParams> {
+                bottomMargin = 0
+            }
+        }
+    }
 
 }
