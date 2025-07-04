@@ -10,6 +10,7 @@
 - 使用场景，多用于 视频剪辑选择库，相册管理选择库。那去玩吧。
 
 ### 好不好用，直接安装。
+
 - 扫码：![filepicker](https://www.pgyer.com/app/qrcode/CdA0TDQB)
 - 或者：点击下载 [app-debug.apk](app/release/app-debug.apk)
 
@@ -18,18 +19,24 @@
 - 下面的这个三方库，本maven仓库中的aar都过滤掉了。建议自己从下面引用，防止库冲突。
 
 ## 最新版本
-1. **filepicker** ![](https://img.shields.io/maven-metadata/v.svg?label=maven-central&metadataUrl=https%3A%2F%2Frepo1.maven.org%2Fmaven2%2Fcom%2Fgitee%2Fpichs%2Ffilepicker%2Fmaven-metadata.xml)
 
-2. **xwidget**  ![](https://img.shields.io/maven-metadata/v.svg?label=maven-central&metadataUrl=https%3A%2F%2Frepo1.maven.org%2Fmaven2%2Fcom%2Fgitee%2Fpichs%2Fxwidget%2Fmaven-metadata.xml)
-3. **BRV**  ![](https://camo.githubusercontent.com/a94b501a064dd623ccd416f3c8262e8309b5a5ac74373d41980797e9ba286522/68747470733a2f2f6a69747061636b2e696f2f762f6c69616e676a696e676b616e6a692f4252562e737667)
-4. **BasePopup** ![](https://camo.githubusercontent.com/a3d2af2f4eff2d27ff650b3ae97271ec783ebc4e12db2fd6213402d57929ed9b/68747470733a2f2f696d672e736869656c64732e696f2f6d6176656e2d63656e7472616c2f762f696f2e6769746875622e72617a657264702f42617365506f707570)
-5. **androidx.media3** 这里建议使用***1.7.1*** 稳定版 ![](https://img.shields.io/maven-metadata/v.svg?label=google-maven&metadataUrl=https%3A%2F%2Fdl.google.com%2Fandroid%2Fmaven2%2Fandroidx%2Fmedia3%2Fmedia3-exoplayer%2Fmaven-metadata.xml) 
+1. **filepicker
+   ** ![](https://img.shields.io/maven-metadata/v.svg?label=maven-central&metadataUrl=https%3A%2F%2Frepo1.maven.org%2Fmaven2%2Fcom%2Fgitee%2Fpichs%2Ffilepicker%2Fmaven-metadata.xml)
+
+2. **xwidget
+   **  ![](https://img.shields.io/maven-metadata/v.svg?label=maven-central&metadataUrl=https%3A%2F%2Frepo1.maven.org%2Fmaven2%2Fcom%2Fgitee%2Fpichs%2Fxwidget%2Fmaven-metadata.xml)
+3. **BRV
+   **  ![](https://camo.githubusercontent.com/a94b501a064dd623ccd416f3c8262e8309b5a5ac74373d41980797e9ba286522/68747470733a2f2f6a69747061636b2e696f2f762f6c69616e676a696e676b616e6a692f4252562e737667)
+4. **BasePopup
+   ** ![](https://camo.githubusercontent.com/a3d2af2f4eff2d27ff650b3ae97271ec783ebc4e12db2fd6213402d57929ed9b/68747470733a2f2f696d672e736869656c64732e696f2f6d6176656e2d63656e7472616c2f762f696f2e6769746875622e72617a657264702f42617365506f707570)
+5. **androidx.media3** 这里建议使用***1.7.1***
+   稳定版 ![](https://img.shields.io/maven-metadata/v.svg?label=google-maven&metadataUrl=https%3A%2F%2Fdl.google.com%2Fandroid%2Fmaven2%2Fandroidx%2Fmedia3%2Fmedia3-exoplayer%2Fmaven-metadata.xml)
 6. **glide** ![](https://img.shields.io/badge/glide-4.16.0-brightgreen.svg)
 
 ```kotlin
 dependencies {
     // 基础组件库 （必须）
-    implementation("com.gitee.pichs:filepicker:4.1.0")
+    implementation("com.gitee.pichs:filepicker:4.2.0")
 
     // 基础组件库 （必须）
     implementation("com.gitee.pichs:xwidget:5.5.0")
@@ -58,11 +65,9 @@ dependencies {
 }
 ```
 
-
 # 动图效果
+
 ![img2.gif](pics/img2.gif)
-
-
 
 # FilePicker 文件选择器 - 使用文档
 
@@ -78,7 +83,6 @@ dependencies {
 * **支持 UI 文案与界面定制**
 
 ---
-
 
 ## 基本用法
 
@@ -104,7 +108,7 @@ FilePicker.with(this) // this: FragmentActivity
 
 ```kotlin
 FilePicker.with(this) // this: Fragment
-    .setSelectType(FilePicker.ofAll()) 
+    .setSelectType(FilePicker.ofAll())
     .setMaxSelectNumber(5)
     .setMaxFileSize(50 * 1024 * 1024) // 50MB
     .setMinFileSize(10 * 1024) // 10KB
@@ -120,7 +124,7 @@ FilePicker.with(this) // this: Fragment
 ## 选择类型
 
 | 方法                     | 说明        |
-| ---------------------- | --------- |
+|------------------------|-----------|
 | `FilePicker.ofImage()` | 只选择图片     |
 | `FilePicker.ofVideo()` | 只选择视频     |
 | `FilePicker.ofAll()`   | 图片、视频均可选择 |
@@ -129,16 +133,16 @@ FilePicker.with(this) // this: Fragment
 
 ## 常用配置参数
 
-| 配置方法                                          | 说明                           | 默认值                           |
-| --------------------------------------------- | ---------------------------- |-------------------------------|
-| `setSelectType(type: String)`                 | 选择类型：图片、视频、全部                | 全部                            |
-| `setMaxSelectNumber(number: Int)`             | 最大可选数量，0为不限制                 | 0                             |
-| `setMaxFileSize(size: Long)`                  | 文件最大大小（字节）                   | 不限制                           |
-| `setMinFileSize(size: Long)`                  | 文件最小大小（字节）                   | 1                             |
-| `setSelectedList(list: MutableList<MediaEntity>)` | 已选择的文件列表，初始化用                | 空列表                           |
-| `setSelectedPathList(list: List<String>)`     | 已选择的文件路径列表，自动转换为 `MediaEntity` | 空列表                           |
-| `setUiConfig(config: FilePickerUIConfig)`     | 界面文案与UI配置                    | 默认配置                          |
-| `setOnSelectCallback(callback: OnSelectCallback)` | 选择完成回调                       | 必填                            |
+| 配置方法                                              | 说明                             | 默认值  |
+|---------------------------------------------------|--------------------------------|------|
+| `setSelectType(type: String)`                     | 选择类型：图片、视频、全部                  | 全部   |
+| `setMaxSelectNumber(number: Int)`                 | 最大可选数量，0为不限制                   | 0    |
+| `setMaxFileSize(size: Long)`                      | 文件最大大小（字节）                     | 不限制  |
+| `setMinFileSize(size: Long)`                      | 文件最小大小（字节）                     | 1    |
+| `setSelectedList(list: MutableList<MediaEntity>)` | 已选择的文件列表，初始化用                  | 空列表  |
+| `setSelectedPathList(list: List<String>)`         | 已选择的文件路径列表，自动转换为 `MediaEntity` | 空列表  |
+| `setUiConfig(config: FilePickerUIConfig)`         | 界面文案与UI配置                      | 默认配置 |
+| `setOnSelectCallback(callback: OnSelectCallback)` | 选择完成回调                         | 必填   |
 
 ---
 
@@ -157,10 +161,10 @@ fun interface OnSelectCallback {
 
 ## 工具方法
 
-| 方法 | 说明   |
-| ------------- | -------------- |
-| `FilePicker.convertToPathList(list: MutableList<MediaEntity>)` | 将选中的 `MediaEntity` 转换为路径列表                             |
-| `FilePicker.convertToEntityList(list: List<String>)`           | 路径列表转换为 `MediaEntity` 列表                               |
+| 方法                                                             | 说明                         |
+|----------------------------------------------------------------|----------------------------|
+| `FilePicker.convertToPathList(list: MutableList<MediaEntity>)` | 将选中的 `MediaEntity` 转换为路径列表 |
+| `FilePicker.convertToEntityList(list: List<String>)`           | 路径列表转换为 `MediaEntity` 列表   |
 
 ---
 
@@ -201,15 +205,15 @@ FilePicker.with(this)
 
 ```kotlin
     FilePicker.with(this)
-        .setSelectType(FilePicker.ofImage())
-        .setMaxSelectNumber(5)
-        .setMinFileSize(1024) // 最小1KB
-        .setMaxFileSize(10 * 1024 * 1024) // 最大10MB
-        .setOnSelectCallback { isUseOriginal, list ->
-            val paths = FilePicker.convertToPathList(list)
-            println("选中文件路径: $paths")
-        }
-        .start()
+    .setSelectType(FilePicker.ofImage())
+    .setMaxSelectNumber(5)
+    .setMinFileSize(1024) // 最小1KB
+    .setMaxFileSize(10 * 1024 * 1024) // 最大10MB
+    .setOnSelectCallback { isUseOriginal, list ->
+        val paths = FilePicker.convertToPathList(list)
+        println("选中文件路径: $paths")
+    }
+    .start()
 ```
 
 ---
@@ -222,29 +226,25 @@ FilePicker.with(this)
 </br>
 ### 三、UIConfig解释
 
-| 字段名  | 类型  | 默认值 | 说明  |
-| --------- | --------- | ------ | ----------------- |
-| `confirmBtnText`                        | `String`  | `"确定"`                               | 确认按钮文本，默认 "确定"                              |
-| `isShowPreviewPageSelectedIndex`        | `Boolean` | `true`                               | 预览页面是否显示选中索引。`true` 显示序号，`false` 显示对号 ✅     |
-| `previewText`                           | `String`  | `"预览"`                               | 预览页面标题文本                                    |
-| `previewSelectText`                     | `String`  | `"选择"`                               | 预览页面的选择按钮文本                                 |
-| `originalText`                          | `String`  | `"原图"`                               | 原图选项的文本内容                                   |
-| `isShowOriginal`                        | `Boolean` | `true`                               | 是否显示原图选项                                    |
-| `isOriginalChecked`                     | `Boolean` | `false`                              | 原图选项是否默认勾选                                  |
-| `isShowSelectedListDeleteIcon`          | `Boolean` | `false`                              | 是否展示选中列表中的删除按钮                              |
-| `selectedListDeleteIconBackgroundColor` | `Int`     | `"#FA4B3A"` | 选中列表中删除按钮的背景颜色                              |
-| `atLeastSelectOneToastContent`          | `String`  | `"至少选择一个"`                           | 最少选择一个文件时的提示文本                              |
-| `selectMaxNumberOverToastContent`       | `String`  | `"已达到最大选择数量"`                        | 达到最大选择数量限制时的提示文本                            |
-
-
+| 字段名                                     | 类型        | 默认值           | 说明                                      |
+|-----------------------------------------|-----------|---------------|-----------------------------------------|
+| `confirmBtnText`                        | `String`  | `"确定"`        | 确认按钮文本，默认 "确定"                          |
+| `isShowPreviewPageSelectedIndex`        | `Boolean` | `true`        | 预览页面是否显示选中索引。`true` 显示序号，`false` 显示对号 ✅ |
+| `previewText`                           | `String`  | `"预览"`        | 预览页面标题文本                                |
+| `previewSelectText`                     | `String`  | `"选择"`        | 预览页面的选择按钮文本                             |
+| `originalText`                          | `String`  | `"原图"`        | 原图选项的文本内容                               |
+| `isShowOriginal`                        | `Boolean` | `true`        | 是否显示原图选项                                |
+| `isOriginalChecked`                     | `Boolean` | `false`       | 原图选项是否默认勾选                              |
+| `isShowSelectedListDeleteIcon`          | `Boolean` | `false`       | 是否展示选中列表中的删除按钮                          |
+| `selectedListDeleteIconBackgroundColor` | `Int`     | `"#FA4B3A"`   | 选中列表中删除按钮的背景颜色                          |
+| `atLeastSelectOneToastContent`          | `String`  | `"至少选择一个"`    | 最少选择一个文件时的提示文本                          |
+| `selectMaxNumberOverToastContent`       | `String`  | `"已达到最大选择数量"` | 达到最大选择数量限制时的提示文本                        |
 
 ## 结束语
 
 `FilePicker` 旨在提供简洁、灵活、可定制的文件选择功能，广泛适用于相册、文件管理、视频选择等场景。
 
 如需深入定制或遇到问题，欢迎补充需求，我可以帮您生成对应的开发指导。
-
-
 
 ## 特别鸣谢
 
@@ -257,3 +257,13 @@ FilePicker.with(this)
 - [androidx.media3](https://developer.android.com/jetpack/androidx/releases/media3) —— 官方视频播放组件
 
 感谢你们的无私奉献，让开发变得更加高效和有趣！
+
+## 升级日志
+
+### 4.2.0
+
+- 修复maxFileSize默认值:目前改为Long.MAX_VALUE .
+
+### 4.1.0
+
+- 适配手机底部导航栏，为屏幕内虚拟三键的情况。

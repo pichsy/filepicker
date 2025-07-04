@@ -133,7 +133,7 @@ class FilePicker {
             return this
         }
 
-        var mMaxFileSize = 0L
+        var mMaxFileSize = Long.MAX_VALUE
             private set
 
         fun setMaxFileSize(maxFileSize: Long): Builder {
