@@ -12,6 +12,7 @@ import com.drake.brv.utils.setup
 import com.hjq.permissions.Permission
 import com.hjq.permissions.XXPermissions
 import com.pichs.filepicker.FilePicker
+import com.pichs.filepicker.FilePickerSelectType
 import com.pichs.filepicker.FilePickerUIConfig
 import com.pichs.filepicker.common.ImagePreviewDialog
 import com.pichs.filepicker.demo.databinding.ActivityMainBinding
@@ -44,21 +45,40 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
             val maxFileSize = maxFileSizeMB * 1024 * 1024
             // 获取类型
             val type = when (binding.rgType.checkedRadioButtonId) {
-                binding.rbAll.id -> "all"
-                binding.rbImage.id -> "image"
-                binding.rbVideo.id -> "video"
-                else -> "all"
+                binding.rbAll.id -> FilePickerSelectType.ALL
+                binding.rbImage.id -> FilePickerSelectType.IMAGE
+                binding.rbVideo.id -> FilePickerSelectType.VIDEO
+                binding.rbAudio.id -> FilePickerSelectType.AUDIO
+                else -> FilePickerSelectType.ALL
             }
-            // 权限请求
-            XXPermissions.with(this).unchecked().permission(
-                Permission.READ_MEDIA_IMAGES,
-                Permission.READ_MEDIA_VIDEO,
-                Permission.READ_MEDIA_AUDIO,
-            ).request { permissions, all ->
-                if (all) {
-                    selectFile(type, maxSelectCount, maxFileSize)
-                } else {
-                    XXPermissions.startPermissionActivity(this, permissions)
+
+            if (type == FilePickerSelectType.ALL
+                || type == FilePickerSelectType.AUDIO
+                || type == FilePickerSelectType.VIDEO
+                || type == FilePickerSelectType.IMAGE
+            ) {
+                // 权限请求
+                XXPermissions.with(this).unchecked().permission(
+                    Permission.READ_MEDIA_IMAGES,
+                    Permission.READ_MEDIA_VIDEO,
+                    Permission.READ_MEDIA_AUDIO,
+                ).request { permissions, all ->
+                    if (all) {
+                        selectFile(type, maxSelectCount, maxFileSize)
+                    } else {
+                        XXPermissions.startPermissionActivity(this, permissions)
+                    }
+                }
+            } else {
+                // 权限请求
+                XXPermissions.with(this).unchecked().permission(
+                    Permission.MANAGE_EXTERNAL_STORAGE,
+                ).request { permissions, all ->
+                    if (all) {
+                        selectFile(type, maxSelectCount, maxFileSize)
+                    } else {
+                        XXPermissions.startPermissionActivity(this, permissions)
+                    }
                 }
             }
         }
@@ -78,13 +98,11 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
                 this,
                 "https://jianliu.oss-cn-hangzhou.aliyuncs.com/jianliu/render_video/ed96ba31-6902-4acd-bae6-13a4a9d46fde.mp4",
                 "https://jianliu.oss-cn-hangzhou.aliyuncs.com/jianliu/render_video/ed96ba31-6902-4acd-bae6-13a4a9d46fde.mp4?x-oss-process=video/snapshot,t_10,f_jpg,w_360,m_fast,ar_auto,mode_crop",
-                false
             ).showPopupWindow()
         }
     }
 
     private fun initRecyclerView() {
-
         binding.recyclerView.linear(RecyclerView.HORIZONTAL).setup {
             addType<MediaEntity>(R.layout.item_image)
 
@@ -110,22 +128,17 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
     }
 
     fun selectFile(type: String, maxSelectCount: Int, maxFileSize: Int) {
-        val selectType = when (type) {
-            "image" -> FilePicker.ofImage()
-            "video" -> FilePicker.ofVideo()
-            else -> FilePicker.ofAll()
-        }
         FilePicker.with(this)
             .setMaxSelectNumber(maxSelectCount)
             .setMaxFileSize(maxFileSize.toLong())
-            .setSelectType(selectType)
+            .setSelectType(type)
             .setOnSelectCallback { isUseOriginal, list ->
                 XLog.d("FilePicker", "Selected files: ${list.size}")
                 binding.recyclerView.models = list
             }.setUiConfig(
                 FilePickerUIConfig(
-                    isHideSelectTab = true,
-                    allAlbumName = "全部相册",
+                    isHideSelectTab = false,
+                    allAlbumName = "全部",
                     confirmBtnText = "下一步",
                     isShowOriginal = false,
                     isShowPreviewPageSelectedIndex = true,

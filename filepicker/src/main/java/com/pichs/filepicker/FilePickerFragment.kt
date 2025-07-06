@@ -20,11 +20,16 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.util.UnstableApi
+import androidx.recyclerview.widget.DividerItemDecoration
+import androidx.recyclerview.widget.RecyclerView
 import com.drake.brv.utils.bindingAdapter
 import com.drake.brv.utils.grid
+import com.drake.brv.utils.linear
 import com.drake.brv.utils.models
 import com.drake.brv.utils.setup
+import com.google.android.material.divider.MaterialDividerItemDecoration
 import com.pichs.filepicker.databinding.FilePickerItemRvAlbumBinding
+import com.pichs.filepicker.databinding.FilePickerItemRvAudioAlbumBinding
 import com.pichs.filepicker.databinding.FragmentFilepickerHomeBinding
 import com.pichs.filepicker.dialog.FilePickerFinalPreviewDialog
 import com.pichs.filepicker.dialog.FilePickerPreviewDialog
@@ -48,28 +53,13 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
 
     private lateinit var binding: FragmentFilepickerHomeBinding
 
-    private var currentTabType = TAB_TYPE_ALL
+    private var currentTabType = FilePickerSelectType.ALL
 
     private val screenWidth by lazy { XDisplayHelper.getScreenWidth(requireContext()) }
 
     private var isTouchSelectStart = false
 
     companion object {
-
-        /**
-         * 内部 tab 选择类型
-         */
-        const val TAB_TYPE_ALL = "all"
-        const val TAB_TYPE_IMAGE = "image"
-        const val TAB_TYPE_VIDEO = "video"
-
-        /**
-         * 选择类型 all, image, video
-         */
-        const val SELECT_TYPE_IMAGE = "image"
-        const val SELECT_TYPE_VIDEO = "video"
-        const val SELECT_TYPE_ALL = "all"
-
         /**
          * @param bundle 传递参数
          */
@@ -88,7 +78,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
 
         currentTabType = viewModel.selectType.value
 
-        if (currentTabType != TAB_TYPE_ALL || viewModel.uiConfig.isHideSelectTab) {
+        if (currentTabType != FilePickerSelectType.ALL || viewModel.uiConfig.isHideSelectTab) {
             // 隐藏掉tab切换。
             binding.llSelectType.isVisible = false
         } else {
@@ -100,7 +90,12 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
         initConfigUI()
 
         initTab()
-        initRecycler()
+        if (viewModel.selectType.value == FilePickerSelectType.ALL || viewModel.selectType.value == FilePickerSelectType.IMAGE || viewModel.selectType.value == FilePickerSelectType.VIDEO) {
+            initGridRecycler()
+        } else {
+            initLinearRecycler()
+        }
+        initRecyclerSlideChoose()
         initDataFlow()
         loadData()
         initListener()
@@ -165,24 +160,23 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
             activity?.finish()
         }
 
-
         binding.tvAlbum.setOnClickListener(this)
         binding.ivArrowDown.setOnClickListener(this)
 
         binding.llTypeAll.setOnClickListener {
-            if (currentTabType == TAB_TYPE_ALL) {
+            if (currentTabType == FilePickerSelectType.ALL) {
                 return@setOnClickListener
             }
-            currentTabType = TAB_TYPE_ALL
+            currentTabType = FilePickerSelectType.ALL
             resetListDataWithSelectData()
             selectAllTabUI()
         }
 
         binding.llTypeImage.setOnClickListener {
-            if (currentTabType == TAB_TYPE_IMAGE) {
+            if (currentTabType == FilePickerSelectType.IMAGE) {
                 return@setOnClickListener
             }
-            currentTabType = TAB_TYPE_IMAGE
+            currentTabType = FilePickerSelectType.IMAGE
             resetListDataWithSelectData()
             selectImageTabUI()
 
@@ -190,10 +184,10 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
 
         binding.llTypeVideo.setOnClickListener {
 
-            if (currentTabType == TAB_TYPE_VIDEO) {
+            if (currentTabType == FilePickerSelectType.VIDEO) {
                 return@setOnClickListener
             }
-            currentTabType = TAB_TYPE_VIDEO
+            currentTabType = FilePickerSelectType.VIDEO
             resetListDataWithSelectData()
             selectVideoTabUI()
         }
@@ -205,7 +199,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
 
         updateBottomMenuSelectNumberUI()
 
-        if (currentTabType == TAB_TYPE_ALL) {
+        if (currentTabType == FilePickerSelectType.ALL) {
             selectAllTabUI()
         }
     }
@@ -262,42 +256,200 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
 
     private fun resetListDataWithSelectData() {
         lifecycleScope.launch {
-            when (currentTabType) {
-                TAB_TYPE_ALL -> {
-                    viewModel.updateCurrentFolderDataList(
-                        if (viewModel.currentFolder.value != null) {
-                            viewModel.currentFolder.value?.mediaEntityList ?: mutableListOf()
-                        } else {
-                            viewModel.getAllDataList().flatMap { it.mediaEntityList }.toMutableList()
-                        }
-                    )
-                }
+            if (viewModel.selectType.value == FilePickerSelectType.ALL) {
+                when (currentTabType) {
+                    FilePickerSelectType.ALL -> {
+                        viewModel.updateCurrentFolderDataList(
+                            if (viewModel.currentFolder.value != null) {
+                                viewModel.currentFolder.value?.mediaEntityList ?: mutableListOf()
+                            } else {
+                                viewModel.getAllDataList().flatMap { it.mediaEntityList }.toMutableList()
+                            }
+                        )
+                    }
 
-                TAB_TYPE_IMAGE -> {
-                    viewModel.updateCurrentFolderDataList(
-                        if (viewModel.currentFolder.value != null) {
-                            viewModel.currentFolder.value?.mediaEntityList?.filter { it.isImage() }?.toMutableList() ?: mutableListOf()
-                        } else {
-                            viewModel.getAllDataList().flatMap { it.mediaEntityList.filter { it.isImage() } }.toMutableList()
-                        }
-                    )
-                }
+                    FilePickerSelectType.IMAGE -> {
+                        viewModel.updateCurrentFolderDataList(
+                            if (viewModel.currentFolder.value != null) {
+                                viewModel.currentFolder.value?.mediaEntityList?.filter { it.isImage() }?.toMutableList() ?: mutableListOf()
+                            } else {
+                                viewModel.getAllDataList().flatMap { it.mediaEntityList.filter { it.isImage() } }.toMutableList()
+                            }
+                        )
+                    }
 
-                TAB_TYPE_VIDEO -> {
-                    viewModel.updateCurrentFolderDataList(
-                        if (viewModel.currentFolder.value != null) {
-                            viewModel.currentFolder.value?.mediaEntityList?.filter { it.isVideo() }?.toMutableList() ?: mutableListOf()
-                        } else {
-                            viewModel.getAllDataList().flatMap { it.mediaEntityList.filter { it.isVideo() } }.toMutableList()
-                        }
-                    )
+                    FilePickerSelectType.VIDEO -> {
+                        viewModel.updateCurrentFolderDataList(
+                            if (viewModel.currentFolder.value != null) {
+                                viewModel.currentFolder.value?.mediaEntityList?.filter { it.isVideo() }?.toMutableList() ?: mutableListOf()
+                            } else {
+                                viewModel.getAllDataList().flatMap { it.mediaEntityList.filter { it.isVideo() } }.toMutableList()
+                            }
+                        )
+                    }
                 }
+            } else {
+                viewModel.updateCurrentFolderDataList(
+                    if (viewModel.currentFolder.value != null) {
+                        viewModel.currentFolder.value?.mediaEntityList?.toMutableList() ?: mutableListOf()
+                    } else {
+                        viewModel.getAllDataList().flatMap { it.mediaEntityList }.toMutableList()
+                    }
+                )
             }
         }
     }
 
+    /**
+     * 滑动选择
+     */
+    private fun initRecyclerSlideChoose() {
+        binding.recyclerView.setOnItemSelectionChangedListener(object : OnItemSelectionChangedListener {
+            override fun onItemSelectionChanged(startPosition: Int, currentPosition: Int, isSelected: Boolean) {
+                Log.d("FilePickerFragment6665", "startPosition:$startPosition, currentPosition:$currentPosition, isSelected:$isSelected")
+                if (!isTouchSelectStart) {
+                    return
+                }
+                // 我应该怎么实现
+                val rvData = binding.recyclerView.models as? MutableList<MediaEntity> ?: return
+                val from = minOf(startPosition, currentPosition)
+                val to = maxOf(startPosition, currentPosition)
+                // 如果是从上到下选，
+                val tempList = if (currentPosition >= startPosition) {
+                    rvData.subList(startPosition, currentPosition + 1)
+                } else {
+                    rvData.subList(currentPosition, startPosition + 1).reversed()
+                }
+                Log.d("FilePickerFragment6665", "from:$from, to:$to, tempList.size:${tempList.size}, isSelected:$isSelected")
+                if (isSelected) {
+                    // 这里需要区分 viewModel.maxSelectNumber.value==0 的情况。
+                    // 如果是选中模式，那么 经过的都要选中。
+                    viewModel.tempSelectData.clear()
+                    val list = tempList.filter { it !in viewModel.getSelectedDataList() }
+
+                    if (viewModel.maxSelectNumber.value == 0 || viewModel.maxSelectNumber.value == Int.MAX_VALUE) {
+                        // 如果没有限制选择数量，那么直接添加到临时选择数据中。
+                        viewModel.tempSelectData.addAll(list)
+                    } else {
+                        val dx = list.size + viewModel.getSelectedCount() - viewModel.maxSelectNumber.value
+
+                        Log.d(
+                            "FilePickerFragment",
+                            "dx:$dx, list.size:${list.size}, selectedData.size:${viewModel.getSelectedCount()}, ----x=${viewModel.maxSelectNumber.value - viewModel.getSelectedCount()}"
+                        )
+
+                        if (dx > 0) {
+                            viewModel.tempSelectData.addAll(list.subList(0, list.size - dx))
+                        } else {
+                            viewModel.tempSelectData.addAll(list)
+                        }
+                    }
+                } else {
+                    // 如果是取消选中模式，那么经过的都要取消选中。
+                    viewModel.tempSelectData.removeAll { it in tempList }
+                    viewModel.removeSelectedDataAll(tempList)
+                    // 这里需要刷新移除的 条目
+                    // updateUnselectDataUI(tempList)
+                }
+
+                updateSelectDataUI()
+                updateBottomMenuSelectNumberUI()
+            }
+
+            override fun onToucheSelectStart() {
+                isTouchSelectStart = true
+            }
+
+            override fun onTouchSelectEnd() {
+                isTouchSelectStart = false
+                if (viewModel.tempSelectData.isNotEmpty()) {
+                    // 如果临时选择数据不为空，那么就添加到已选择数据中。
+                    viewModel.addSelectedDataList(viewModel.tempSelectData)
+                    viewModel.tempSelectData.clear()
+//                    updateSelectDataUI()
+//                    updateBottomMenuSelectNumberUI()
+                }
+            }
+
+            override fun onSelectionMaxStopped(maxCount: Int) {
+                // 达到最大选择数量，提示用户可以弹窗。
+                Toast.makeText(requireContext(), viewModel.uiConfig.selectMaxNumberOverToastContent, Toast.LENGTH_SHORT).show()
+            }
+        })
+    }
+
     @SuppressLint("SetTextI18n")
-    private fun initRecycler() {
+    private fun initLinearRecycler() {
+        // 其他文件选择时使用样式和组件。
+        binding.recyclerView.itemAnimator = null
+        context?.let { ctx ->
+            binding.recyclerView.addItemDecoration(
+                DividerItemDecoration(
+                    ctx, RecyclerView.VERTICAL
+                ).apply {
+                    ContextCompat.getDrawable(ctx, R.drawable.item_decroration_line)?.let {
+                        setDrawable(it)
+                    }
+                }
+            )
+        }
+        binding.recyclerView.linear(RecyclerView.VERTICAL).setup {
+            addType<MediaEntity>(R.layout.file_picker_item_rv_audio_album)
+
+            onBind {
+                val item = getModel<MediaEntity>()
+                val itemBinding = getBinding<FilePickerItemRvAudioAlbumBinding>()
+                itemBinding.tvName.text = item.name ?: ""
+                if (item.isAudio()) {
+                    itemBinding.tvInfo.text =
+                        FilePickerTimeFormatUtils.formatTimeMillSeconds(item.duration) + " - " + FilePickerTimeFormatUtils.formatFileSize(item.size)
+                    // todo 加载对用图标
+                } else {
+                    itemBinding.tvInfo.text = FilePickerTimeFormatUtils.formatFileSize(item.size)
+                }
+
+                val indexOfSelect = viewModel.indexOfSelected(item)
+
+                if (indexOfSelect != -1) {
+                    itemBinding.tvSelectIndex.text = "${indexOfSelect + 1}"
+                    itemBinding.tvSelectIndex.setNormalBackgroundColor(ContextCompat.getColor(context, R.color.file_picker_index_bg_color))
+                    itemBinding.ivCoverImage.foreground = ContextCompat.getDrawable(context, R.drawable.item_filepicker_select_mask)
+                    itemBinding.root.isSelected = true
+                } else {
+                    itemBinding.tvSelectIndex.text = ""
+                    itemBinding.tvSelectIndex.setNormalBackgroundColor(Color.TRANSPARENT)
+                    itemBinding.ivCoverImage.foreground = null
+                    itemBinding.root.isSelected = false
+                }
+
+                itemBinding.root.setOnClickListener {
+                    Log.d("FilePickerFragment", "item.path:${item.path},mimeType:${item.mimeType}")
+                    if (viewModel.containsSelectedData(item)) {
+                        viewModel.removeSelectedData(item)
+                        notifyItemChanged(modelPosition)
+                        updateBottomMenuSelectNumberUI()
+                        // 更新角标
+                        updateSelectDataUI()
+                    } else {
+                        if (isOverMaxSelectNumber(viewModel.getSelectedDataList().size + viewModel.tempSelectData.size)) {
+                            Toast.makeText(requireContext(), viewModel.uiConfig.selectMaxNumberOverToastContent, Toast.LENGTH_SHORT).show()
+                            return@setOnClickListener
+                        }
+                        viewModel.addSelectedData(item)
+                        notifyItemChanged(modelPosition)
+                        updateBottomMenuSelectNumberUI()
+                    }
+                }
+            }
+        }
+
+    }
+
+    /**
+     * 图库选择使用的样式和组件
+     */
+    @SuppressLint("SetTextI18n")
+    private fun initGridRecycler() {
 //        binding.tvMaxSelectNumber.text = "${viewModel.maxSelectNumber.value}"
 
         binding.recyclerView.itemAnimator = null
@@ -305,6 +457,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
             addType<MediaEntity>(R.layout.file_picker_item_rv_album)
             onBind {
                 val item = getModel<MediaEntity>()
+
                 val itemBinding = getBinding<FilePickerItemRvAlbumBinding>()
 
                 itemBinding.clSelectArea.updateLayoutParams {
@@ -368,80 +521,6 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
         binding.recyclerView.maxSelectNumber = viewModel.maxSelectNumber.value
         binding.recyclerView.currentSelectedCountProvider = { viewModel.getSelectedCount() + viewModel.tempSelectData.size }
 
-        binding.recyclerView.setOnItemSelectionChangedListener(object : OnItemSelectionChangedListener {
-
-            override fun onItemSelectionChanged(startPosition: Int, currentPosition: Int, isSelected: Boolean) {
-                Log.d("FilePickerFragment", "startPosition:$startPosition, currentPosition:$currentPosition, isSelected:$isSelected")
-                if (!isTouchSelectStart) {
-                    return
-                }
-                // 我应该怎么实现
-                val rvData = binding.recyclerView.models as? MutableList<MediaEntity> ?: return
-                val from = minOf(startPosition, currentPosition)
-                val to = maxOf(startPosition, currentPosition)
-                // 如果是从上到下选，
-                val tempList = if (currentPosition >= startPosition) {
-                    rvData.subList(startPosition, currentPosition + 1)
-                } else {
-                    rvData.subList(currentPosition, startPosition + 1).reversed()
-                }
-
-                Log.d("FilePickerFragment", "from:$from, to:$to, tempList.size:${tempList.size}, isSelected:$isSelected")
-                if (isSelected) {
-                    // 这里需要区分 viewModel.maxSelectNumber.value==0 的情况。
-                    // 如果是选中模式，那么 经过的都要选中。
-                    viewModel.tempSelectData.clear()
-                    val list = tempList.filter { it !in viewModel.getSelectedDataList() }
-
-                    if (viewModel.maxSelectNumber.value == 0 || viewModel.maxSelectNumber.value == Int.MAX_VALUE) {
-                        // 如果没有限制选择数量，那么直接添加到临时选择数据中。
-                        viewModel.tempSelectData.addAll(list)
-                    } else {
-                        val dx = list.size + viewModel.getSelectedCount() - viewModel.maxSelectNumber.value
-
-                        Log.d(
-                            "FilePickerFragment",
-                            "dx:$dx, list.size:${list.size}, selectedData.size:${viewModel.getSelectedCount()}, ----x=${viewModel.maxSelectNumber.value - viewModel.getSelectedCount()}"
-                        )
-
-                        if (dx > 0) {
-                            viewModel.tempSelectData.addAll(list.subList(0, list.size - dx))
-                        } else {
-                            viewModel.tempSelectData.addAll(list)
-                        }
-                    }
-                } else {
-                    // 如果是取消选中模式，那么经过的都要取消选中。
-                    viewModel.tempSelectData.removeAll { it in tempList }
-                    viewModel.removeSelectedDataAll(tempList)
-                    // 这里需要刷新移除的 条目
-                    // updateUnselectDataUI(tempList)
-                }
-
-                updateSelectDataUI()
-                updateBottomMenuSelectNumberUI()
-            }
-
-            override fun onToucheSelectStart() {
-                isTouchSelectStart = true
-            }
-
-            override fun onTouchSelectEnd() {
-                isTouchSelectStart = false
-                if (viewModel.tempSelectData.isNotEmpty()) {
-                    // 如果临时选择数据不为空，那么就添加到已选择数据中。
-                    viewModel.addSelectedDataList(viewModel.tempSelectData)
-                    viewModel.tempSelectData.clear()
-//                    updateSelectDataUI()
-//                    updateBottomMenuSelectNumberUI()
-                }
-            }
-
-            override fun onSelectionMaxStopped(maxCount: Int) {
-                // 达到最大选择数量，提示用户可以弹窗。
-                Toast.makeText(requireContext(), viewModel.uiConfig.selectMaxNumberOverToastContent, Toast.LENGTH_SHORT).show()
-            }
-        })
     }
 
 
@@ -559,53 +638,15 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
         binding.lineTypeVideo.isInvisible = false
     }
 
-
-    private fun updateUnselectDataUI(removedList: List<MediaEntity>) {
-        // 更新未选择数据的UI
-//        for (item in removedList) {
-//            val index = viewModel.currentFolderDataList.value.indexOfFirst { it.path == item.path }
-//            if (index != -1) {
-//                binding.recyclerView.post {
-//                    binding.recyclerView.bindingAdapter.notifyItemChanged(index)
-//                }
-//            }
-//        }
-    }
-
     /**
      * 更新选择数据的UI。 主要是角标。
      * 有优化点，就是 针对性刷新，
      * 移除的那些需要刷新，新增的也需要刷新。
      */
     private fun updateSelectDataUI() {
-//        val combineData = viewModel.getSelectedDataList() + viewModel.tempSelectData
-//        for (item in combineData) {
-//            // 找到对应的item，更新角标
-//            val index = viewModel.currentFolderDataList.value.indexOfFirst { it.path == item.path }
-//            Log.d("FilePickerFragment", "updateSelectDataUI: item:${item.path}, index:$index")
-//            if (index != -1) {
-//                binding.recyclerView.post {
-//                    binding.recyclerView.bindingAdapter.notifyItemChanged(index)
-//                }
-//            }
-//        }
         binding.recyclerView.post {
             binding.recyclerView.bindingAdapter.notifyItemRangeChanged(0, viewModel.currentFolderDataList.value.size)
         }
-//        for (item in combineData) {
-//            // 找到对应的item，更新角标
-//            val index = rvData.indexOfFirst { it == item }
-//            Log.d("FilePickerFragment", "updateSelectDataUI: item:${item.path}, index:$index")
-//
-//        }
-//        for (item in viewModel.tempSelectData) {
-//            val index = rvData?.indexOfFirst { it == item } ?: -1
-//            binding.recyclerView.post {
-//                if (index != -1) {
-//                    binding.recyclerView.bindingAdapter.notifyItemChanged(index)
-//                }
-//            }
-//        }
     }
 
     var isFirstResume = true

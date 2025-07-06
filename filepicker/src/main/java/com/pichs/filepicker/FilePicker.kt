@@ -46,15 +46,47 @@ class FilePicker {
         }
 
         fun ofImage(): String {
-            return FilePickerFragment.SELECT_TYPE_IMAGE
+            return FilePickerSelectType.IMAGE
         }
 
         fun ofVideo(): String {
-            return FilePickerFragment.SELECT_TYPE_VIDEO
+            return FilePickerSelectType.VIDEO
         }
 
         fun ofAll(): String {
-            return FilePickerFragment.SELECT_TYPE_ALL
+            return FilePickerSelectType.ALL
+        }
+
+        fun ofAudio(): String {
+            return FilePickerSelectType.AUDIO
+        }
+
+        fun ofDocument(): String {
+            return FilePickerSelectType.DOCUMENT
+        }
+
+        fun ofPdf(): String {
+            return FilePickerSelectType.PDF
+        }
+
+        fun ofWord(): String {
+            return FilePickerSelectType.WORD
+        }
+
+        fun ofPPT(): String {
+            return FilePickerSelectType.PPT
+        }
+
+        fun ofExcel(): String {
+            return FilePickerSelectType.EXCEL
+        }
+
+        fun ofApk(): String {
+            return FilePickerSelectType.APK
+        }
+
+        fun ofZip(): String {
+            return FilePickerSelectType.ZIP
         }
 
         /**
@@ -117,7 +149,7 @@ class FilePicker {
             return this
         }
 
-        var mSelectType: String = FilePickerFragment.SELECT_TYPE_ALL
+        var mSelectType: String = FilePickerSelectType.ALL
             private set
 
         fun setSelectType(selectType: String): Builder {

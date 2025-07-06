@@ -6,9 +6,6 @@ import android.view.ViewGroup
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.updateLayoutParams
-import com.pichs.filepicker.FilePickerFragment.Companion.SELECT_TYPE_ALL
-import com.pichs.filepicker.FilePickerFragment.Companion.SELECT_TYPE_IMAGE
-import com.pichs.filepicker.FilePickerFragment.Companion.SELECT_TYPE_VIDEO
 import com.pichs.filepicker.databinding.ActivityFilepickerMainBinding
 import com.pichs.filepicker.entity.MediaEntity
 import com.pichs.filepicker.utils.NavigationBarUtils
@@ -43,7 +40,7 @@ class FilePickerActivity : AppCompatActivity() {
         var maxSelectNumber = intent.getIntExtra("maxSelectNumber", 0)
         var maxFileSize = intent.getLongExtra("maxFileSize", 0L)
         var minFileSize = intent.getLongExtra("minFileSize", 0L)
-        var selectType = intent.getStringExtra("selectType") ?: SELECT_TYPE_ALL
+        var selectType = intent.getStringExtra("selectType") ?: FilePickerSelectType.ALL
         var selectDataList = intent.getParcelableArrayListExtra<MediaEntity>("selectedDataList") ?: mutableListOf()
 
         val uiConfig = intent.getParcelableExtra<FilePickerUIConfig>("uiConfig")
@@ -67,8 +64,9 @@ class FilePickerActivity : AppCompatActivity() {
         if (maxSelectNumber < 0 || maxSelectNumber == Int.MAX_VALUE) {
             maxSelectNumber = 0
         }
-        if (selectType != SELECT_TYPE_ALL && selectType != SELECT_TYPE_IMAGE && selectType != SELECT_TYPE_VIDEO) {
-            selectType = SELECT_TYPE_ALL
+
+        if (selectType != FilePickerSelectType.ALL && selectType != FilePickerSelectType.IMAGE && selectType != FilePickerSelectType.VIDEO && selectType != FilePickerSelectType.AUDIO && selectType != FilePickerSelectType.GIF && selectType != FilePickerSelectType.DOCUMENT && selectType != FilePickerSelectType.APK && selectType != FilePickerSelectType.EXCEL && selectType != FilePickerSelectType.WORD && selectType != FilePickerSelectType.PDF && selectType != FilePickerSelectType.PPT && selectType != FilePickerSelectType.ZIP) {
+            selectType = FilePickerSelectType.ALL
         }
 
         viewModel.maxFileSize.value = maxFileSize

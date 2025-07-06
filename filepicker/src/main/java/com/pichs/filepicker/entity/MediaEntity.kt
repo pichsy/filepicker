@@ -10,7 +10,6 @@ data class MediaEntity(
     var uri: Uri? = null,
     var name: String? = null,
     var path: String? = null,
-    var type: String? = null,
     var mimeType: String? = null,
     var width: Int = 0,
     var height: Int = 0,

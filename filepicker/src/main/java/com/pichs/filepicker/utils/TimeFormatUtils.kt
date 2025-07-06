@@ -1,5 +1,7 @@
 package com.pichs.filepicker.utils
 
+import android.annotation.SuppressLint
+
 object FilePickerTimeFormatUtils {
 
     /**
@@ -40,6 +42,20 @@ object FilePickerTimeFormatUtils {
             timeBuilder.append("0").append(second)
         }
         return timeBuilder.toString()
+    }
+
+
+    @SuppressLint("DefaultLocale")
+    fun formatFileSize(byteSize: Long):String{
+        if (byteSize < 1024) {
+            return "$byteSize B"
+        } else if (byteSize < 1024 * 1024) {
+            return String.format("%.2f KB", byteSize / 1024.0)
+        } else if (byteSize < 1024 * 1024 * 1024) {
+            return String.format("%.2f MB", byteSize / (1024.0 * 1024.0))
+        } else {
+            return String.format("%.2f GB", byteSize / (1024.0 * 1024.0 * 1024.0))
+        }
     }
 
 

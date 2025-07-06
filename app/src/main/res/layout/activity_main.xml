@@ -94,6 +94,12 @@
                 android:layout_height="wrap_content"
                 android:text="视频"
                 android:textColor="#fff" />
+            <RadioButton
+                android:id="@+id/rb_audio"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="音频"
+                android:textColor="#fff" />
         </RadioGroup>
     </LinearLayout>
 
