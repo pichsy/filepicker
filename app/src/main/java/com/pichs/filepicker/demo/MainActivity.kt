@@ -128,9 +128,10 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
 
     fun selectFile(type: String, maxSelectCount: Int, maxFileSize: Int) {
         FilePicker.with(this)
-            .setMaxSelectNumber(maxSelectCount)
+            .setMaxSelectNumber(1)
             .setMaxFileSize(maxFileSize.toLong())
-            .setSelectType(FilePicker.ofAllWithGif())
+            .setSelectType(FilePicker.ofAudio())
+            .setSingleClickEnable(true)
             .setOnSelectCallback { isUseOriginal, list ->
                 XLog.d("FilePicker", "Selected files: ${list.size}")
                 binding.recyclerView.models = list

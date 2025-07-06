@@ -41,6 +41,8 @@ class FilePickerActivity : AppCompatActivity() {
         var maxFileSize = intent.getLongExtra("maxFileSize", 0L)
         var minFileSize = intent.getLongExtra("minFileSize", 0L)
         var selectType = intent.getStringExtra("selectType") ?: FilePickerSelectType.IMAGE_VIDEO
+        var singleClickEnable = intent.getBooleanExtra("singleClickEnable", false)
+        var slideChooseEnable = intent.getBooleanExtra("slideChooseEnable", true)
         var selectDataList = intent.getParcelableArrayListExtra<MediaEntity>("selectedDataList") ?: mutableListOf()
 
         val uiConfig = intent.getParcelableExtra<FilePickerUIConfig>("uiConfig")
@@ -73,6 +75,8 @@ class FilePickerActivity : AppCompatActivity() {
         viewModel.minFileSize.value = minFileSize
         viewModel.selectType.value = selectType
         viewModel.maxSelectNumber.value = maxSelectNumber
+        viewModel.singleClickEnable.value = singleClickEnable
+        viewModel.slideChooseEnable.value = slideChooseEnable
 
         viewModel.userUseSelectDataList.value = selectDataList.toMutableList()
 

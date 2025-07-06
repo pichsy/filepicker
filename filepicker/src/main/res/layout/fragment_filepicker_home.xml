@@ -185,10 +185,12 @@
         android:background="#000" />
 
     <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/ll_bottom_bar"
         android:layout_width="match_parent"
         android:layout_height="48dp"
         android:background="#121212"
-        android:clickable="true">
+        android:clickable="true"
+        android:visibility="visible">
 
         <LinearLayout
             android:id="@+id/ll_preview"

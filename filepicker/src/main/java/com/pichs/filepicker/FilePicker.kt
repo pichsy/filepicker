@@ -8,6 +8,12 @@ import com.pichs.filepicker.empty.CallbackFragment
 import com.pichs.filepicker.entity.MediaEntity
 import kotlin.collections.toMutableList
 
+/**
+ * FilePicker入口API
+ * ofImage()，ofVideo()， ofAll()，ofAllWithGif()，ofGif(), ofAudio() //这几个获取方式必须申请 读写权限。可不用文件管理权限。
+ * 但是剩下的全部 方式，都必须申请 文件管理权限。否则拿不到数据。
+ * 使用时请先自行申请权限。方便个人定制，不会写到库里，定制起来太麻烦。
+ */
 fun interface OnSelectCallback {
     fun onCallback(isUseOriginal: Boolean, list: MutableList<MediaEntity>)
 }
@@ -195,6 +201,35 @@ class FilePicker {
             return this
         }
 
+        /**
+         * 是否启用 单点击选择模式，
+         */
+        var mSingleClickEnable: Boolean = false
+            private set
+
+        /**
+         * 单点 图片或视频 就立刻 返回选择，无需再点确定按钮。仅针对 单选，即选择数量为1 时生效。
+         * maxSelectNumber权重大于此参数。maxSelectNumber!=1 时，此参数无效。请配合使用。
+         */
+        fun setSingleClickEnable(enable: Boolean): Builder {
+            this.mSingleClickEnable = enable
+            return this
+        }
+
+        /**
+         * 是否启用 滑动选择模式，
+         */
+        var mSlideChooseEnable: Boolean = true
+            private set
+
+        /**
+         * 是否启用 滑动选择模式，
+         */
+        fun setSlideChooseEnable(enable: Boolean): Builder {
+            this.mSlideChooseEnable = enable
+            return this
+        }
+
         var mMaxSelectNumber = 0
             private set
 
@@ -255,13 +290,14 @@ class FilePicker {
                             }
                         }
                         fm.beginTransaction().add(this, tag).commitNowAllowingStateLoss()
-
                         val intent = Intent(ctx, FilePickerActivity::class.java)
                         intent.putExtra("maxSelectNumber", bd.mMaxSelectNumber)
                         intent.putExtra("selectType", bd.mSelectType)
                         intent.putExtra("maxFileSize", bd.mMaxFileSize)
                         intent.putExtra("minFileSize", bd.mMinFileSize)
                         intent.putExtra("uiConfig", bd.mUiConfig)
+                        intent.putExtra("singleClickEnable", bd.mSingleClickEnable)
+                        intent.putExtra("slideChooseEnable", bd.mSlideChooseEnable)
                         intent.putParcelableArrayListExtra("selectedDataList", ArrayList(bd.mSelectedList))
                         launch(intent)
                     }
@@ -292,6 +328,8 @@ class FilePicker {
                         intent.putExtra("maxFileSize", bd.mMaxFileSize)
                         intent.putExtra("minFileSize", bd.mMinFileSize)
                         intent.putExtra("uiConfig", bd.mUiConfig)
+                        intent.putExtra("singleClickEnable", bd.mSingleClickEnable)
+                        intent.putExtra("slideChooseEnable", bd.mSlideChooseEnable)
                         intent.putParcelableArrayListExtra("selectedDataList", ArrayList(bd.mSelectedList))
                         launch(intent)
                     }

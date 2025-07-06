@@ -18,9 +18,12 @@ class FilePickerViewModel : ViewModel() {
     val originalCheckedFlow = MutableStateFlow(false)
 
     val maxSelectNumber = MutableStateFlow(0)
+    val singleClickEnable = MutableStateFlow(false)
+    val slideChooseEnable = MutableStateFlow(true)
     val selectType = MutableStateFlow(FilePickerSelectType.IMAGE_VIDEO)
     val maxFileSize = MutableStateFlow(0L)
     val minFileSize = MutableStateFlow(1L)
+
 
     val userUseSelectDataList = MutableStateFlow<MutableList<MediaEntity>>(mutableListOf())
 
@@ -31,6 +34,17 @@ class FilePickerViewModel : ViewModel() {
 
     private var _currentFolder = MutableStateFlow<MediaFolder?>(null)
     val currentFolder = _currentFolder
+
+    fun isCanSingleClickSelect(): Boolean {
+        return maxSelectNumber.value == 1 && singleClickEnable.value
+    }
+
+    /**
+     * 是否 启用 滑动选择模式
+     */
+    fun isCanSlideChoose(): Boolean {
+        return slideChooseEnable.value && !isCanSingleClickSelect()
+    }
 
     fun isOverMaxSelectNumber(listSize: Int): Boolean {
         return maxSelectNumber.value > 0 && listSize >= maxSelectNumber.value

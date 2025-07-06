@@ -99,7 +99,9 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
         } else {
             initLinearRecycler()
         }
-        initRecyclerSlideChoose()
+        if (viewModel.isCanSlideChoose()) {
+            initRecyclerSlideChoose()
+        }
         initDataFlow()
         loadData()
         initListener()
@@ -158,6 +160,8 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
         binding.llPreview.isVisible = viewModel.uiConfig.isShowBottomPreviewText && SelectTypeUtil.isCanPreview(viewModel.selectType.value)
         binding.tvOriginal.text = viewModel.uiConfig.originalText
         binding.cboxOriginal.isChecked = viewModel.originalCheckedFlow.value
+
+        binding.llBottomBar.isVisible = !viewModel.isCanSingleClickSelect()
     }
 
     private fun initTab() {
@@ -439,6 +443,8 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                     itemBinding.tvInfo.text = FilePickerTimeFormatUtils.formatFileSize(item.size)
                 }
 
+                itemBinding.tvSelectIndex.isVisible = !viewModel.isCanSingleClickSelect()
+
                 val indexOfSelect = viewModel.indexOfSelected(item)
 
                 if (indexOfSelect != -1) {
@@ -454,6 +460,12 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                 }
 
                 itemBinding.root.setOnClickListener {
+                    if (viewModel.isCanSingleClickSelect()) {
+                        // 单击选择模式，直接回调选择器
+                        callbackToChooser(arrayListOf(item))
+                        return@setOnClickListener
+                    }
+
                     Log.d("FilePickerFragment", "item.path:${item.path},mimeType:${item.mimeType}")
                     if (viewModel.containsSelectedData(item)) {
                         viewModel.removeSelectedData(item)
@@ -497,6 +509,8 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
 
                 MediaLoader.loadImageThumbnail(item.uri, item.mimeType, itemBinding.ivCoverImage)
 
+                itemBinding.clSelectArea.isVisible = !viewModel.isCanSingleClickSelect()
+
                 if (item.isVideo()) {
                     itemBinding.tvDuration.visibility = View.VISIBLE
                     itemBinding.tvDuration.text = FilePickerTimeFormatUtils.formatTimeMillSeconds(item.duration)
@@ -523,6 +537,9 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                 }
 
                 itemBinding.clSelectArea.setOnClickListener {
+                    if (viewModel.isCanSingleClickSelect()) {
+                        return@setOnClickListener
+                    }
                     Log.d("FilePickerFragment", "item.path:${item.path},mimeType:${item.mimeType}")
                     if (viewModel.containsSelectedData(item)) {
                         viewModel.removeSelectedData(item)
@@ -542,6 +559,10 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                 }
                 itemBinding.ivCoverImage.setOnClickListener {
                     // 进入弹窗
+                    if (viewModel.isCanSingleClickSelect()) {
+                        callbackToChooser(arrayListOf(item))
+                        return@setOnClickListener
+                    }
                     showFilePickerPreviewDialog(item)
                 }
             }
