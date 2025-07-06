@@ -51,6 +51,8 @@ class ImagePreviewActivity : AppCompatActivity() {
             return
         }
 
+        binding.tvTitle.text = intent.getStringExtra("title") ?: "图片预览"
+
         Glide.with(this)
             .load(imageUrl)
             .dontTransform()

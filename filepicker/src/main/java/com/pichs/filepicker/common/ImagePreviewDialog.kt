@@ -38,6 +38,7 @@ import java.io.File
 class ImagePreviewDialog(
     context: Context,
     val url: String?,
+    var title: String? = null,
     var hideStatusHeight: Boolean = false
 ) : BasePopupWindow(context), CoroutineScope by MainScope() {
 
@@ -73,6 +74,8 @@ class ImagePreviewDialog(
         binding.ivBack.setOnClickListener {
             dismiss()
         }
+
+        binding.tvTitle.text = title ?: "视频预览"
 
         binding.photoView.setOnClickListener {
             isShowToolbarFlow.update { isShowToolbarFlow.value.not() }

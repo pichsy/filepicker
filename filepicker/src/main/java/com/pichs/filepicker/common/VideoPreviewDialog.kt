@@ -37,6 +37,7 @@ class VideoPreviewDialog(
     context: Context,
     val videoUrl: String?,
     val videoCover: String? = null,
+    var title: String? = null,
     var hideStatusHeight: Boolean = false
 ) : BasePopupWindow(context), CoroutineScope by MainScope() {
 
@@ -68,6 +69,8 @@ class VideoPreviewDialog(
             dismiss()
             return
         }
+
+        binding.tvTitle.text = title ?: "视频预览"
 
         binding.ivBack.setOnClickListener {
             dismiss()

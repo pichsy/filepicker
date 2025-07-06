@@ -48,6 +48,8 @@ class VideoPreviewActivity : AppCompatActivity() {
         videoUrl = intent.getStringExtra("videoUrl") ?: ""
         videoCover = intent.getStringExtra("videoCover")
 
+        binding.tvTitle.text = intent.getStringExtra("title") ?: "视频预览"
+
         if (videoUrl.isNotEmpty()) {
             Toast.makeText(applicationContext, "请传入正确的视频地址", Toast.LENGTH_SHORT).show()
             finish()
