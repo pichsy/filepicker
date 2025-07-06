@@ -1,6 +1,5 @@
 package com.pichs.filepicker.demo
 
-import android.app.ProgressDialog.show
 import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
@@ -45,14 +44,14 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
             val maxFileSize = maxFileSizeMB * 1024 * 1024
             // 获取类型
             val type = when (binding.rgType.checkedRadioButtonId) {
-                binding.rbAll.id -> FilePickerSelectType.ALL
+                binding.rbAll.id -> FilePickerSelectType.IMAGE_VIDEO
                 binding.rbImage.id -> FilePickerSelectType.IMAGE
                 binding.rbVideo.id -> FilePickerSelectType.VIDEO
                 binding.rbAudio.id -> FilePickerSelectType.AUDIO
-                else -> FilePickerSelectType.ALL
+                else -> FilePickerSelectType.IMAGE_VIDEO
             }
 
-            if (type == FilePickerSelectType.ALL
+            if (type == FilePickerSelectType.IMAGE_VIDEO
                 || type == FilePickerSelectType.AUDIO
                 || type == FilePickerSelectType.VIDEO
                 || type == FilePickerSelectType.IMAGE
@@ -131,7 +130,7 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
         FilePicker.with(this)
             .setMaxSelectNumber(maxSelectCount)
             .setMaxFileSize(maxFileSize.toLong())
-            .setSelectType(type)
+            .setSelectType(FilePicker.ofTxt())
             .setOnSelectCallback { isUseOriginal, list ->
                 XLog.d("FilePicker", "Selected files: ${list.size}")
                 binding.recyclerView.models = list

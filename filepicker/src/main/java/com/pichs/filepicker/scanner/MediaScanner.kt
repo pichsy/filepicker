@@ -1,13 +1,8 @@
 package com.pichs.filepicker.scanner
 
-import android.R.attr.duration
-import android.R.attr.height
-import android.R.attr.mimeType
-import android.R.attr.orientation
-import android.R.attr.width
 import android.content.ContentUris
 import android.database.Cursor
-import android.icu.text.ListFormatter.Type.OR
+import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
 import android.util.Log
@@ -19,6 +14,7 @@ import com.pichs.filepicker.FilePickerSelectType
 import com.pichs.filepicker.entity.MediaEntity
 import com.pichs.filepicker.entity.MediaFolder
 import java.io.File
+import kotlin.text.compareTo
 
 /**
  * 相册、视频扫描工具，输出现成 MediaFolder 和 MediaEntity
@@ -38,7 +34,11 @@ object MediaScanner {
             override fun onCreateLoader(id: Int, args: Bundle?): Loader<Cursor> {
                 val uri = MediaStore.Files.getContentUri("external")
 
-                val projection = if (type == FilePickerSelectType.ALL || type == FilePickerSelectType.IMAGE || type == FilePickerSelectType.VIDEO) {
+                val projection = if (type == FilePickerSelectType.IMAGE_VIDEO
+                    || type == FilePickerSelectType.IMAGE_VIDEO_GIF
+                    || type == FilePickerSelectType.IMAGE
+                    || type == FilePickerSelectType.VIDEO
+                ) {
                     arrayOf(
                         MediaStore.Files.FileColumns._ID,
                         MediaStore.Files.FileColumns.MEDIA_TYPE,
@@ -86,12 +86,174 @@ object MediaScanner {
                         "${MediaStore.MediaColumns.SIZE}>0 AND (${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE} AND ${MediaStore.Files.FileColumns.MIME_TYPE} != 'image/gif')"
                     }
 
+                    FilePickerSelectType.GIF -> {
+                        "${MediaStore.MediaColumns.SIZE}>0 AND (${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE} AND ${MediaStore.Files.FileColumns.MIME_TYPE} == 'image/gif')"
+                    }
+
                     FilePickerSelectType.VIDEO -> {
                         "${MediaStore.MediaColumns.SIZE}>0 AND ${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO}"
                     }
 
                     FilePickerSelectType.AUDIO -> {
                         "${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_AUDIO}"
+                    }
+
+                    FilePickerSelectType.IMAGE_VIDEO -> {
+                        "${MediaStore.MediaColumns.SIZE}>0 AND ((${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE} AND ${MediaStore.Files.FileColumns.MIME_TYPE}!= 'image/gif') OR ${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO})"
+                    }
+
+                    FilePickerSelectType.IMAGE_VIDEO_GIF -> {
+                        "${MediaStore.MediaColumns.SIZE}>0 AND (${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE} OR ${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO})"
+                    }
+
+                    FilePickerSelectType.DOCUMENT -> {
+                        val mediaTypeSelection = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                            "(${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_DOCUMENT} OR ${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_NONE})"
+                        } else {
+                            "(${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_NONE})"
+                        }
+                        "${MediaStore.MediaColumns.SIZE}>0 AND $mediaTypeSelection AND (" +
+                                "${MediaStore.Files.FileColumns.DISPLAY_NAME} LIKE '%.${FilePickerSelectType.TXT}' OR " +
+                                "${MediaStore.Files.FileColumns.DISPLAY_NAME} LIKE '%.pdf' OR " +
+                                "${MediaStore.Files.FileColumns.DISPLAY_NAME} LIKE '%.doc' OR " +
+                                "${MediaStore.Files.FileColumns.DISPLAY_NAME} LIKE '%.docx' OR " +
+                                "${MediaStore.Files.FileColumns.DISPLAY_NAME} LIKE '%.ppt' OR " +
+                                "${MediaStore.Files.FileColumns.DISPLAY_NAME} LIKE '%.pptx' OR " +
+                                "${MediaStore.Files.FileColumns.DISPLAY_NAME} LIKE '%.xls' OR " +
+                                "${MediaStore.Files.FileColumns.DISPLAY_NAME} LIKE '%.xlsx')"
+                    }
+
+                    FilePickerSelectType.PDF -> {
+                        val mediaTypeSelection = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                            "(${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_DOCUMENT} OR ${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_NONE})"
+                        } else {
+                            "(${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_NONE})"
+                        }
+                        "${MediaStore.MediaColumns.SIZE}>0 AND $mediaTypeSelection AND ${MediaStore.Files.FileColumns.DISPLAY_NAME} LIKE '%.${FilePickerSelectType.PDF}'"
+                    }
+
+                    FilePickerSelectType.DOC -> {
+                        val mediaTypeSelection = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                            "(${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_DOCUMENT} OR ${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_NONE})"
+                        } else {
+                            "(${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_NONE})"
+                        }
+                        "${MediaStore.MediaColumns.SIZE}>0 AND $mediaTypeSelection AND (${MediaStore.Files.FileColumns.DISPLAY_NAME} LIKE '%.doc' OR ${MediaStore.Files.FileColumns.DISPLAY_NAME} LIKE '%.docx')"
+                    }
+
+                    FilePickerSelectType.EXCEL -> {
+                        val mediaTypeSelection = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                            "(${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_DOCUMENT} OR ${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_NONE})"
+                        } else {
+                            "(${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_NONE})"
+                        }
+                        "${MediaStore.MediaColumns.SIZE}>0 AND $mediaTypeSelection AND (${MediaStore.Files.FileColumns.DISPLAY_NAME} LIKE '%.xls' OR ${MediaStore.Files.FileColumns.DISPLAY_NAME} LIKE '%.xlsx')"
+                    }
+
+                    FilePickerSelectType.PPT -> {
+                        val mediaTypeSelection = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                            "(${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_DOCUMENT} OR ${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_NONE})"
+                        } else {
+                            "(${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_NONE})"
+                        }
+                        "${MediaStore.MediaColumns.SIZE}>0 AND $mediaTypeSelection AND (${MediaStore.Files.FileColumns.DISPLAY_NAME} LIKE '%.ppt' OR ${MediaStore.Files.FileColumns.DISPLAY_NAME} LIKE '%.pptx')"
+                    }
+
+                    FilePickerSelectType.TXT -> {
+                        val mediaTypeSelection = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                            "(${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_DOCUMENT} OR ${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_NONE})"
+                        } else {
+                            "(${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_NONE})"
+                        }
+                        "${MediaStore.MediaColumns.SIZE}>0 AND $mediaTypeSelection AND ${MediaStore.Files.FileColumns.DISPLAY_NAME} LIKE '%.${FilePickerSelectType.TXT}'"
+                    }
+
+                    FilePickerSelectType.APK -> {
+                        val mediaTypeSelection = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                            "(${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_DOCUMENT} OR ${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_NONE})"
+                        } else {
+                            "(${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_NONE})"
+                        }
+                        "${MediaStore.MediaColumns.SIZE}>0 AND $mediaTypeSelection AND ${MediaStore.Files.FileColumns.DISPLAY_NAME} LIKE '%.${FilePickerSelectType.APK}'"
+                    }
+
+                    FilePickerSelectType.ZIP -> {
+                        val mediaTypeSelection = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                            "(${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_DOCUMENT} OR ${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_NONE})"
+                        } else {
+                            "(${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_NONE})"
+                        }
+                        "${MediaStore.MediaColumns.SIZE}>0 AND $mediaTypeSelection AND ${MediaStore.Files.FileColumns.DISPLAY_NAME} LIKE '%.${FilePickerSelectType.ZIP}'"
+                    }
+
+                    FilePickerSelectType.RAR -> {
+                        val mediaTypeSelection = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                            "(${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_DOCUMENT} OR ${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_NONE})"
+                        } else {
+                            "(${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_NONE})"
+                        }
+                        "${MediaStore.MediaColumns.SIZE}>0 AND $mediaTypeSelection AND ${MediaStore.Files.FileColumns.DISPLAY_NAME} LIKE '%.${FilePickerSelectType.RAR}'"
+                    }
+
+                    FilePickerSelectType.SEVEN_Z -> {
+                        val mediaTypeSelection = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                            "(${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_DOCUMENT} OR ${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_NONE})"
+                        } else {
+                            "(${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_NONE})"
+                        }
+                        "${MediaStore.MediaColumns.SIZE}>0 AND $mediaTypeSelection AND ${MediaStore.Files.FileColumns.DISPLAY_NAME} LIKE '%.${FilePickerSelectType.SEVEN_Z}'"
+                    }
+
+                    FilePickerSelectType.BZ2 -> {
+                        val mediaTypeSelection = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                            "(${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_DOCUMENT} OR ${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_NONE})"
+                        } else {
+                            "(${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_NONE})"
+                        }
+                        "${MediaStore.MediaColumns.SIZE}>0 AND $mediaTypeSelection AND ${MediaStore.Files.FileColumns.DISPLAY_NAME} LIKE '%.${FilePickerSelectType.BZ2}'"
+                    }
+
+                    FilePickerSelectType.ISO -> {
+                        val mediaTypeSelection = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                            "(${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_DOCUMENT} OR ${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_NONE})"
+                        } else {
+                            "(${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_NONE})"
+                        }
+                        "${MediaStore.MediaColumns.SIZE}>0 AND $mediaTypeSelection AND ${MediaStore.Files.FileColumns.DISPLAY_NAME} LIKE '%.${FilePickerSelectType.ISO}'"
+                    }
+
+                    FilePickerSelectType.GZ -> {
+                        val mediaTypeSelection = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                            "(${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_DOCUMENT} OR ${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_NONE})"
+                        } else {
+                            "(${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_NONE})"
+                        }
+                        "${MediaStore.MediaColumns.SIZE}>0 AND $mediaTypeSelection AND ${MediaStore.Files.FileColumns.DISPLAY_NAME} LIKE '%.${FilePickerSelectType.GZ}'"
+                    }
+
+                    FilePickerSelectType.TAR -> {
+                        val mediaTypeSelection = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                            "(${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_DOCUMENT} OR ${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_NONE})"
+                        } else {
+                            "(${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_NONE})"
+                        }
+                        "${MediaStore.MediaColumns.SIZE}>0 AND $mediaTypeSelection AND ${MediaStore.Files.FileColumns.DISPLAY_NAME} LIKE '%.${FilePickerSelectType.TAR}'"
+                    }
+
+                    FilePickerSelectType.ZIP_ALL -> {
+                        val mediaTypeSelection = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                            "(${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_DOCUMENT} OR ${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_NONE})"
+                        } else {
+                            "(${MediaStore.Files.FileColumns.MEDIA_TYPE}=${MediaStore.Files.FileColumns.MEDIA_TYPE_NONE})"
+                        }
+                        "${MediaStore.MediaColumns.SIZE}>0 AND $mediaTypeSelection AND (" +
+                                "${MediaStore.Files.FileColumns.DISPLAY_NAME} LIKE '%.${FilePickerSelectType.ZIP}' OR " +
+                                "${MediaStore.Files.FileColumns.DISPLAY_NAME} LIKE '%.${FilePickerSelectType.TAR}' OR " +
+                                "${MediaStore.Files.FileColumns.DISPLAY_NAME} LIKE '%.${FilePickerSelectType.SEVEN_Z}' OR " +
+                                "${MediaStore.Files.FileColumns.DISPLAY_NAME} LIKE '%.${FilePickerSelectType.BZ2}' OR " +
+                                "${MediaStore.Files.FileColumns.DISPLAY_NAME} LIKE '%.${FilePickerSelectType.RAR}' OR " +
+                                "${MediaStore.Files.FileColumns.DISPLAY_NAME} LIKE '%.${FilePickerSelectType.ISO}' OR " +
+                                "${MediaStore.Files.FileColumns.DISPLAY_NAME} LIKE '%.${FilePickerSelectType.GZ}')"
                     }
 
                     else -> {
@@ -288,8 +450,8 @@ object MediaScanner {
                         val contentUri = when (mediaType) {
                             MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE -> ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id)
                             MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO -> ContentUris.withAppendedId(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, id)
-                            MediaStore.Files.FileColumns.MEDIA_TYPE_AUDIO -> ContentUris.withAppendedId(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, id)
-                            else -> ContentUris.withAppendedId(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, id)
+                            MediaStore.Files.FileColumns.MEDIA_TYPE_AUDIO -> ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id)
+                            else -> MediaStore.Files.getContentUri("external")
                         }
 
                         val mediaEntity = MediaEntity(

@@ -34,6 +34,7 @@ class FilePickerRecyclerView @JvmOverloads constructor(
     private var isEnterSelectMode = false
 
     init {
+        overScrollMode = OVER_SCROLL_NEVER
         addOnItemTouchListener(object : OnItemTouchListener {
 
             override fun onInterceptTouchEvent(rv: RecyclerView, e: MotionEvent): Boolean {

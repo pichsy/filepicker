@@ -18,7 +18,7 @@ class FilePickerViewModel : ViewModel() {
     val originalCheckedFlow = MutableStateFlow(false)
 
     val maxSelectNumber = MutableStateFlow(0)
-    val selectType = MutableStateFlow("all")
+    val selectType = MutableStateFlow(FilePickerSelectType.IMAGE_VIDEO)
     val maxFileSize = MutableStateFlow(0L)
     val minFileSize = MutableStateFlow(1L)
 

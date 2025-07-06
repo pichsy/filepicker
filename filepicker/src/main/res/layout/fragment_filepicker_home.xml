@@ -145,6 +145,36 @@
                 app:xp_radius="4dp" />
 
         </com.pichs.xwidget.view.XLinearLayout>
+
+        <com.pichs.xwidget.view.XLinearLayout
+            android:id="@+id/ll_type_gif"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <com.pichs.xwidget.view.XTextView
+                android:id="@+id/tv_type_gif"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="true"
+                android:text="动图"
+                android:textColor="#999"
+                android:textSize="14dp"
+                app:xp_checkedTextColor="#fff" />
+
+            <com.pichs.xwidget.roundview.XRoundFrameLayout
+                android:id="@+id/line_type_gif"
+                android:layout_width="30dp"
+                android:layout_height="3dp"
+                android:layout_marginTop="5dp"
+                android:background="#fff"
+                android:visibility="invisible"
+                app:xp_radius="4dp" />
+
+        </com.pichs.xwidget.view.XLinearLayout>
     </com.pichs.xwidget.view.XLinearLayout>
 
     <com.pichs.filepicker.widget.FilePickerRecyclerView

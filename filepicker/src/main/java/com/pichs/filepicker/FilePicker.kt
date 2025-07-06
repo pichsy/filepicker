@@ -23,8 +23,6 @@ class FilePicker {
 
     companion object {
 
-        const val DEFAULT_REQUEST_CODE = 11021
-
         private val _instance by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
             FilePicker()
         }
@@ -54,7 +52,15 @@ class FilePicker {
         }
 
         fun ofAll(): String {
-            return FilePickerSelectType.ALL
+            return FilePickerSelectType.IMAGE_VIDEO
+        }
+
+        fun ofAllWithGif(): String {
+            return FilePickerSelectType.IMAGE_VIDEO_GIF
+        }
+
+        fun ofGif(): String {
+            return FilePickerSelectType.GIF
         }
 
         fun ofAudio(): String {
@@ -69,11 +75,11 @@ class FilePicker {
             return FilePickerSelectType.PDF
         }
 
-        fun ofWord(): String {
-            return FilePickerSelectType.WORD
+        fun ofDoc(): String {
+            return FilePickerSelectType.DOC
         }
 
-        fun ofPPT(): String {
+        fun ofPpt(): String {
             return FilePickerSelectType.PPT
         }
 
@@ -81,12 +87,44 @@ class FilePicker {
             return FilePickerSelectType.EXCEL
         }
 
+        fun ofTxt(): String {
+            return FilePickerSelectType.TXT
+        }
+
         fun ofApk(): String {
             return FilePickerSelectType.APK
         }
 
+        fun ofZipAll(): String {
+            return FilePickerSelectType.ZIP_ALL
+        }
+
         fun ofZip(): String {
             return FilePickerSelectType.ZIP
+        }
+
+        fun ofRar(): String {
+            return FilePickerSelectType.RAR
+        }
+
+        fun of7Z(): String {
+            return FilePickerSelectType.SEVEN_Z
+        }
+
+        fun ofTar(): String {
+            return FilePickerSelectType.TAR
+        }
+
+        fun ofGz(): String {
+            return FilePickerSelectType.GZ
+        }
+
+        fun ofBz2(): String {
+            return FilePickerSelectType.BZ2
+        }
+
+        fun ofIso(): String {
+            return FilePickerSelectType.ISO
         }
 
         /**
@@ -149,7 +187,7 @@ class FilePicker {
             return this
         }
 
-        var mSelectType: String = FilePickerSelectType.ALL
+        var mSelectType: String = FilePickerSelectType.IMAGE_VIDEO
             private set
 
         fun setSelectType(selectType: String): Builder {

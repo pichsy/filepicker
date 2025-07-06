@@ -40,7 +40,7 @@ class FilePickerActivity : AppCompatActivity() {
         var maxSelectNumber = intent.getIntExtra("maxSelectNumber", 0)
         var maxFileSize = intent.getLongExtra("maxFileSize", 0L)
         var minFileSize = intent.getLongExtra("minFileSize", 0L)
-        var selectType = intent.getStringExtra("selectType") ?: FilePickerSelectType.ALL
+        var selectType = intent.getStringExtra("selectType") ?: FilePickerSelectType.IMAGE_VIDEO
         var selectDataList = intent.getParcelableArrayListExtra<MediaEntity>("selectedDataList") ?: mutableListOf()
 
         val uiConfig = intent.getParcelableExtra<FilePickerUIConfig>("uiConfig")
@@ -65,8 +65,8 @@ class FilePickerActivity : AppCompatActivity() {
             maxSelectNumber = 0
         }
 
-        if (selectType != FilePickerSelectType.ALL && selectType != FilePickerSelectType.IMAGE && selectType != FilePickerSelectType.VIDEO && selectType != FilePickerSelectType.AUDIO && selectType != FilePickerSelectType.GIF && selectType != FilePickerSelectType.DOCUMENT && selectType != FilePickerSelectType.APK && selectType != FilePickerSelectType.EXCEL && selectType != FilePickerSelectType.WORD && selectType != FilePickerSelectType.PDF && selectType != FilePickerSelectType.PPT && selectType != FilePickerSelectType.ZIP) {
-            selectType = FilePickerSelectType.ALL
+        if (!SelectTypeUtil.isValidType(selectType)) {
+            selectType = FilePickerSelectType.IMAGE_VIDEO
         }
 
         viewModel.maxFileSize.value = maxFileSize

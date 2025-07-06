@@ -27,7 +27,6 @@ import com.drake.brv.utils.grid
 import com.drake.brv.utils.linear
 import com.drake.brv.utils.models
 import com.drake.brv.utils.setup
-import com.google.android.material.divider.MaterialDividerItemDecoration
 import com.pichs.filepicker.databinding.FilePickerItemRvAlbumBinding
 import com.pichs.filepicker.databinding.FilePickerItemRvAudioAlbumBinding
 import com.pichs.filepicker.databinding.FragmentFilepickerHomeBinding
@@ -53,7 +52,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
 
     private lateinit var binding: FragmentFilepickerHomeBinding
 
-    private var currentTabType = FilePickerSelectType.ALL
+    private var currentTabType = FilePickerSelectType.IMAGE_VIDEO
 
     private val screenWidth by lazy { XDisplayHelper.getScreenWidth(requireContext()) }
 
@@ -78,10 +77,15 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
 
         currentTabType = viewModel.selectType.value
 
-        if (currentTabType != FilePickerSelectType.ALL || viewModel.uiConfig.isHideSelectTab) {
+        if (!isSelectTypeEqualsAll(viewModel.selectType.value) || viewModel.uiConfig.isHideSelectTab) {
             // 隐藏掉tab切换。
             binding.llSelectType.isVisible = false
         } else {
+            if (viewModel.selectType.value == FilePickerSelectType.IMAGE_VIDEO_GIF) {
+                binding.llTypeGif.isVisible = true
+            } else {
+                binding.llTypeGif.isVisible = false
+            }
             binding.llSelectType.isVisible = true
         }
 
@@ -90,7 +94,11 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
         initConfigUI()
 
         initTab()
-        if (viewModel.selectType.value == FilePickerSelectType.ALL || viewModel.selectType.value == FilePickerSelectType.IMAGE || viewModel.selectType.value == FilePickerSelectType.VIDEO) {
+        if (isSelectTypeEqualsAll(viewModel.selectType.value)
+            || viewModel.selectType.value == FilePickerSelectType.IMAGE
+            || viewModel.selectType.value == FilePickerSelectType.VIDEO
+            || viewModel.selectType.value == FilePickerSelectType.GIF
+        ) {
             initGridRecycler()
         } else {
             initLinearRecycler()
@@ -164,10 +172,10 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
         binding.ivArrowDown.setOnClickListener(this)
 
         binding.llTypeAll.setOnClickListener {
-            if (currentTabType == FilePickerSelectType.ALL) {
+            if (isSelectTypeEqualsAll(currentTabType)) {
                 return@setOnClickListener
             }
-            currentTabType = FilePickerSelectType.ALL
+            currentTabType = viewModel.selectType.value
             resetListDataWithSelectData()
             selectAllTabUI()
         }
@@ -183,13 +191,21 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
         }
 
         binding.llTypeVideo.setOnClickListener {
-
             if (currentTabType == FilePickerSelectType.VIDEO) {
                 return@setOnClickListener
             }
             currentTabType = FilePickerSelectType.VIDEO
             resetListDataWithSelectData()
             selectVideoTabUI()
+        }
+
+        binding.llTypeGif.setOnClickListener {
+            if (currentTabType == FilePickerSelectType.GIF) {
+                return@setOnClickListener
+            }
+            currentTabType = FilePickerSelectType.GIF
+            resetListDataWithSelectData()
+            selectGIFTabUI()
         }
 
         binding.btnConfirm.setOnClickListener {
@@ -199,9 +215,18 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
 
         updateBottomMenuSelectNumberUI()
 
-        if (currentTabType == FilePickerSelectType.ALL) {
+        if (isSelectTypeEqualsAll(currentTabType)) {
             selectAllTabUI()
         }
+
+    }
+
+
+    /**
+     * 判断类型是否是全部。
+     */
+    private fun isSelectTypeEqualsAll(selectType: String): Boolean {
+        return selectType == FilePickerSelectType.IMAGE_VIDEO || selectType == FilePickerSelectType.IMAGE_VIDEO_GIF
     }
 
     private fun initDataFlow() {
@@ -256,9 +281,9 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
 
     private fun resetListDataWithSelectData() {
         lifecycleScope.launch {
-            if (viewModel.selectType.value == FilePickerSelectType.ALL) {
+            if (isSelectTypeEqualsAll(viewModel.selectType.value)) {
                 when (currentTabType) {
-                    FilePickerSelectType.ALL -> {
+                    FilePickerSelectType.IMAGE_VIDEO -> {
                         viewModel.updateCurrentFolderDataList(
                             if (viewModel.currentFolder.value != null) {
                                 viewModel.currentFolder.value?.mediaEntityList ?: mutableListOf()
@@ -284,6 +309,16 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                                 viewModel.currentFolder.value?.mediaEntityList?.filter { it.isVideo() }?.toMutableList() ?: mutableListOf()
                             } else {
                                 viewModel.getAllDataList().flatMap { it.mediaEntityList.filter { it.isVideo() } }.toMutableList()
+                            }
+                        )
+                    }
+
+                    FilePickerSelectType.GIF -> {
+                        viewModel.updateCurrentFolderDataList(
+                            if (viewModel.currentFolder.value != null) {
+                                viewModel.currentFolder.value?.mediaEntityList?.filter { it.isGif() }?.toMutableList() ?: mutableListOf()
+                            } else {
+                                viewModel.getAllDataList().flatMap { it.mediaEntityList.filter { it.isGif() } }.toMutableList()
                             }
                         )
                     }
@@ -390,8 +425,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                     ContextCompat.getDrawable(ctx, R.drawable.item_decroration_line)?.let {
                         setDrawable(it)
                     }
-                }
-            )
+                })
         }
         binding.recyclerView.linear(RecyclerView.VERTICAL).setup {
             addType<MediaEntity>(R.layout.file_picker_item_rv_audio_album)
@@ -610,6 +644,9 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
         binding.lineTypeAll.isInvisible = false
         binding.lineTypeImage.isInvisible = true
         binding.lineTypeVideo.isInvisible = true
+        binding.tvTypeGif.setTypeface(Typeface.DEFAULT, Typeface.NORMAL)
+        binding.tvTypeGif.isChecked = false
+        binding.lineTypeGif.isInvisible = false
     }
 
     private fun selectImageTabUI() {
@@ -623,6 +660,10 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
         binding.lineTypeAll.isInvisible = true
         binding.lineTypeImage.isInvisible = false
         binding.lineTypeVideo.isInvisible = true
+
+        binding.tvTypeGif.setTypeface(Typeface.DEFAULT, Typeface.NORMAL)
+        binding.tvTypeGif.isChecked = false
+        binding.lineTypeGif.isInvisible = false
     }
 
     private fun selectVideoTabUI() {
@@ -636,6 +677,28 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
         binding.lineTypeAll.isInvisible = true
         binding.lineTypeImage.isInvisible = true
         binding.lineTypeVideo.isInvisible = false
+
+        binding.tvTypeGif.setTypeface(Typeface.DEFAULT, Typeface.NORMAL)
+        binding.tvTypeGif.isChecked = false
+        binding.lineTypeGif.isInvisible = false
+    }
+
+
+    private fun selectGIFTabUI() {
+        binding.tvTypeImage.isChecked = false
+        binding.tvTypeVideo.isChecked = false
+        binding.tvTypeAll.isChecked = false
+        binding.tvTypeImage.setTypeface(Typeface.DEFAULT, Typeface.NORMAL)
+        binding.tvTypeVideo.setTypeface(Typeface.DEFAULT, Typeface.NORMAL)
+        binding.tvTypeAll.setTypeface(Typeface.DEFAULT, Typeface.NORMAL)
+
+        binding.lineTypeAll.isInvisible = true
+        binding.lineTypeImage.isInvisible = false
+        binding.lineTypeVideo.isInvisible = false
+
+        binding.tvTypeGif.setTypeface(Typeface.DEFAULT, Typeface.BOLD)
+        binding.tvTypeGif.isChecked = true
+        binding.lineTypeGif.isInvisible = true
     }
 
     /**
