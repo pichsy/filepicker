@@ -24,7 +24,7 @@ data class FilePickerUIConfig(
     /**
      * 预览页面是否显示选中索引。显示顶部的就是 index号，不选就是对号✅
      */
-    var isShowPreviewPageSelectedIndex: Boolean = true,
+    var isPreviewPageIndexMode: Boolean = true,
 
     /**
      * 全部文件夹的文本名字
@@ -35,6 +35,11 @@ data class FilePickerUIConfig(
      * 预览页面的标题
      */
     var previewText: String = "预览",
+
+    /**
+     * 是否显示底部预览视图
+     */
+    var isShowBottomPreviewText: Boolean = true,
 
     /**
      * selectText 选择

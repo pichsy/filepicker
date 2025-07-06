@@ -16,7 +16,6 @@ import androidx.viewpager2.widget.ViewPager2
 import com.bumptech.glide.Glide
 import com.pichs.filepicker.FilePickerViewModel
 import com.pichs.filepicker.R
-import com.pichs.filepicker.databinding.DialogFilePickerPreviewBinding
 import com.pichs.filepicker.entity.MediaEntity
 import com.pichs.filepicker.photoview.PhotoView
 import com.pichs.filepicker.video.VideoPlayerView
@@ -25,6 +24,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.drake.brv.utils.linear
 import com.drake.brv.utils.setup
+import com.pichs.filepicker.SelectTypeUtil
 import com.pichs.filepicker.databinding.DialogFilePickerSelectedPreviewBinding
 import com.pichs.filepicker.databinding.FilePickerItemRvAlbumJustSelectedBinding
 import com.pichs.filepicker.entity.FilePickerTempSelected
@@ -125,12 +125,13 @@ class FilePickerFinalPreviewDialog(
             binding.btnConfirm.text = "${viewModel.uiConfig.confirmBtnText}(${tempSelectDataList.filter { !it.isDelete }.size})"
         }
 
-        binding.llOriginal.isVisible = viewModel.uiConfig.isShowOriginal
+        binding.llOriginal.isVisible = viewModel.uiConfig.isShowOriginal && SelectTypeUtil.isCanOriginal(viewModel.selectType.value)
+
         binding.tvOriginal.text = viewModel.uiConfig.originalText
         binding.cboxOriginal.isChecked = viewModel.originalCheckedFlow.value
         binding.tvSelect.text = viewModel.uiConfig.previewSelectText
 
-        if (viewModel.uiConfig.isShowPreviewPageSelectedIndex) {
+        if (viewModel.uiConfig.isPreviewPageIndexMode) {
             binding.tvSelectIndex.isVisible = true
             binding.ivSelectState.isVisible = false
         } else {
@@ -150,7 +151,7 @@ class FilePickerFinalPreviewDialog(
 
                 val itemEntity = item.mediaEntity
 
-                MediaLoader.loadImage(itemEntity.uri, itemEntity.mimeType, itemBinding.ivCoverImage)
+                MediaLoader.loadImageThumbnail(itemEntity.uri, itemEntity.mimeType, itemBinding.ivCoverImage)
 
                 itemBinding.clSelectDelete.isVisible = viewModel.uiConfig.isShowSelectedListDeleteIcon
                 itemBinding.tvDelete.setBackgroundColor(viewModel.uiConfig.selectedListDeleteIconBackgroundColor)

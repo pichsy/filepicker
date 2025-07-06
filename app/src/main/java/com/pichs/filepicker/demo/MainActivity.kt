@@ -130,7 +130,7 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
         FilePicker.with(this)
             .setMaxSelectNumber(maxSelectCount)
             .setMaxFileSize(maxFileSize.toLong())
-            .setSelectType(FilePicker.ofTxt())
+            .setSelectType(FilePicker.ofAllWithGif())
             .setOnSelectCallback { isUseOriginal, list ->
                 XLog.d("FilePicker", "Selected files: ${list.size}")
                 binding.recyclerView.models = list
@@ -140,7 +140,7 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
                     allAlbumName = "全部",
                     confirmBtnText = "下一步",
                     isShowOriginal = false,
-                    isShowPreviewPageSelectedIndex = true,
+                    isPreviewPageIndexMode = true,
                     isShowSelectedListDeleteIcon = true,
                     selectedListDeleteIconBackgroundColor = Color.BLUE
                 )

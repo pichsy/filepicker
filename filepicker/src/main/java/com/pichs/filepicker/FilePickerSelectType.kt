@@ -70,4 +70,18 @@ object SelectTypeUtil {
     fun isValidType(type: String): Boolean {
         return getAllTypes().contains(type)
     }
+
+    fun isCanPreview(type: String): Boolean {
+        return when (type) {
+            IMAGE_VIDEO, IMAGE_VIDEO_GIF, IMAGE, VIDEO, GIF -> true
+            else -> false
+        }
+    }
+
+    fun isCanOriginal(type: String): Boolean {
+        return when (type) {
+            IMAGE_VIDEO, IMAGE_VIDEO_GIF, IMAGE, VIDEO -> true
+            else -> false
+        }
+    }
 }

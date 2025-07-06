@@ -94,11 +94,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
         initConfigUI()
 
         initTab()
-        if (isSelectTypeEqualsAll(viewModel.selectType.value)
-            || viewModel.selectType.value == FilePickerSelectType.IMAGE
-            || viewModel.selectType.value == FilePickerSelectType.VIDEO
-            || viewModel.selectType.value == FilePickerSelectType.GIF
-        ) {
+        if (isSelectTypeEqualsAll(viewModel.selectType.value) || viewModel.selectType.value == FilePickerSelectType.IMAGE || viewModel.selectType.value == FilePickerSelectType.VIDEO || viewModel.selectType.value == FilePickerSelectType.GIF) {
             initGridRecycler()
         } else {
             initLinearRecycler()
@@ -158,7 +154,8 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
             binding.tvPreview.text = "${viewModel.uiConfig.previewText}(${viewModel.getSelectedCount()})"
         }
 
-        binding.llOriginal.isVisible = viewModel.uiConfig.isShowOriginal
+        binding.llOriginal.isVisible = viewModel.uiConfig.isShowOriginal && SelectTypeUtil.isCanOriginal(viewModel.selectType.value)
+        binding.llPreview.isVisible = viewModel.uiConfig.isShowBottomPreviewText && SelectTypeUtil.isCanPreview(viewModel.selectType.value)
         binding.tvOriginal.text = viewModel.uiConfig.originalText
         binding.cboxOriginal.isChecked = viewModel.originalCheckedFlow.value
     }
@@ -172,7 +169,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
         binding.ivArrowDown.setOnClickListener(this)
 
         binding.llTypeAll.setOnClickListener {
-            if (isSelectTypeEqualsAll(currentTabType)) {
+            if (currentTabType == viewModel.selectType.value) {
                 return@setOnClickListener
             }
             currentTabType = viewModel.selectType.value
@@ -283,7 +280,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
         lifecycleScope.launch {
             if (isSelectTypeEqualsAll(viewModel.selectType.value)) {
                 when (currentTabType) {
-                    FilePickerSelectType.IMAGE_VIDEO -> {
+                    FilePickerSelectType.IMAGE_VIDEO, FilePickerSelectType.IMAGE_VIDEO_GIF -> {
                         viewModel.updateCurrentFolderDataList(
                             if (viewModel.currentFolder.value != null) {
                                 viewModel.currentFolder.value?.mediaEntityList ?: mutableListOf()
@@ -476,7 +473,6 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                 }
             }
         }
-
     }
 
     /**
@@ -499,7 +495,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                     height = width
                 }
 
-                MediaLoader.loadImage(item.uri, item.mimeType, itemBinding.ivCoverImage)
+                MediaLoader.loadImageThumbnail(item.uri, item.mimeType, itemBinding.ivCoverImage)
 
                 if (item.isVideo()) {
                     itemBinding.tvDuration.visibility = View.VISIBLE
@@ -644,9 +640,10 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
         binding.lineTypeAll.isInvisible = false
         binding.lineTypeImage.isInvisible = true
         binding.lineTypeVideo.isInvisible = true
+
         binding.tvTypeGif.setTypeface(Typeface.DEFAULT, Typeface.NORMAL)
         binding.tvTypeGif.isChecked = false
-        binding.lineTypeGif.isInvisible = false
+        binding.lineTypeGif.isInvisible = true
     }
 
     private fun selectImageTabUI() {
@@ -663,7 +660,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
 
         binding.tvTypeGif.setTypeface(Typeface.DEFAULT, Typeface.NORMAL)
         binding.tvTypeGif.isChecked = false
-        binding.lineTypeGif.isInvisible = false
+        binding.lineTypeGif.isInvisible = true
     }
 
     private fun selectVideoTabUI() {
@@ -680,7 +677,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
 
         binding.tvTypeGif.setTypeface(Typeface.DEFAULT, Typeface.NORMAL)
         binding.tvTypeGif.isChecked = false
-        binding.lineTypeGif.isInvisible = false
+        binding.lineTypeGif.isInvisible = true
     }
 
 
@@ -693,12 +690,12 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
         binding.tvTypeAll.setTypeface(Typeface.DEFAULT, Typeface.NORMAL)
 
         binding.lineTypeAll.isInvisible = true
-        binding.lineTypeImage.isInvisible = false
-        binding.lineTypeVideo.isInvisible = false
+        binding.lineTypeImage.isInvisible = true
+        binding.lineTypeVideo.isInvisible = true
 
         binding.tvTypeGif.setTypeface(Typeface.DEFAULT, Typeface.BOLD)
         binding.tvTypeGif.isChecked = true
-        binding.lineTypeGif.isInvisible = true
+        binding.lineTypeGif.isInvisible = false
     }
 
     /**

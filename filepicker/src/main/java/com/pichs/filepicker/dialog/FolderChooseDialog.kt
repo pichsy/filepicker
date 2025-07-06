@@ -16,8 +16,6 @@ import com.pichs.filepicker.databinding.FilePickerFolderChooseDialogItemBinding
 import com.pichs.filepicker.entity.MediaFolder
 import com.pichs.filepicker.loader.MediaLoader
 import razerdp.basepopup.BasePopupWindow
-import razerdp.util.animation.AnimationHelper
-import razerdp.util.animation.TranslationConfig
 
 class FolderChooseDialog(mCtx: Context, val allAlbumName:String, val list: MutableList<MediaFolder>, val currentFolder: MediaFolder?, val onSelectCallback: (MediaFolder?) -> Unit) :
     BasePopupWindow(mCtx) {
@@ -72,10 +70,10 @@ class FolderChooseDialog(mCtx: Context, val allAlbumName:String, val list: Mutab
 
                 val firstEntity = item.mediaEntityList.firstOrNull()
                 if (firstEntity != null) {
-                    MediaLoader.loadImage(firstEntity.uri, firstEntity.mimeType, itemBinding.ivCover)
+                    MediaLoader.loadImageThumbnail(firstEntity.uri, firstEntity.mimeType, itemBinding.ivCover)
                 } else {
                     val ent = list.firstOrNull()?.mediaEntityList?.firstOrNull()
-                    MediaLoader.loadImage(ent?.uri, ent?.mimeType, itemBinding.ivCover)
+                    MediaLoader.loadImageThumbnail(ent?.uri, ent?.mimeType, itemBinding.ivCover)
                 }
 
                 itemBinding.root.setOnClickListener {

@@ -25,6 +25,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.drake.brv.utils.linear
 import com.drake.brv.utils.models
 import com.drake.brv.utils.setup
+import com.pichs.filepicker.SelectTypeUtil
 import com.pichs.filepicker.databinding.FilePickerItemRvAlbumSelectedBinding
 import com.pichs.filepicker.loader.MediaLoader
 import com.pichs.filepicker.utils.FilePickerClickHelper
@@ -135,12 +136,13 @@ class FilePickerPreviewDialog(
             binding.btnConfirm.text = "${viewModel.uiConfig.confirmBtnText}(${viewModel.getSelectedCount()})"
         }
 
-        binding.llOriginal.isVisible = viewModel.uiConfig.isShowOriginal
+        binding.llOriginal.isVisible = viewModel.uiConfig.isShowOriginal && SelectTypeUtil.isCanOriginal(viewModel.selectType.value)
+
         binding.tvOriginal.text = viewModel.uiConfig.originalText
         binding.cboxOriginal.isChecked = viewModel.originalCheckedFlow.value
         binding.tvSelect.text = viewModel.uiConfig.previewSelectText
 
-        if (viewModel.uiConfig.isShowPreviewPageSelectedIndex) {
+        if (viewModel.uiConfig.isPreviewPageIndexMode) {
             binding.tvSelectIndex.isVisible = true
             binding.ivSelectState.isVisible = false
         } else {
@@ -159,7 +161,7 @@ class FilePickerPreviewDialog(
                 val item = getModel<MediaEntity>()
                 val itemBinding = getBinding<FilePickerItemRvAlbumSelectedBinding>()
 
-                MediaLoader.loadImage(item.uri, item.mimeType, itemBinding.ivCoverImage)
+                MediaLoader.loadImageThumbnail(item.uri, item.mimeType, itemBinding.ivCoverImage)
 
                 itemBinding.clSelectDelete.isVisible = viewModel.uiConfig.isShowSelectedListDeleteIcon
                 itemBinding.tvDelete.setBackgroundColor(viewModel.uiConfig.selectedListDeleteIconBackgroundColor)
@@ -434,7 +436,8 @@ class FilePickerPreviewDialog(
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
             val item = viewModel.getCurrentFolderDataList().getOrNull(position) ?: return
             if (holder is ImageViewHolder) {
-                Glide.with(context).load(item.path).into(holder.photoView)
+                MediaLoader.loadImage(item.uri, item.mimeType, holder.photoView)
+//                Glide.with(context).load(item.path).into(holder.photoView)
             } else if (holder is VideoViewHolder) {
                 Log.d("MediaPagerAdapter", "onBindViewHolder: item.path=${item.path}, item.uri=${item.uri}")
                 holder.videoPlayerView.loadCover(item)
