@@ -13,20 +13,17 @@ import android.view.MotionEvent
 import android.view.View
 import android.widget.FrameLayout
 import android.widget.SeekBar
-import androidx.core.content.ContextCompat
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.VideoSize
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.ui.TimeBar
-import com.pichs.filepicker.databinding.FilepickerVideoPlayerBinding
 import androidx.core.net.toUri
 import androidx.core.view.isVisible
+import com.pichs.filepicker.databinding.FilePickerVideoPlayerBinding
 import com.pichs.filepicker.entity.MediaEntity
 import com.pichs.filepicker.loader.MediaLoader
 import com.pichs.filepicker.utils.FilePickerClickHelper
-import com.pichs.filepicker.widget.OnItemSelectionChangedListener
 
 @SuppressLint("ClickableViewAccessibility")
 @UnstableApi
@@ -34,7 +31,7 @@ class VideoPlayerView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null
 ) : FrameLayout(context, attrs) {
 
-    private val binding: FilepickerVideoPlayerBinding = FilepickerVideoPlayerBinding.inflate(LayoutInflater.from(context), this, true)
+    private val binding: FilePickerVideoPlayerBinding = FilePickerVideoPlayerBinding.inflate(LayoutInflater.from(context), this, true)
     private var player: ExoPlayer? = null
     private val handler = Handler(Looper.getMainLooper())
 

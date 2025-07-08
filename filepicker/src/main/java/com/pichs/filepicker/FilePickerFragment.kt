@@ -1,5 +1,6 @@
 package com.pichs.filepicker
 
+import android.R.attr.scrollX
 import android.annotation.SuppressLint
 import android.app.Activity.RESULT_OK
 import android.content.Intent
@@ -21,6 +22,8 @@ import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.util.UnstableApi
 import androidx.recyclerview.widget.DividerItemDecoration
+import androidx.recyclerview.widget.ItemTouchHelper
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.drake.brv.utils.bindingAdapter
 import com.drake.brv.utils.grid
@@ -28,6 +31,7 @@ import com.drake.brv.utils.linear
 import com.drake.brv.utils.models
 import com.drake.brv.utils.setup
 import com.pichs.filepicker.databinding.FilePickerItemRvAlbumBinding
+import com.pichs.filepicker.databinding.FilePickerItemRvAlbumSelectedBinding
 import com.pichs.filepicker.databinding.FilePickerItemRvAudioAlbumBinding
 import com.pichs.filepicker.databinding.FragmentFilepickerHomeBinding
 import com.pichs.filepicker.dialog.FilePickerFinalPreviewDialog
@@ -39,6 +43,7 @@ import com.pichs.filepicker.loader.MediaLoader
 import com.pichs.filepicker.scanner.MediaScanner
 import com.pichs.filepicker.utils.FilePickerClickHelper
 import com.pichs.filepicker.utils.FilePickerTimeFormatUtils
+import com.pichs.filepicker.widget.OnDragItemTouchHelperCallback
 import com.pichs.filepicker.widget.OnItemSelectionChangedListener
 import com.pichs.xwidget.utils.XDisplayHelper
 import kotlinx.coroutines.flow.collectLatest
@@ -105,6 +110,9 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
         initDataFlow()
         loadData()
         initListener()
+        initSelectedRecyclerView()
+
+        updateBottomMenuSelectNumberUI()
     }
 
 
@@ -214,7 +222,6 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
             callbackToChooser(ArrayList(viewModel.getSelectedDataList()))
         }
 
-        updateBottomMenuSelectNumberUI()
 
         if (isSelectTypeEqualsAll(currentTabType)) {
             selectAllTabUI()
@@ -342,6 +349,10 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
     private fun initRecyclerSlideChoose() {
         binding.recyclerView.setOnItemSelectionChangedListener(object : OnItemSelectionChangedListener {
             override fun onItemSelectionChanged(startPosition: Int, currentPosition: Int, isSelected: Boolean) {
+                if (viewModel.slideChooseEnable.value.not()) {
+                    // 不支持手滑。
+                    return
+                }
                 Log.d("FilePickerFragment6665", "startPosition:$startPosition, currentPosition:$currentPosition, isSelected:$isSelected")
                 if (!isTouchSelectStart) {
                     return
@@ -536,6 +547,21 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                     itemBinding.root.isSelected = false
                 }
 
+                // 判断是否是最后一行
+                val lastRowStart = itemCount - itemCount % 4
+
+                Log.d("FilePickerFragment7777", "modelPosition:$modelPosition, lastRowStart:$lastRowStart, itemCount:$itemCount")
+
+                if (modelPosition >= lastRowStart && (viewModel.getSelectedCount() + viewModel.tempSelectData.size) > 0) {
+                    itemBinding.clRoot.updateLayoutParams<ViewGroup.MarginLayoutParams> {
+                        bottomMargin = XDisplayHelper.dp2px(requireContext(), 80f)
+                    }
+                } else {
+                    itemBinding.clRoot.updateLayoutParams<ViewGroup.MarginLayoutParams> {
+                        bottomMargin = XDisplayHelper.dp2px(requireContext(), 1f)
+                    }
+                }
+
                 itemBinding.clSelectArea.setOnClickListener {
                     if (viewModel.isCanSingleClickSelect()) {
                         return@setOnClickListener
@@ -543,6 +569,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                     Log.d("FilePickerFragment", "item.path:${item.path},mimeType:${item.mimeType}")
                     if (viewModel.containsSelectedData(item)) {
                         viewModel.removeSelectedData(item)
+                        itemBinding.root.isSelected = false
                         notifyItemChanged(modelPosition)
                         updateBottomMenuSelectNumberUI()
                         // 更新角标
@@ -553,8 +580,10 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                             return@setOnClickListener
                         }
                         viewModel.addSelectedData(item)
+                        itemBinding.root.isSelected = true
                         notifyItemChanged(modelPosition)
                         updateBottomMenuSelectNumberUI()
+                        notifyItemRangeChanged(lastRowStart, itemCount - lastRowStart) // 刷新最后一行
                     }
                 }
                 itemBinding.ivCoverImage.setOnClickListener {
@@ -568,10 +597,64 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
             }
         }
 
-
         binding.recyclerView.maxSelectNumber = viewModel.maxSelectNumber.value
         binding.recyclerView.currentSelectedCountProvider = { viewModel.getSelectedCount() + viewModel.tempSelectData.size }
+    }
 
+    private fun initSelectedRecyclerView() {
+        binding.rvSelected.itemAnimator = null
+        binding.rvSelected.linear(RecyclerView.HORIZONTAL).setup {
+            addType<MediaEntity>(R.layout.file_picker_item_rv_album_selected)
+
+            onBind {
+                val item = getModel<MediaEntity>()
+                val itemBinding = getBinding<FilePickerItemRvAlbumSelectedBinding>()
+
+                MediaLoader.loadImageThumbnail(item.uri, item.mimeType, itemBinding.ivCoverImage)
+
+                itemBinding.clSelectDelete.isVisible = viewModel.uiConfig.isShowSelectedListDeleteIcon
+                itemBinding.tvDelete.setBackgroundColor(viewModel.uiConfig.selectedListDeleteIconBackgroundColor)
+
+                if (item.isVideo()) {
+                    itemBinding.tvDuration.visibility = View.VISIBLE
+                    itemBinding.tvDuration.text = FilePickerTimeFormatUtils.formatTimeMillSeconds(item.duration)
+                } else if (item.isGif()) {
+                    itemBinding.tvDuration.visibility = View.VISIBLE
+                    itemBinding.tvDuration.text = "GIF"
+                } else {
+                    itemBinding.tvDuration.visibility = View.GONE
+                    itemBinding.tvDuration.text = ""
+                }
+
+                itemBinding.clSelectDelete.setOnClickListener {
+                    // 删除选中项
+                    viewModel.removeSelectedData(item)
+                    // 更新角标
+                    updateSelectDataUI()
+                    updateBottomMenuSelectNumberUI()
+                }
+            }
+        }.models = viewModel.getSelectedDataList()
+
+        OnDragItemTouchHelperCallback(binding.rvSelected.bindingAdapter, viewModel, onDragEnd = {
+            updateSelectDataUI()
+        }).let { callback ->
+            ItemTouchHelper(callback).attachToRecyclerView(binding.rvSelected)
+        }
+
+    }
+
+
+    fun scrollItemToCenter(recyclerView: RecyclerView, position: Int) {
+        if (position == -1) return
+        val layoutManager = recyclerView.layoutManager as? LinearLayoutManager ?: return
+        val itemView = layoutManager.findViewByPosition(position)
+        val recyclerViewWidth = recyclerView.width
+
+        val itemWidth = itemView?.width ?: 0
+        val offset = (recyclerViewWidth - itemWidth) / 2
+
+        layoutManager.scrollToPositionWithOffset(position, offset)
     }
 
 
@@ -593,6 +676,15 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                 updateSelectDataUI()
             }
             updateBottomMenuSelectNumberUI()
+        }, onDragEnd = {
+            updateSelectDataUI()
+            updateBottomMenuSelectNumberUI()
+        }, onSelectListScrollChanged = { index, type, dx ->
+            if (type == 1) {
+                scrollItemToCenter(binding.rvSelected, index)
+            } else if (type == 2) {
+                binding.rvSelected.scrollBy(dx, 0)
+            }
         }, onConfirm = { pos ->
             val finalList = ArrayList(viewModel.getSelectedDataList())
             // 确认
@@ -604,6 +696,25 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
             Log.d("FilePickerFragment", "onConfirm: finalList=${finalList.size}")
             callbackToChooser(finalList)
         }).showPopupWindow()
+
+        var indexOfSelected = viewModel.indexOfSelected(item)
+        if (indexOfSelected < 0) {
+            indexOfSelected = 0
+        }
+        if (indexOfSelected > viewModel.getSelectedCount()) {
+            indexOfSelected = viewModel.getSelectedCount() - 1
+        }
+        scrollItemToCenter(binding.rvSelected, indexOfSelected)
+    }
+
+    fun getScrollX(recyclerView: RecyclerView): Int {
+        val layoutManager = recyclerView.layoutManager as? LinearLayoutManager ?: return 0
+        val firstVisible = layoutManager.findFirstVisibleItemPosition()
+        val firstView = layoutManager.findViewByPosition(firstVisible) ?: return 0
+        val itemWidth = firstView.width
+        val marginLeft = (firstView.layoutParams as? ViewGroup.MarginLayoutParams)?.leftMargin ?: 0
+        val scrollX = firstVisible * (itemWidth + marginLeft) - (firstView.left - marginLeft)
+        return scrollX.coerceAtLeast(0)
     }
 
     /**
@@ -641,6 +752,10 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
             binding.btnConfirm.text = "${viewModel.uiConfig.confirmBtnText}(${selectedMergeSize})"
             binding.tvPreview.text = "${viewModel.uiConfig.previewText}(${selectedMergeSize})"
 
+
+            // 底部列表
+            binding.rvSelected.isVisible = true
+            binding.rvSelected.models = viewModel.getSelectedDataList() + viewModel.tempSelectData
         } else {
             binding.llPreview.isEnabled = false
             binding.tvPreview.isEnabled = false
@@ -648,6 +763,10 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
 
             binding.btnConfirm.text = viewModel.uiConfig.confirmBtnText
             binding.tvPreview.text = viewModel.uiConfig.previewText
+
+            // 底部选择列表
+            binding.rvSelected.models = mutableListOf<MediaEntity>()
+            binding.rvSelected.isVisible = false
         }
     }
 

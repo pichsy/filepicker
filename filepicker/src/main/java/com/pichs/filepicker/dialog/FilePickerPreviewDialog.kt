@@ -21,7 +21,9 @@ import com.pichs.filepicker.photoview.PhotoView
 import com.pichs.filepicker.video.VideoPlayerView
 import razerdp.basepopup.BasePopupWindow
 import androidx.lifecycle.viewModelScope
+import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.drake.brv.utils.bindingAdapter
 import com.drake.brv.utils.linear
 import com.drake.brv.utils.models
 import com.drake.brv.utils.setup
@@ -30,11 +32,13 @@ import com.pichs.filepicker.databinding.FilePickerItemRvAlbumSelectedBinding
 import com.pichs.filepicker.loader.MediaLoader
 import com.pichs.filepicker.utils.FilePickerClickHelper
 import com.pichs.filepicker.utils.FilePickerTimeFormatUtils
+import com.pichs.filepicker.widget.OnDragItemTouchHelperCallback
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.times
 
 @UnstableApi
 class FilePickerPreviewDialog(
@@ -42,6 +46,8 @@ class FilePickerPreviewDialog(
     val viewModel: FilePickerViewModel,
     val curItem: MediaEntity,
     val onSelect: (MediaEntity, Boolean, Int) -> Unit,
+    val onDragEnd: () -> Unit,
+    var onSelectListScrollChanged: (index: Int, type: Int, dx: Int) -> Unit,
     val onConfirm: (Int) -> Unit
 ) : BasePopupWindow(context) {
 
@@ -203,11 +209,50 @@ class FilePickerPreviewDialog(
                         notifyItemRangeChanged(0, binding.rvSelected.adapter?.itemCount ?: 0)
                         updateIndexUI(item)
                         scrollItemToCenter(binding.rvSelected, modelPosition)
+                        onSelectListScrollChanged(modelPosition, 1, 0)
                     }
                 }
             }
         }.models = viewModel.getSelectedDataList()
+
+        OnDragItemTouchHelperCallback(binding.rvSelected.bindingAdapter, viewModel, onDragEnd = {
+            onDragEnd()
+            updateIndexUI(mCurrentItem)
+        }).let { callback ->
+            ItemTouchHelper(callback).attachToRecyclerView(binding.rvSelected)
+        }
+
+        binding.rvSelected.post {
+            var indexOfSelected = viewModel.indexOfSelected(mCurrentItem)
+            if (indexOfSelected < 0) {
+                indexOfSelected = 0
+            }
+            if (indexOfSelected > viewModel.getSelectedCount()) {
+                indexOfSelected = viewModel.getSelectedCount() - 1
+            }
+            scrollItemToCenter(binding.rvSelected, indexOfSelected)
+        }
+
+        binding.rvSelected.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                super.onScrolled(recyclerView, dx, dy)
+                // 这里可以监听到滚动事件
+                Log.d("FilePickerPreviewDialog999", "onScrolled: dx=$dx")
+                onSelectListScrollChanged(mCurrentIndex, 2, dx)
+            }
+        })
+
     }
+
+//    fun getScrollX(recyclerView: RecyclerView): Int {
+//        val layoutManager = recyclerView.layoutManager as? LinearLayoutManager ?: return 0
+//        val firstVisible = layoutManager.findFirstVisibleItemPosition()
+//        val firstView = layoutManager.findViewByPosition(firstVisible) ?: return 0
+//        val itemWidth = firstView.width
+//        val marginLeft = (firstView.layoutParams as? ViewGroup.MarginLayoutParams)?.leftMargin ?: 0
+//        val scrollX = firstVisible * (itemWidth + marginLeft) - (firstView.left - marginLeft)
+//        return scrollX.coerceAtLeast(0)
+//    }
 
     fun itemIndexOfList(item: MediaEntity?): Int {
         if (item == null) return 0
@@ -329,6 +374,7 @@ class FilePickerPreviewDialog(
                     binding.rvSelected.adapter?.notifyItemRangeChanged(0, binding.rvSelected.adapter?.itemCount ?: 0)
                     val indexOfSelect = viewModel.indexOfSelected(item)
                     scrollItemToCenter(binding.rvSelected, indexOfSelect)
+                    onSelectListScrollChanged(indexOfSelect, 1, 0)
                 }
             }
         })
