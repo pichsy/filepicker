@@ -11,7 +11,6 @@ import com.drake.brv.utils.setup
 import com.hjq.permissions.Permission
 import com.hjq.permissions.XXPermissions
 import com.pichs.filepicker.FilePicker
-import com.pichs.filepicker.FilePickerSelectType
 import com.pichs.filepicker.FilePickerUIConfig
 import com.pichs.filepicker.common.ImagePreviewDialog
 import com.pichs.filepicker.demo.databinding.ActivityMainBinding
@@ -44,17 +43,19 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
             val maxFileSize = maxFileSizeMB * 1024 * 1024
             // 获取类型
             val type = when (binding.rgType.checkedRadioButtonId) {
-                binding.rbAll.id -> FilePickerSelectType.IMAGE_VIDEO
-                binding.rbImage.id -> FilePickerSelectType.IMAGE
-                binding.rbVideo.id -> FilePickerSelectType.VIDEO
-                binding.rbAudio.id -> FilePickerSelectType.AUDIO
-                else -> FilePickerSelectType.IMAGE_VIDEO
+                binding.rbAll.id -> FilePicker.ofAll()
+                binding.rbImage.id -> FilePicker.ofImage()
+                binding.rbVideo.id -> FilePicker.ofVideo()
+                binding.rbAudio.id -> FilePicker.ofAudio()
+                binding.rbDocument.id -> FilePicker.ofDocument()
+                binding.rbAip.id -> FilePicker.ofZipAll()
+                else -> FilePicker.ofAll()
             }
 
-            if (type == FilePickerSelectType.IMAGE_VIDEO
-                || type == FilePickerSelectType.AUDIO
-                || type == FilePickerSelectType.VIDEO
-                || type == FilePickerSelectType.IMAGE
+            if (type == FilePicker.ofAll()
+                || type == FilePicker.ofVideo()
+                || type == FilePicker.ofImage()
+                || type == FilePicker.ofAudio()
             ) {
                 // 权限请求
                 XXPermissions.with(this).unchecked().permission(
@@ -87,18 +88,18 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
     }
 
     private fun initListener() {
-        binding.previewVideo.fastClick {
-//            val intent = Intent(this, VideoPreviewActivity::class.java)
-////            intent.putExtra("videoUrl", "https://jianliu.oss-cn-hangzhou.aliyuncs.com/jianliu/render_video/ed96ba31-6902-4acd-bae6-13a4a9d46fde.mp4")
-//            startActivity(intent)
-
-
-            VideoPreviewDialog(
-                this,
-                "https://jianliu.oss-cn-hangzhou.aliyuncs.com/jianliu/render_video/ed96ba31-6902-4acd-bae6-13a4a9d46fde.mp4",
-                "https://jianliu.oss-cn-hangzhou.aliyuncs.com/jianliu/render_video/ed96ba31-6902-4acd-bae6-13a4a9d46fde.mp4?x-oss-process=video/snapshot,t_10,f_jpg,w_360,m_fast,ar_auto,mode_crop",
-            ).showPopupWindow()
-        }
+//        binding.previewVideo.fastClick {
+////            val intent = Intent(this, VideoPreviewActivity::class.java)
+//////            intent.putExtra("videoUrl", "https://jianliu.oss-cn-hangzhou.aliyuncs.com/jianliu/render_video/ed96ba31-6902-4acd-bae6-13a4a9d46fde.mp4")
+////            startActivity(intent)
+//
+//
+//            VideoPreviewDialog(
+//                this,
+//                "https://jianliu.oss-cn-hangzhou.aliyuncs.com/jianliu/render_video/ed96ba31-6902-4acd-bae6-13a4a9d46fde.mp4",
+//                "https://jianliu.oss-cn-hangzhou.aliyuncs.com/jianliu/render_video/ed96ba31-6902-4acd-bae6-13a4a9d46fde.mp4?x-oss-process=video/snapshot,t_10,f_jpg,w_360,m_fast,ar_auto,mode_crop",
+//            ).showPopupWindow()
+//        }
     }
 
     private fun initRecyclerView() {
@@ -128,9 +129,9 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
 
     fun selectFile(type: String, maxSelectCount: Int, maxFileSize: Int) {
         FilePicker.with(this)
-            .setMaxSelectNumber(1)
+            .setMaxSelectNumber(maxSelectCount)
             .setMaxFileSize(maxFileSize.toLong())
-            .setSelectType(FilePicker.ofAudio())
+            .setSelectType(type)
             .setSingleClickEnable(true)
             .setOnSelectCallback { isUseOriginal, list ->
                 XLog.d("FilePicker", "Selected files: ${list.size}")
