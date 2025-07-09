@@ -248,8 +248,10 @@ FilePicker.with(this)
 | `originalText` | `String` | `"原图"` | 原图选项的文本内容 |
 | `isShowOriginal` | `Boolean` | `true` | 是否显示原图选项 |
 | `isOriginalChecked` | `Boolean` | `false` | 原图选项是否默认勾选 |
+| `isShowHomePageSelectedBottomListWidget` | `Boolean` | `true` | 是否显示主界面的底部已选列表（仅对图片和视频有效） |
 | `isShowSelectedListDeleteIcon` | `Boolean` | `false` | 是否展示选中列表中的删除按钮 |
-| `selectedListDeleteIconBackgroundColor` | `Int` | `"#FA4B3A"` | 选中列表中删除按钮的背景颜色 |
+| `selectedListDeleteIconResId` | `Int` | `0` | 选中列表删除按钮的图标资源ID |
+| `selectedListDeleteIconBackgroundColor` | `Int` | `Color.TRANSPARENT` | 选中列表中删除按钮的背景颜色 |
 | `atLeastSelectOneToastContent` | `String` | `"至少选择一个"` | 最少选择一个文件时的提示文本 |
 | `selectMaxNumberOverToastContent` | `String` | `"已达到最大选择数量"` | 达到最大选择数量限制时的提示文本 |
 

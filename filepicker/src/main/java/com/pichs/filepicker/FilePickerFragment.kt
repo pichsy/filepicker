@@ -1,6 +1,5 @@
 package com.pichs.filepicker
 
-import android.R.attr.scrollX
 import android.annotation.SuppressLint
 import android.app.Activity.RESULT_OK
 import android.content.Intent
@@ -113,6 +112,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
         initListener()
 
         initSelectedRecyclerView()
+
         if (viewModel.isCanShowBottomSelectRecyclerView()) {
             binding.rvSelected.isVisible = true
         } else {
@@ -238,7 +238,6 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
         }
 
     }
-
 
     /**
      * 判断类型是否是全部。

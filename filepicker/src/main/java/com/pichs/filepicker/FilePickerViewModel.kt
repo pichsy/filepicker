@@ -2,7 +2,6 @@ package com.pichs.filepicker
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
-import com.pichs.filepicker.FilePickerSelectType
 import com.pichs.filepicker.entity.MediaEntity
 import com.pichs.filepicker.entity.MediaFolder
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,11 +25,7 @@ class FilePickerViewModel : ViewModel() {
     val minFileSize = MutableStateFlow(1L)
 
     fun isCanShowBottomSelectRecyclerView(): Boolean {
-        return selectType.value == FilePickerSelectType.IMAGE_VIDEO ||
-                selectType.value == FilePickerSelectType.IMAGE ||
-                selectType.value == FilePickerSelectType.VIDEO ||
-                selectType.value == FilePickerSelectType.IMAGE_VIDEO_GIF ||
-                selectType.value == FilePickerSelectType.GIF
+        return uiConfig.isShowHomePageSelectedBottomListWidget && (selectType.value == FilePickerSelectType.IMAGE_VIDEO || selectType.value == FilePickerSelectType.IMAGE || selectType.value == FilePickerSelectType.VIDEO || selectType.value == FilePickerSelectType.IMAGE_VIDEO_GIF || selectType.value == FilePickerSelectType.GIF)
     }
 
     val userUseSelectDataList = MutableStateFlow<MutableList<MediaEntity>>(mutableListOf())
@@ -160,9 +155,7 @@ class FilePickerViewModel : ViewModel() {
         return folders.map { folder ->
             val filteredMediaList = folder.mediaEntityList.filter { it.size in minFileSize.value..maxFileSize.value }.toMutableList()
             MediaFolder(
-                folderPath = folder.folderPath,
-                name = folder.name,
-                mediaEntityList = filteredMediaList
+                folderPath = folder.folderPath, name = folder.name, mediaEntityList = filteredMediaList
             )
         }.filter { it.mediaEntityList.isNotEmpty() }.toMutableList()
     }

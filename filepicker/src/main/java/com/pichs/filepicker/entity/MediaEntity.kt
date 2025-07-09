@@ -20,11 +20,33 @@ data class MediaEntity(
     var selectedCount: Int = 0,
 ) : Parcelable {
 
-    var tempSelected: Boolean = false
-
     companion object {
         fun fromPath(path: String): MediaEntity {
-            return MediaEntity(path = path)
+            return MediaEntity(path = path).apply {
+                mimeType = when {
+                    path.endsWith(".jpg", true) || path.endsWith(".jpeg", true) -> "image/jpeg"
+                    path.endsWith(".png", true) -> "image/png"
+                    path.endsWith(".gif", true) -> "image/gif"
+                    path.endsWith(".mp4", true) -> "video/mp4"
+                    path.endsWith(".mp3", true) -> "audio/mpeg"
+                    path.endsWith(".wav", true) -> "audio/wav"
+                    path.endsWith(".flac", true) -> "audio/flac"
+                    path.endsWith(".m4a", true) -> "audio/mp4"
+                    path.endsWith(".txt", true) -> "text/plain"
+                    path.endsWith(".pdf", true) -> "application/pdf"
+                    path.endsWith(".doc", true) || path.endsWith(".docx", true) -> "application/msword"
+                    path.endsWith(".ppt", true) || path.endsWith(".pptx", true) -> "application/vnd.ms-powerpoint"
+                    path.endsWith(".xls", true) || path.endsWith(".xlsx", true) -> "application/vnd.ms-excel"
+                    path.endsWith(".zip", true) -> "application/zip"
+                    path.endsWith(".rar", true) -> "application/x-rar-compressed"
+                    path.endsWith(".tar", true) -> "application/x-tar"
+                    path.endsWith(".gz", true) -> "application/gzip"
+                    path.endsWith(".iso", true) -> "application/x-iso9660-image"
+                    path.endsWith(".7z", true) -> "application/x-7z-compressed"
+                    path.endsWith(".apk", true) -> "application/vnd.android.package-archive"
+                    else -> null
+                }
+            }
         }
     }
 
@@ -92,8 +114,12 @@ data class MediaEntity(
         return mimeType?.equals("application/vnd.ms-excel", true) == true
     }
 
+    /**
+     * 是否是压缩包。
+     * Check if the media entity is an archive file (zip, rar, tar, gz, iso, 7z).
+     */
     fun isArchive(): Boolean {
-        return isZip() || isRar() || isTar() || isGz()
+        return isZip() || is7z() || isRar() || isTar() || isGz() || isIso()
     }
 
     fun isZip(): Boolean {
@@ -110,6 +136,14 @@ data class MediaEntity(
 
     fun isGz(): Boolean {
         return mimeType?.equals("application/gzip", true) == true
+    }
+
+    fun isIso(): Boolean {
+        return mimeType?.equals("application/x-iso9660-image", true) == true
+    }
+
+    fun is7z(): Boolean {
+        return mimeType?.equals("application/x-7z-compressed", true) == true
     }
 
     /**

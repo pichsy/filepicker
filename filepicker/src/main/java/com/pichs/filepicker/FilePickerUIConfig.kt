@@ -2,7 +2,6 @@ package com.pichs.filepicker
 
 import android.graphics.Color
 import android.os.Parcelable
-import com.pichs.xwidget.utils.XColorHelper
 import kotlinx.parcelize.Parcelize
 
 @Parcelize
@@ -63,12 +62,12 @@ data class FilePickerUIConfig(
     var isOriginalChecked: Boolean = false,
 
     /**
-     *  是否显示底部选择的 列表
+     *  是否显示 主界面的 底部选择的 列表
      *  默认展示
      *  但是，仅限于 图片类的，视频类的。（默认展示）
      *  文件和音频类型不支持。
      */
-    var isShowSelectedBottomListWidget: Boolean = true,
+    var isShowHomePageSelectedBottomListWidget: Boolean = true,
 
     /**
      * 是否展示选中列表item中的close按钮
