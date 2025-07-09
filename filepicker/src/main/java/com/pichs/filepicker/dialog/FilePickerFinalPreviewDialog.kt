@@ -21,7 +21,9 @@ import com.pichs.filepicker.photoview.PhotoView
 import com.pichs.filepicker.video.VideoPlayerView
 import razerdp.basepopup.BasePopupWindow
 import androidx.lifecycle.viewModelScope
+import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.drake.brv.utils.bindingAdapter
 import com.drake.brv.utils.linear
 import com.drake.brv.utils.setup
 import com.pichs.filepicker.SelectTypeUtil
@@ -31,6 +33,7 @@ import com.pichs.filepicker.entity.FilePickerTempSelected
 import com.pichs.filepicker.loader.MediaLoader
 import com.pichs.filepicker.utils.FilePickerClickHelper
 import com.pichs.filepicker.utils.FilePickerTimeFormatUtils
+import com.pichs.filepicker.widget.OnDragItemTouchHelperCallback
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -42,6 +45,7 @@ class FilePickerFinalPreviewDialog(
     val context: Context,
     val viewModel: FilePickerViewModel,
     val onDismissDataDelete: (deleteList: MutableList<MediaEntity>) -> Unit,
+    val onDragEnd: () -> Unit,
     val onConfirm: (ArrayList<MediaEntity>) -> Unit
 ) : BasePopupWindow(context) {
 
@@ -141,7 +145,6 @@ class FilePickerFinalPreviewDialog(
     }
 
     private fun initSelectedRecyclerView() {
-        binding.rvSelected.itemAnimator = null
         binding.rvSelected.linear(RecyclerView.HORIZONTAL).setup {
             addType<FilePickerTempSelected>(R.layout.file_picker_item_rv_album_just_selected)
 
@@ -154,7 +157,8 @@ class FilePickerFinalPreviewDialog(
                 MediaLoader.loadImageThumbnail(itemEntity.uri, itemEntity.mimeType, itemBinding.ivCoverImage)
 
                 itemBinding.clSelectDelete.isVisible = viewModel.uiConfig.isShowSelectedListDeleteIcon
-                itemBinding.tvDelete.setBackgroundColor(viewModel.uiConfig.selectedListDeleteIconBackgroundColor)
+                itemBinding.ivDelete.setImageResource(if (viewModel.uiConfig.selectedListDeleteIconResId != 0) viewModel.uiConfig.selectedListDeleteIconResId else R.drawable.filepicker_ic_delete_item)
+                itemBinding.ivDelete.setBackgroundColor(viewModel.uiConfig.selectedListDeleteIconBackgroundColor)
 
                 if (mCurrentItem == item) {
                     itemBinding.ivCoverImage.isSelected = true
@@ -204,6 +208,13 @@ class FilePickerFinalPreviewDialog(
                 }
             }
         }.models = tempSelectDataList
+
+        OnDragItemTouchHelperCallback(binding.rvSelected.bindingAdapter, viewModel, onDragEnd = {
+            onDragEnd()
+            updateIndexUI(mCurrentItem)
+        }).let { callback ->
+            ItemTouchHelper(callback).attachToRecyclerView(binding.rvSelected)
+        }
     }
 
     fun itemIndexOfList(item: FilePickerTempSelected?): Int {

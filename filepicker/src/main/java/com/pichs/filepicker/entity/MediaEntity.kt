@@ -40,8 +40,40 @@ data class MediaEntity(
         return mimeType?.contains("audio/", true) == true
     }
 
+    fun isMp3(): Boolean {
+        return mimeType?.equals("audio/mpeg", true) == true
+    }
+
+    fun isWav(): Boolean {
+        return mimeType?.equals("audio/wav", true) == true
+    }
+
+    fun isFlac(): Boolean {
+        return mimeType?.equals("audio/flac", true) == true
+    }
+
+    fun isM4a(): Boolean {
+        return mimeType?.equals("audio/mp4", true) == true
+    }
+
     fun isGif(): Boolean {
         return mimeType?.equals("image/gif", true) == true
+    }
+
+    fun isJpeg(): Boolean {
+        return mimeType?.equals("image/jpeg", true) == true
+    }
+
+    fun isPng(): Boolean {
+        return mimeType?.equals("image/png", true) == true
+    }
+
+    fun isWebp(): Boolean {
+        return mimeType?.equals("image/webp", true) == true
+    }
+
+    fun isTxt(): Boolean {
+        return mimeType?.equals("text/plain", true) == true
     }
 
     fun isPdf(): Boolean {
@@ -60,10 +92,30 @@ data class MediaEntity(
         return mimeType?.equals("application/vnd.ms-excel", true) == true
     }
 
+    fun isArchive(): Boolean {
+        return isZip() || isRar() || isTar() || isGz()
+    }
+
     fun isZip(): Boolean {
         return mimeType?.equals("application/zip", true) == true
     }
 
+    fun isRar(): Boolean {
+        return mimeType?.equals("application/x-rar-compressed", true) == true
+    }
+
+    fun isTar(): Boolean {
+        return mimeType?.equals("application/x-tar", true) == true
+    }
+
+    fun isGz(): Boolean {
+        return mimeType?.equals("application/gzip", true) == true
+    }
+
+    /**
+     * Check if the media entity is an APK file.
+     * @return true if the mimeType is "application/vnd.android.package-archive", false otherwise.
+     */
     fun isApk(): Boolean {
         return mimeType?.equals("application/vnd.android.package-archive", true) == true
     }

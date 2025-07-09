@@ -144,7 +144,6 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
                     isShowOriginal = false,
                     isPreviewPageIndexMode = true,
                     isShowSelectedListDeleteIcon = true,
-                    selectedListDeleteIconBackgroundColor = Color.BLUE
                 )
             ).start()
     }

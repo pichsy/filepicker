@@ -2,6 +2,7 @@ package com.pichs.filepicker
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
+import com.pichs.filepicker.FilePickerSelectType
 import com.pichs.filepicker.entity.MediaEntity
 import com.pichs.filepicker.entity.MediaFolder
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,6 +25,13 @@ class FilePickerViewModel : ViewModel() {
     val maxFileSize = MutableStateFlow(0L)
     val minFileSize = MutableStateFlow(1L)
 
+    fun isCanShowBottomSelectRecyclerView(): Boolean {
+        return selectType.value == FilePickerSelectType.IMAGE_VIDEO ||
+                selectType.value == FilePickerSelectType.IMAGE ||
+                selectType.value == FilePickerSelectType.VIDEO ||
+                selectType.value == FilePickerSelectType.IMAGE_VIDEO_GIF ||
+                selectType.value == FilePickerSelectType.GIF
+    }
 
     val userUseSelectDataList = MutableStateFlow<MutableList<MediaEntity>>(mutableListOf())
 

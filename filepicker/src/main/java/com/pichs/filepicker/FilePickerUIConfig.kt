@@ -1,5 +1,6 @@
 package com.pichs.filepicker
 
+import android.graphics.Color
 import android.os.Parcelable
 import com.pichs.xwidget.utils.XColorHelper
 import kotlinx.parcelize.Parcelize
@@ -62,14 +63,27 @@ data class FilePickerUIConfig(
     var isOriginalChecked: Boolean = false,
 
     /**
+     *  是否显示底部选择的 列表
+     *  默认展示
+     *  但是，仅限于 图片类的，视频类的。（默认展示）
+     *  文件和音频类型不支持。
+     */
+    var isShowSelectedBottomListWidget: Boolean = true,
+
+    /**
      * 是否展示选中列表item中的close按钮
      */
     var isShowSelectedListDeleteIcon: Boolean = false,
 
     /**
+     * 是否展示选中列表item中的close按钮 资源id
+     */
+    var selectedListDeleteIconResId: Int = 0,
+
+    /**
      * 选中列表item中删除按钮的背景色
      */
-    var selectedListDeleteIconBackgroundColor: Int = XColorHelper.parseColor("#FA4B3A"),
+    var selectedListDeleteIconBackgroundColor: Int = Color.TRANSPARENT,
 
     /**
      * 至少选择一个 toast

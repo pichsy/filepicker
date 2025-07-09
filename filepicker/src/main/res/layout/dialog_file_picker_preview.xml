@@ -107,7 +107,7 @@
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rv_selected"
         android:layout_width="match_parent"
-        android:layout_height="68dp"
+        android:layout_height="wrap_content"
         android:background="#EA121212"
         android:visibility="gone"
         app:layout_constraintBottom_toTopOf="@+id/cl_bottom_bar"

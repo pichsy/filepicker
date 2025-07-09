@@ -42,6 +42,7 @@ import com.pichs.filepicker.entity.MediaFolder
 import com.pichs.filepicker.loader.MediaLoader
 import com.pichs.filepicker.scanner.MediaScanner
 import com.pichs.filepicker.utils.FilePickerClickHelper
+import com.pichs.filepicker.utils.FilePickerIconUtils
 import com.pichs.filepicker.utils.FilePickerTimeFormatUtils
 import com.pichs.filepicker.widget.OnDragItemTouchHelperCallback
 import com.pichs.filepicker.widget.OnItemSelectionChangedListener
@@ -110,7 +111,13 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
         initDataFlow()
         loadData()
         initListener()
+
         initSelectedRecyclerView()
+        if (viewModel.isCanShowBottomSelectRecyclerView()) {
+            binding.rvSelected.isVisible = true
+        } else {
+            binding.rvSelected.isVisible = false
+        }
 
         updateBottomMenuSelectNumberUI()
     }
@@ -126,21 +133,24 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
             }
 
             // todo 进入 展示界面弹窗，这里仅展示固定个数，不参与展示。
-            FilePickerFinalPreviewDialog(requireContext(), viewModel, onDismissDataDelete = { deleteList ->
-                viewModel.removeSelectedDataAll(deleteList)
+            FilePickerFinalPreviewDialog(
+                requireContext(), viewModel, onDismissDataDelete = { deleteList ->
+                    viewModel.removeSelectedDataAll(deleteList)
 //                Toast.makeText(requireContext(), "删除了 ${deleteList.size} 个文件", Toast.LENGTH_SHORT).show()
-                updateSelectDataUI()
-                updateBottomMenuSelectNumberUI()
-            }, onConfirm = { resultList ->
+                    updateSelectDataUI()
+                    updateBottomMenuSelectNumberUI()
+                }, onDragEnd = {
+                    updateSelectDataUI()
+                }, onConfirm = { resultList ->
 //                Toast.makeText(requireContext(), "确定了 ${resultList?.path}", Toast.LENGTH_SHORT).show()
-                Log.d("FilePickerFragment", "onConfirm: resultList size:${resultList.size}")
-                if (resultList.isEmpty()) {
-                    Log.d("FilePickerFragment", "item is null, return")
-                    Toast.makeText(requireContext(), "未选择文件", Toast.LENGTH_SHORT).show()
-                    return@FilePickerFinalPreviewDialog
-                }
-                callbackToChooser(resultList)
-            }).showPopupWindow()
+                    Log.d("FilePickerFragment", "onConfirm: resultList size:${resultList.size}")
+                    if (resultList.isEmpty()) {
+                        Log.d("FilePickerFragment", "item is null, return")
+                        Toast.makeText(requireContext(), "未选择文件", Toast.LENGTH_SHORT).show()
+                        return@FilePickerFinalPreviewDialog
+                    }
+                    callbackToChooser(resultList)
+                }).showPopupWindow()
         }
 
         FilePickerClickHelper.clicks(binding.llOriginal) {
@@ -446,6 +456,9 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                 val item = getModel<MediaEntity>()
                 val itemBinding = getBinding<FilePickerItemRvAudioAlbumBinding>()
                 itemBinding.tvName.text = item.name ?: ""
+
+                itemBinding.ivCoverImage.setImageResource(FilePickerIconUtils.getFileIcon(item))
+
                 if (item.isAudio()) {
                     itemBinding.tvInfo.text =
                         FilePickerTimeFormatUtils.formatTimeMillSeconds(item.duration) + " - " + FilePickerTimeFormatUtils.formatFileSize(item.size)
@@ -461,12 +474,14 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                 if (indexOfSelect != -1) {
                     itemBinding.tvSelectIndex.text = "${indexOfSelect + 1}"
                     itemBinding.tvSelectIndex.setNormalBackgroundColor(ContextCompat.getColor(context, R.color.file_picker_index_bg_color))
-                    itemBinding.ivCoverImage.foreground = ContextCompat.getDrawable(context, R.drawable.item_filepicker_select_mask)
+//                    itemBinding.ivCoverImage.foreground = ContextCompat.getDrawable(context, R.drawable.item_filepicker_select_mask)
+                    itemBinding.clRoot.isChecked = true
                     itemBinding.root.isSelected = true
                 } else {
                     itemBinding.tvSelectIndex.text = ""
                     itemBinding.tvSelectIndex.setNormalBackgroundColor(Color.TRANSPARENT)
-                    itemBinding.ivCoverImage.foreground = null
+//                    itemBinding.ivCoverImage.foreground = null
+                    itemBinding.clRoot.isChecked = false
                     itemBinding.root.isSelected = false
                 }
 
@@ -504,7 +519,6 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
     @SuppressLint("SetTextI18n")
     private fun initGridRecycler() {
 //        binding.tvMaxSelectNumber.text = "${viewModel.maxSelectNumber.value}"
-
         binding.recyclerView.itemAnimator = null
         binding.recyclerView.grid(4).setup {
             addType<MediaEntity>(R.layout.file_picker_item_rv_album)
@@ -602,7 +616,6 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
     }
 
     private fun initSelectedRecyclerView() {
-        binding.rvSelected.itemAnimator = null
         binding.rvSelected.linear(RecyclerView.HORIZONTAL).setup {
             addType<MediaEntity>(R.layout.file_picker_item_rv_album_selected)
 
@@ -610,10 +623,15 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                 val item = getModel<MediaEntity>()
                 val itemBinding = getBinding<FilePickerItemRvAlbumSelectedBinding>()
 
-                MediaLoader.loadImageThumbnail(item.uri, item.mimeType, itemBinding.ivCoverImage)
+                if (item.isVideo() || item.isImage() || item.isGif()) {
+                    MediaLoader.loadImageThumbnail(item.uri, item.mimeType, itemBinding.ivCoverImage)
+                } else {
+                    itemBinding.ivCoverImage.setImageResource(FilePickerIconUtils.getFileIcon(item))
+                }
 
                 itemBinding.clSelectDelete.isVisible = viewModel.uiConfig.isShowSelectedListDeleteIcon
-                itemBinding.tvDelete.setBackgroundColor(viewModel.uiConfig.selectedListDeleteIconBackgroundColor)
+                itemBinding.ivDelete.setImageResource(if (viewModel.uiConfig.selectedListDeleteIconResId != 0) viewModel.uiConfig.selectedListDeleteIconResId else R.drawable.filepicker_ic_delete_item)
+                itemBinding.ivDelete.setBackgroundColor(viewModel.uiConfig.selectedListDeleteIconBackgroundColor)
 
                 if (item.isVideo()) {
                     itemBinding.tvDuration.visibility = View.VISIBLE
@@ -754,7 +772,9 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
 
 
             // 底部列表
-            binding.rvSelected.isVisible = true
+            if (viewModel.isCanShowBottomSelectRecyclerView()) {
+                binding.rvSelected.isVisible = true
+            }
             binding.rvSelected.models = viewModel.getSelectedDataList() + viewModel.tempSelectData
         } else {
             binding.llPreview.isEnabled = false

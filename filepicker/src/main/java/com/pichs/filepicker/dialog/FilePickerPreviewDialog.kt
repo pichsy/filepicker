@@ -159,7 +159,6 @@ class FilePickerPreviewDialog(
 
 
     private fun initSelectedRecyclerView() {
-        binding.rvSelected.itemAnimator = null
         binding.rvSelected.linear(RecyclerView.HORIZONTAL).setup {
             addType<MediaEntity>(R.layout.file_picker_item_rv_album_selected)
 
@@ -170,7 +169,8 @@ class FilePickerPreviewDialog(
                 MediaLoader.loadImageThumbnail(item.uri, item.mimeType, itemBinding.ivCoverImage)
 
                 itemBinding.clSelectDelete.isVisible = viewModel.uiConfig.isShowSelectedListDeleteIcon
-                itemBinding.tvDelete.setBackgroundColor(viewModel.uiConfig.selectedListDeleteIconBackgroundColor)
+                itemBinding.ivDelete.setImageResource(if (viewModel.uiConfig.selectedListDeleteIconResId != 0) viewModel.uiConfig.selectedListDeleteIconResId else R.drawable.filepicker_ic_delete_item)
+                itemBinding.ivDelete.setBackgroundColor(viewModel.uiConfig.selectedListDeleteIconBackgroundColor)
 
                 if (mCurrentItem == item) {
                     itemBinding.ivCoverImage.isSelected = true
