@@ -260,6 +260,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                     }
                     // 这里处理数据
                     binding.recyclerView.models = list
+                    binding.llEmpty.isVisible = list.isEmpty()
                 }
             }
 
@@ -443,7 +444,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                 DividerItemDecoration(
                     ctx, RecyclerView.VERTICAL
                 ).apply {
-                    ContextCompat.getDrawable(ctx, R.drawable.item_decroration_line)?.let {
+                    ContextCompat.getDrawable(ctx, R.drawable.filepicker_item_decroration_line)?.let {
                         setDrawable(it)
                     }
                 })

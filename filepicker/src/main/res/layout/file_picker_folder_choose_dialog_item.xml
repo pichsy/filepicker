@@ -14,7 +14,7 @@
         android:layout_height="48dp"
         android:layout_marginStart="8dp"
         android:scaleType="centerCrop"
-        android:src="@drawable/placeholder_image" />
+        android:src="@drawable/filepicker_placeholder_image" />
 
     <com.pichs.xwidget.view.XTextView
         android:id="@+id/tv_album"

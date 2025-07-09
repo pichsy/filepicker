@@ -46,7 +46,7 @@ class FolderChooseDialog(mCtx: Context, val allAlbumName:String, val list: Mutab
     private fun initRecycler() {
         binding.recyclerView.itemAnimator = null
         binding.recyclerView.addItemDecoration(DividerItemDecoration(context, DividerItemDecoration.VERTICAL).apply {
-            ContextCompat.getDrawable(context, R.drawable.item_decroration_line)?.let { setDrawable(it) }
+            ContextCompat.getDrawable(context, R.drawable.filepicker_item_decroration_line)?.let { setDrawable(it) }
         })
         binding.recyclerView.linear().setup {
             addType<MediaFolder>(R.layout.file_picker_folder_choose_dialog_item)
