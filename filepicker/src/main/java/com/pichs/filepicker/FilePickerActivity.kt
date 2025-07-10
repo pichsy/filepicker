@@ -1,10 +1,15 @@
 package com.pichs.filepicker
 
+import android.content.res.Configuration
 import android.os.Bundle
 import android.util.Log
+import android.view.View
 import android.view.ViewGroup
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.OnApplyWindowInsetsListener
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updateLayoutParams
 import com.pichs.filepicker.databinding.ActivityFilepickerMainBinding
 import com.pichs.filepicker.entity.MediaEntity
@@ -32,10 +37,17 @@ class FilePickerActivity : AppCompatActivity() {
 
         XStatusBarHelper.transparentStatusBar(window)
         super.onCreate(savedInstanceState)
+
         binding = ActivityFilepickerMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        checkNavigationBar()
+        ViewCompat.setOnApplyWindowInsetsListener(window.decorView, object : OnApplyWindowInsetsListener {
+            override fun onApplyWindowInsets(v: View, insets: WindowInsetsCompat): WindowInsetsCompat {
+                checkNavigationBar()
+                return insets
+            }
+
+        })
 
         var maxSelectNumber = intent.getIntExtra("maxSelectNumber", 0)
         var maxFileSize = intent.getLongExtra("maxFileSize", 0L)
@@ -94,15 +106,12 @@ class FilePickerActivity : AppCompatActivity() {
 
         supportFragmentManager.beginTransaction().add(binding.flContainer.id, fragment).show(fragment).commitAllowingStateLoss()
 
-        addOnNewIntentListener {
-            checkNavigationBar()
-        }
     }
 
     private fun checkNavigationBar() {
-        if (NavigationBarUtils.hasNavigationBar(this)) {
+        if (NavigationBarUtils.isGestureBarVisible(this)) {
             binding.flContainer.updateLayoutParams<ViewGroup.MarginLayoutParams> {
-                bottomMargin = XDisplayHelper.getNavigationBarHeight(this@FilePickerActivity)
+                bottomMargin = NavigationBarUtils.getNavigationBarHeight(this@FilePickerActivity)
             }
         } else {
             binding.flContainer.updateLayoutParams<ViewGroup.MarginLayoutParams> {
@@ -111,4 +120,13 @@ class FilePickerActivity : AppCompatActivity() {
         }
     }
 
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        checkNavigationBar()
+    }
+
+    override fun onMultiWindowModeChanged(isInMultiWindowMode: Boolean, newConfig: Configuration) {
+        super.onMultiWindowModeChanged(isInMultiWindowMode, newConfig)
+        checkNavigationBar()
+    }
 }
