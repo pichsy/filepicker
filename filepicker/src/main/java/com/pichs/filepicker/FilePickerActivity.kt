@@ -14,8 +14,8 @@ import androidx.lifecycle.Lifecycle
 import com.pichs.filepicker.databinding.ActivityFilepickerMainBinding
 import com.pichs.filepicker.entity.MediaEntity
 import com.pichs.filepicker.utils.FilePickerLog
-import com.pichs.filepicker.utils.FilePickerNavigationBarUtils
 import com.pichs.filepicker.utils.FilePickerPadUtils
+import com.pichs.xwidget.utils.XNavigationBarUtils
 import com.pichs.xwidget.utils.XStatusBarHelper
 import kotlinx.coroutines.flow.update
 
@@ -109,9 +109,9 @@ class FilePickerActivity : AppCompatActivity() {
     }
 
     private fun checkNavigationBar() {
-        if (FilePickerNavigationBarUtils.isGestureBarVisible(this)) {
+        if (XNavigationBarUtils.isGestureBarVisible(this)) {
             binding.flContainer.updateLayoutParams<ViewGroup.MarginLayoutParams> {
-                bottomMargin = FilePickerNavigationBarUtils.getNavigationBarHeight(this@FilePickerActivity)
+                bottomMargin = XNavigationBarUtils.getNavigationBarHeight(this@FilePickerActivity)
             }
         } else {
             binding.flContainer.updateLayoutParams<ViewGroup.MarginLayoutParams> {

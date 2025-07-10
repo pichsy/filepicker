@@ -1,7 +1,7 @@
 # 图库选择器
 
 ### 最新版本 ![](https://img.shields.io/maven-metadata/v.svg?label=maven-central&metadataUrl=https%3A%2F%2Frepo1.maven.org%2Fmaven2%2Fcom%2Fgitee%2Fpichs%2Ffilepicker%2Fmaven-metadata.xml)
-
+ - 使用最新版的 filepicker 库，必须使用最新版的xwidget库。都是 5.6.2 以上确保。
 - 用了很多，都没有丝滑的选择效果的开源库，滑动选择丝滑。闲来没事，随手写一个吧。
 - 图库选择，文件选择
 - 仿华为相册滑动选择手势逻辑，
@@ -35,10 +35,10 @@
 ```kotlin
 dependencies {
     // 基础组件库 （必须）
-    implementation("com.gitee.pichs:filepicker:4.6.1")
+    implementation("com.gitee.pichs:filepicker:5.6.2")
 
     // 基础组件库 （必须）
-    implementation("com.gitee.pichs:xwidget:5.5.0")
+    implementation("com.gitee.pichs:xwidget:5.6.2")
 
     // glide 图片加载 （必须）
     implementation("com.github.bumptech.glide:glide:4.16.0")
@@ -285,6 +285,10 @@ FilePicker.with(this)
 感谢你们的无私奉献，让开发变得更加高效和有趣！
 
 ## 升级日志
+
+### 5.6.2
+- 适配xwidget的工具类，适配底部导航栏。xwidget库务必使用最新 5.6.2 版本。
+- 为了让版本 跟[xwidget](https://github.com/pichsy/xwidget)关联，方便使用和记忆，版本号跟[xwidget](https://github.com/pichsy/xwidget)统一了。
 
 ### 4.6.1
 
