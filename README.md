@@ -30,7 +30,7 @@
 ```kotlin
 dependencies {
     // 基础组件库 （必须）
-    implementation("com.gitee.pichs:filepicker:4.3.0")
+    implementation("com.gitee.pichs:filepicker:4.5.1")
 
     // 基础组件库 （必须）
     implementation("com.gitee.pichs:xwidget:5.5.0")
@@ -283,6 +283,9 @@ FilePicker.with(this)
 感谢你们的无私奉献，让开发变得更加高效和有趣！
 
 ## 升级日志
+### 4.5.1
+- 适配底部小横导航栏
+- 优化UI选择样式
 
 ### 4.3.0 (预计)
 - **新增**：支持更多文件类型选择，如文档（audio, pdf, doc, ppt, excel, txt）、APK、各类压缩包等。
