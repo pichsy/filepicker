@@ -1,16 +1,29 @@
 package com.pichs.filepicker
 
 import android.util.Log
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.pichs.filepicker.entity.MediaEntity
 import com.pichs.filepicker.entity.MediaFolder
+import com.pichs.filepicker.utils.FilePickerLog
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import java.util.concurrent.CopyOnWriteArrayList
 
 class FilePickerViewModel : ViewModel() {
 
     var uiConfig: FilePickerUIConfig = FilePickerUIConfig()
+
+    val activityLifecycleChannel = Channel<Lifecycle.Event>()
+
+    fun sendActivityLifecycleEvent(event: Lifecycle.Event) {
+        viewModelScope.launch {
+            activityLifecycleChannel.send(event)
+        }
+    }
 
     /**
      * 原图是否勾选，默认不勾选
@@ -150,7 +163,6 @@ class FilePickerViewModel : ViewModel() {
 
 
     fun filterAllData(folders: List<MediaFolder>): MutableList<MediaFolder> {
-        Log.d("FilePickerViewModel", "filterAllData: maxSize=${maxFileSize.value}, minSize=${minFileSize.value}, folders.size=${folders.size}")
         // 将所有的 不合格的都剔除出去
         return folders.map { folder ->
             val filteredMediaList = folder.mediaEntityList.filter { it.size in minFileSize.value..maxFileSize.value }.toMutableList()

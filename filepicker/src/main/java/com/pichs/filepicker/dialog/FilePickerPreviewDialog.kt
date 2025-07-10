@@ -9,16 +9,16 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.core.view.isVisible
+import androidx.lifecycle.Lifecycle
 import androidx.media3.common.util.UnstableApi
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
-import com.bumptech.glide.Glide
 import com.pichs.filepicker.FilePickerViewModel
 import com.pichs.filepicker.R
 import com.pichs.filepicker.databinding.DialogFilePickerPreviewBinding
 import com.pichs.filepicker.entity.MediaEntity
 import com.pichs.filepicker.photoview.PhotoView
-import com.pichs.filepicker.video.VideoPlayerView
+import com.pichs.filepicker.video.FilePickerVideoPlayerView
 import razerdp.basepopup.BasePopupWindow
 import androidx.lifecycle.viewModelScope
 import androidx.recyclerview.widget.ItemTouchHelper
@@ -31,14 +31,15 @@ import com.pichs.filepicker.SelectTypeUtil
 import com.pichs.filepicker.databinding.FilePickerItemRvAlbumSelectedBinding
 import com.pichs.filepicker.loader.MediaLoader
 import com.pichs.filepicker.utils.FilePickerClickHelper
+import com.pichs.filepicker.utils.FilePickerLog
 import com.pichs.filepicker.utils.FilePickerTimeFormatUtils
-import com.pichs.filepicker.widget.OnDragItemTouchHelperCallback
+import com.pichs.filepicker.widget.OnFilePickerDragItemTouchHelperCallback
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlin.times
 
 @UnstableApi
 class FilePickerPreviewDialog(
@@ -80,7 +81,7 @@ class FilePickerPreviewDialog(
         job = viewModel.viewModelScope.launch {
             launch {
                 viewModel.currentFolderDataList.collectLatest {
-                    Log.d("FilePickerFragment", "initDataFlow currentFolderDataList: size:${it.size}")
+                    FilePickerLog.d("FilePickerFragment", "initDataFlow currentFolderDataList: size:${it.size}")
                     mCurrentIndex = viewModel.getCurrentFolderDataList().indexOf(mCurrentItem)
 
                     binding.viewPager2.adapter?.notifyDataSetChanged()
@@ -93,14 +94,14 @@ class FilePickerPreviewDialog(
 
             launch {
                 viewModel.originalCheckedFlow.collectLatest {
-                    Log.d("FilePickerPreviewDialog", "initDataFlow-----dialog originalCheckedFlow: isChecked:${it}")
+                    FilePickerLog.d("FilePickerPreviewDialog", "initDataFlow-----dialog originalCheckedFlow: isChecked:${it}")
                     binding.cboxOriginal.isChecked = it
                 }
             }
 
             launch {
                 isShowToolBar.collectLatest { isShow ->
-                    Log.d("FilePickerPreviewDialog", "initDataFlow-----dialog isShowToolBar: isShow:${isShow}")
+                    FilePickerLog.d("FilePickerPreviewDialog", "initDataFlow-----dialog isShowToolBar: isShow:${isShow}")
 //                    binding.statusBarView.isVisible = isShow
 //                    binding.clToolbar.isVisible = isShow
 //                    binding.rvSelected.isVisible = isShow
@@ -116,6 +117,22 @@ class FilePickerPreviewDialog(
                         binding.clToolbar.animate().alpha(0f).setDuration(300).start()
                         binding.rvSelected.animate().alpha(0f).setDuration(300).start()
                         binding.clBottomBar.animate().alpha(0f).setDuration(300).start()
+                    }
+                }
+            }
+
+            launch {
+                viewModel.activityLifecycleChannel.consumeAsFlow().collectLatest {
+                    if (it == Lifecycle.Event.ON_PAUSE) {
+                        // 暂停播放
+                        if (mCurrentIndex >= 0 && mCurrentIndex < viewModel.getCurrentFolderDataList().size) {
+                            // 查找当前页面的 ViewHolder 并释放播放器
+                            val recyclerView = binding.viewPager2.getChildAt(0) as RecyclerView
+                            val viewHolder = recyclerView.findViewHolderForAdapterPosition(mCurrentIndex)
+                            if (viewHolder is MediaPagerAdapter.VideoViewHolder) {
+                                viewHolder.videoPlayerView.releasePlayer()
+                            }
+                        }
                     }
                 }
             }
@@ -215,7 +232,7 @@ class FilePickerPreviewDialog(
             }
         }.models = viewModel.getSelectedDataList()
 
-        OnDragItemTouchHelperCallback(binding.rvSelected.bindingAdapter, viewModel, onDragEnd = {
+        OnFilePickerDragItemTouchHelperCallback(binding.rvSelected.bindingAdapter, viewModel, onDragEnd = {
             onDragEnd()
             updateIndexUI(mCurrentItem)
         }).let { callback ->
@@ -237,7 +254,7 @@ class FilePickerPreviewDialog(
             override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                 super.onScrolled(recyclerView, dx, dy)
                 // 这里可以监听到滚动事件
-                Log.d("FilePickerPreviewDialog999", "onScrolled: dx=$dx")
+                FilePickerLog.d("FilePickerPreviewDialog999", "onScrolled: dx=$dx")
                 onSelectListScrollChanged(mCurrentIndex, 2, dx)
             }
         })
@@ -323,12 +340,12 @@ class FilePickerPreviewDialog(
 
     override fun onDismiss() {
         super.onDismiss()
-        Log.d("FilePickerPreviewDialog", "onDismiss: releasing player for position=$mCurrentIndex")
+        FilePickerLog.d("FilePickerPreviewDialog", "onDismiss: releasing player for position=$mCurrentIndex")
         // 释放当前页面的播放器
 
         if (mCurrentIndex >= 0 && mCurrentIndex < viewModel.getCurrentFolderDataList().size) {
             // 释放上一个页面的播放器
-            Log.d("FilePickerPreviewDialog", "onPageSelected: releasing player for position=$mCurrentIndex")
+            FilePickerLog.d("FilePickerPreviewDialog", "onPageSelected: releasing player for position=$mCurrentIndex")
 //                // 查找上一个页面的 ViewHolder 并释放播放器
             val recyclerView = binding.viewPager2.getChildAt(0) as RecyclerView
             val viewHolder = recyclerView.findViewHolderForAdapterPosition(mCurrentIndex)
@@ -355,7 +372,7 @@ class FilePickerPreviewDialog(
 
                 if (mCurrentIndex >= 0 && mCurrentIndex < viewModel.getCurrentFolderDataList().size) {
                     // 释放上一个页面的播放器
-                    Log.d("FilePickerPreviewDialog", "onPageSelected: releasing player for position=$mCurrentIndex")
+                    FilePickerLog.d("FilePickerPreviewDialog", "onPageSelected: releasing player for position=$mCurrentIndex")
 //                // 查找上一个页面的 ViewHolder 并释放播放器
                     val recyclerView = binding.viewPager2.getChildAt(0) as RecyclerView
                     val viewHolder = recyclerView.findViewHolderForAdapterPosition(mCurrentIndex)
@@ -363,7 +380,7 @@ class FilePickerPreviewDialog(
                         viewHolder.videoPlayerView.releasePlayer()
                     }
                 }
-                Log.d("FilePickerPreviewDialog", "onPageSelected: position=$position, mCurrentIndex=$mCurrentIndex")
+                FilePickerLog.d("FilePickerPreviewDialog", "onPageSelected: position=$position, mCurrentIndex=$mCurrentIndex")
                 val item = viewModel.getCurrentFolderDataByPosition(position) ?: return
                 mCurrentItem = item
                 updateIndexUI(item)
@@ -461,7 +478,7 @@ class FilePickerPreviewDialog(
                 }
                 ImageViewHolder(photoView)
             } else {
-                val playView = VideoPlayerView(context).apply {
+                val playView = FilePickerVideoPlayerView(context).apply {
                     layoutParams = ViewGroup.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT
                     )
@@ -485,14 +502,14 @@ class FilePickerPreviewDialog(
                 MediaLoader.loadImage(item.uri, item.mimeType, holder.photoView)
 //                Glide.with(context).load(item.path).into(holder.photoView)
             } else if (holder is VideoViewHolder) {
-                Log.d("MediaPagerAdapter", "onBindViewHolder: item.path=${item.path}, item.uri=${item.uri}")
+                FilePickerLog.d("MediaPagerAdapter", "onBindViewHolder: item.path=${item.path}, item.uri=${item.uri}")
                 holder.videoPlayerView.loadCover(item)
             }
         }
 
         override fun onViewDetachedFromWindow(holder: RecyclerView.ViewHolder) {
             super.onViewDetachedFromWindow(holder)
-            Log.d("MediaPagerAdapter", "onViewDetachedFromWindow11111:positon${holder.absoluteAdapterPosition} ==========")
+            FilePickerLog.d("MediaPagerAdapter", "onViewDetachedFromWindow11111:positon${holder.absoluteAdapterPosition} ==========")
             if (holder is VideoViewHolder) {
                 holder.videoPlayerView.releasePlayer()
             }
@@ -500,7 +517,7 @@ class FilePickerPreviewDialog(
 
         override fun onViewAttachedToWindow(holder: RecyclerView.ViewHolder) {
             super.onViewAttachedToWindow(holder)
-            Log.d("MediaPagerAdapter", "onViewAttachedToWindow22222: position=${holder.absoluteAdapterPosition} ==========")
+            FilePickerLog.d("MediaPagerAdapter", "onViewAttachedToWindow22222: position=${holder.absoluteAdapterPosition} ==========")
             if (holder is VideoViewHolder) {
                 // 这里可以根据需要重新加载视频封面或播放器
                 holder.videoPlayerView.loadCover(viewModel.getCurrentFolderDataList().getOrNull(holder.absoluteAdapterPosition))
@@ -517,6 +534,6 @@ class FilePickerPreviewDialog(
         inner class ImageViewHolder(val photoView: PhotoView) : RecyclerView.ViewHolder(photoView)
 
         @UnstableApi
-        inner class VideoViewHolder(val videoPlayerView: VideoPlayerView) : RecyclerView.ViewHolder(videoPlayerView)
+        inner class VideoViewHolder(val videoPlayerView: FilePickerVideoPlayerView) : RecyclerView.ViewHolder(videoPlayerView)
     }
 }

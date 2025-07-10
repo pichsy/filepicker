@@ -11,6 +11,7 @@ import android.util.Log
 import com.pichs.filepicker.entity.MediaResult
 import com.pichs.filepicker.entity.MediaFolder
 import com.pichs.filepicker.entity.MediaEntity
+import com.pichs.filepicker.utils.FilePickerLog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -46,7 +47,6 @@ object FileQueryHelper {
 
             val isNoneMedia = queryTypes.contains(QueryType.NONE)
 
-            Log.d("相册获取", "queryAlbums: isNoneMedia:$isNoneMedia")
             if (isNoneMedia) {
                 // 移除所有非NONE的类型。
                 queryTypes.removeAll { it != QueryType.NONE }
@@ -63,14 +63,12 @@ object FileQueryHelper {
                 // 是否仅仅是gif图片
                 isOnlyGif = isOnlyGifNotImage(queryTypes)
 
-                Log.d("相册获取", "queryAlbums: isContainsGif:$isContainsGif")
                 // 如果包含gif，那么就要查询图片
                 if (isContainsGif) {
                     queryTypes.remove(QueryType.GIF)
                     queryTypes.add(QueryType.IMAGE)
                 }
                 // 去重，防止乱传参数
-                Log.d("相册获取", "queryAlbums: queryTypeList:${queryTypes.joinToString { it.type }}")
 
                 if (queryTypes.size == 1) {
                     val queryType = queryTypes.firstOrNull()
@@ -94,9 +92,6 @@ object FileQueryHelper {
                 }
             }
 
-            Log.d("相册获取", "queryAlbums: isOnlyVideo:$isOnlyVideo")
-            Log.d("相册获取", "queryAlbums: isOnlyImage:$isOnlyImage")
-            Log.d("相册获取", "queryAlbums: isOnlyAudio:$isOnlyAudio")
 
             var contentUri: Uri? = null
 
@@ -142,9 +137,9 @@ object FileQueryHelper {
 
             val qf = queryWhereBuilder.build() + queryWhere.build()
 
-            Log.d("相册获取", "contentUri:$contentUri")
-            Log.d("相册获取", "section:${qf.section}")
-            Log.d("相册获取", "selectionAllArgs:${qf.sectionArgs?.joinToString(",")}")
+            FilePickerLog.d("相册获取", "contentUri:$contentUri")
+            FilePickerLog.d("相册获取", "section:${qf.section}")
+            FilePickerLog.d("相册获取", "selectionAllArgs:${qf.sectionArgs?.joinToString(",")}")
 
             val contentResolver = context.contentResolver
             var projection = arrayOf(
@@ -171,25 +166,19 @@ object FileQueryHelper {
             }
 
             val startTime = System.currentTimeMillis()
-            Log.e("相册获取", " 开始查询---startTime:${startTime}")
             val cursor = contentResolver.query(
                 contentUri, projection, qf.section, qf.sectionArgs, sortOrder
             )
 
             val endTime = System.currentTimeMillis()
-            Log.e("相册获取", " 结束查询---endTime:${endTime}---耗时：${endTime - startTime}")
-
-            Log.d("相册获取", "queryAlbums: cursor对象拿到了吗 count:${cursor?.count}")
             if (cursor == null) {
                 return@withContext mediaResult
             }
 
             val startTimeWhile = System.currentTimeMillis()
-            Log.e("相册获取", " 开始循环（整体）while---startTimeWhile:${startTimeWhile}")
             while (cursor.moveToNext()) {
 
                 val startTimeOneWhile = System.currentTimeMillis()
-                Log.e("相册获取", " 开始循环（单次)while---startTimeWhile:${startTimeOneWhile}")
                 val id = cursor.getLong(cursor.getColumnIndex(MediaStore.Files.FileColumns._ID))
                 val data = cursor.getString(cursor.getColumnIndex(MediaStore.Files.FileColumns.DATA))
                 val displayName = cursor.getString(cursor.getColumnIndex(MediaStore.Files.FileColumns.DISPLAY_NAME))
@@ -208,21 +197,20 @@ object FileQueryHelper {
                 }
 
                 val endTimeOneWhile = System.currentTimeMillis()
-                Log.e("相册获取", " 开始循环（单次) while---endTimeWhile:${endTimeOneWhile}---耗时：${endTimeOneWhile - startTimeOneWhile}")
 
                 // 获取缩略图位置
-                Log.d("相册获取", "queryAlbums: id:$id")
-                Log.d("相册获取", "queryAlbums: data:$data")
-                Log.d("相册获取", "queryAlbums: displayName:$displayName")
-                Log.d("相册获取", "queryAlbums: size:$size")
-                Log.d("相册获取", "queryAlbums: mimeType:$mimeType")
-                Log.d("相册获取", "queryAlbums: width:$width")
-                Log.d("相册获取", "queryAlbums: height:$height")
-                Log.d("相册获取", "queryAlbums: duration:$duration")
-                Log.d("相册获取", "queryAlbums: dateModified:$dateModified")
-                Log.d("相册获取", "queryAlbums: bucketDisplayName:$bucketDisplayName")
-                Log.d("相册获取", "queryAlbums: bucketId:$bucketId")
-                Log.d("相册获取", "queryAlbums: orientation:$orientation")
+                FilePickerLog.d("相册获取", "queryAlbums: id:$id")
+                FilePickerLog.d("相册获取", "queryAlbums: data:$data")
+                FilePickerLog.d("相册获取", "queryAlbums: displayName:$displayName")
+                FilePickerLog.d("相册获取", "queryAlbums: size:$size")
+                FilePickerLog.d("相册获取", "queryAlbums: mimeType:$mimeType")
+                FilePickerLog.d("相册获取", "queryAlbums: width:$width")
+                FilePickerLog.d("相册获取", "queryAlbums: height:$height")
+                FilePickerLog.d("相册获取", "queryAlbums: duration:$duration")
+                FilePickerLog.d("相册获取", "queryAlbums: dateModified:$dateModified")
+                FilePickerLog.d("相册获取", "queryAlbums: bucketDisplayName:$bucketDisplayName")
+                FilePickerLog.d("相册获取", "queryAlbums: bucketId:$bucketId")
+                FilePickerLog.d("相册获取", "queryAlbums: orientation:$orientation")
 
                 val fileCheckTimeStart = System.currentTimeMillis()
                 Log.e("相册获取", " 开始文件判断---fileCheckTimeStart 耗时:${fileCheckTimeStart - endTimeOneWhile}")
@@ -236,13 +224,13 @@ object FileQueryHelper {
                 val fileCheckTimeEnd = System.currentTimeMillis()
                 Log.e("相册获取", " 结束文件判断---fileCheckTimeEnd:${fileCheckTimeEnd}---耗时：${fileCheckTimeEnd - fileCheckTimeStart}")
 
-                Log.d("相册获取", "文件判断: isExists:$isExists")
-                Log.d("相册获取", "文件判断: isFile:$isFile")
-                Log.d("相册获取", "文件判断: length:$length")
-                Log.d("相册获取", "文件判断: isInHiddenDir:$isInHiddenDir")
+                FilePickerLog.d("相册获取", "文件判断: isExists:$isExists")
+                FilePickerLog.d("相册获取", "文件判断: isFile:$isFile")
+                FilePickerLog.d("相册获取", "文件判断: length:$length")
+                FilePickerLog.d("相册获取", "文件判断: isInHiddenDir:$isInHiddenDir")
 
                 if (!isExists || !isFile || length == 0L || isInHiddenDir) {
-                    Log.d("相册获取", "queryAlbums: 文件有毛病-或者-无权读取-在隐藏目录,忽略。。。。")
+                    FilePickerLog.d("相册获取", "queryAlbums: 文件有毛病-或者-无权读取-在隐藏目录,忽略。。。。")
                     continue
                 }
                 val fileCheckTimeEnd2 = System.currentTimeMillis()
@@ -286,7 +274,7 @@ object FileQueryHelper {
                     orientation = orientation,
                     time = dateModified,
                 )
-                Log.d("相册获取", "queryAlbums: mediaEntity:$mediaEntity")
+                FilePickerLog.d("相册获取", "queryAlbums: mediaEntity:$mediaEntity")
                 mediaResult.addMediaEntity(
                     MediaFolder(
                         name = bucketDisplayName,
@@ -298,7 +286,7 @@ object FileQueryHelper {
             val endTimeWhile = System.currentTimeMillis()
             Log.e("相册获取", " 结束循环（整体）while---endTimeWhile:${endTimeWhile}---耗时：${endTimeWhile - startTimeWhile}")
             cursor.close()
-            Log.d("相册获取", "queryAlbums: 最终结果-执行完毕---------folder:size：${mediaResult.mediaFolders.size}")
+            FilePickerLog.d("相册获取", "queryAlbums: 最终结果-执行完毕---------folder:size：${mediaResult.mediaFolders.size}")
             return@withContext mediaResult
         }
 

@@ -5,7 +5,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.pichs.filepicker.FilePickerViewModel
 import java.util.Collections
 
-class OnDragItemTouchHelperCallback(
+class OnFilePickerDragItemTouchHelperCallback(
     private val adapter: RecyclerView.Adapter<*>,
     private val viewModel: FilePickerViewModel,
     val onDragEnd: () -> Unit

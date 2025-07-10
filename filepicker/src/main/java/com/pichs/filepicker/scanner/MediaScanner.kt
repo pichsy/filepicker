@@ -478,10 +478,6 @@ object MediaScanner {
                         folder.mediaEntityList.add(mediaEntity)
                     }
                 }
-                Log.d(
-                    "MediaScanner",
-                    "scanMedia: Found ${folderMap.size} folders with total media count: ${folderMap.values.sumOf { it.mediaEntityList.size }}"
-                )
                 callback.onCompleted(folderMap.values.toList())
             }
 

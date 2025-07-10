@@ -2,7 +2,6 @@ package com.pichs.filepicker
 
 import android.content.res.Configuration
 import android.os.Bundle
-import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import androidx.activity.viewModels
@@ -11,11 +10,12 @@ import androidx.core.view.OnApplyWindowInsetsListener
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updateLayoutParams
+import androidx.lifecycle.Lifecycle
 import com.pichs.filepicker.databinding.ActivityFilepickerMainBinding
 import com.pichs.filepicker.entity.MediaEntity
-import com.pichs.filepicker.utils.NavigationBarUtils
-import com.pichs.filepicker.utils.PadUtils
-import com.pichs.xwidget.utils.XDisplayHelper
+import com.pichs.filepicker.utils.FilePickerLog
+import com.pichs.filepicker.utils.FilePickerNavigationBarUtils
+import com.pichs.filepicker.utils.FilePickerPadUtils
 import com.pichs.xwidget.utils.XStatusBarHelper
 import kotlinx.coroutines.flow.update
 
@@ -29,7 +29,7 @@ class FilePickerActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
 
         // 判断一下，如果是是手机，则直接锁定竖屏。
-        if (PadUtils.isTablet(this)) {
+        if (FilePickerPadUtils.isTablet(this)) {
             requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
         } else {
             requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
@@ -64,15 +64,15 @@ class FilePickerActivity : AppCompatActivity() {
         }
 
         viewModel.originalCheckedFlow.update { viewModel.uiConfig.isOriginalChecked }
-        Log.d(
-            "FilePickerActivity", """
+        FilePickerLog.d {
+            """
             maxSelectNumber: $maxSelectNumber, 
             maxFileSize: $maxFileSize, 
             minFileSize: $minFileSize,
              selectType: $selectType, 
              selectDataList: ${selectDataList.size}
         """.trimIndent()
-        )
+        }
 
         // 强行 纠正数据。
         if (maxSelectNumber < 0 || maxSelectNumber == Int.MAX_VALUE) {
@@ -109,9 +109,9 @@ class FilePickerActivity : AppCompatActivity() {
     }
 
     private fun checkNavigationBar() {
-        if (NavigationBarUtils.isGestureBarVisible(this)) {
+        if (FilePickerNavigationBarUtils.isGestureBarVisible(this)) {
             binding.flContainer.updateLayoutParams<ViewGroup.MarginLayoutParams> {
-                bottomMargin = NavigationBarUtils.getNavigationBarHeight(this@FilePickerActivity)
+                bottomMargin = FilePickerNavigationBarUtils.getNavigationBarHeight(this@FilePickerActivity)
             }
         } else {
             binding.flContainer.updateLayoutParams<ViewGroup.MarginLayoutParams> {
@@ -128,5 +128,15 @@ class FilePickerActivity : AppCompatActivity() {
     override fun onMultiWindowModeChanged(isInMultiWindowMode: Boolean, newConfig: Configuration) {
         super.onMultiWindowModeChanged(isInMultiWindowMode, newConfig)
         checkNavigationBar()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        viewModel.sendActivityLifecycleEvent(Lifecycle.Event.ON_PAUSE)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        viewModel.sendActivityLifecycleEvent(Lifecycle.Event.ON_RESUME)
     }
 }

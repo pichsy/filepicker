@@ -4,7 +4,7 @@ import android.content.Context
 import android.util.DisplayMetrics
 import kotlin.math.sqrt
 
-object PadUtils {
+object FilePickerPadUtils {
     /**
      * 是否是平板
      */

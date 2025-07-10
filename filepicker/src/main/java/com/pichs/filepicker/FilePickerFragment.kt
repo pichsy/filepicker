@@ -42,9 +42,10 @@ import com.pichs.filepicker.loader.MediaLoader
 import com.pichs.filepicker.scanner.MediaScanner
 import com.pichs.filepicker.utils.FilePickerClickHelper
 import com.pichs.filepicker.utils.FilePickerIconUtils
+import com.pichs.filepicker.utils.FilePickerLog
 import com.pichs.filepicker.utils.FilePickerTimeFormatUtils
-import com.pichs.filepicker.widget.OnDragItemTouchHelperCallback
-import com.pichs.filepicker.widget.OnItemSelectionChangedListener
+import com.pichs.filepicker.widget.OnFilePickerDragItemTouchHelperCallback
+import com.pichs.filepicker.widget.OnFilePickerItemSelectionChangedListener
 import com.pichs.xwidget.utils.XDisplayHelper
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
@@ -126,7 +127,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
     private fun initListener() {
         FilePickerClickHelper.clicks(binding.llPreview) {
             // 预览按钮点击事件
-            Log.d("FilePickerFragment", "Preview clicked, selectedDataList size: ${viewModel.getSelectedDataList().size}")
+            FilePickerLog.d("FilePickerFragment", "Preview clicked, selectedDataList size: ${viewModel.getSelectedDataList().size}")
             if (viewModel.getSelectedDataList().isEmpty()) {
                 Toast.makeText(requireContext(), viewModel.uiConfig.atLeastSelectOneToastContent, Toast.LENGTH_SHORT).show()
                 return@clicks
@@ -143,9 +144,9 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                     updateSelectDataUI()
                 }, onConfirm = { resultList ->
 //                Toast.makeText(requireContext(), "确定了 ${resultList?.path}", Toast.LENGTH_SHORT).show()
-                    Log.d("FilePickerFragment", "onConfirm: resultList size:${resultList.size}")
+                    FilePickerLog.d("FilePickerFragment", "onConfirm: resultList size:${resultList.size}")
                     if (resultList.isEmpty()) {
-                        Log.d("FilePickerFragment", "item is null, return")
+                        FilePickerLog.d("FilePickerFragment", "item is null, return")
                         Toast.makeText(requireContext(), "未选择文件", Toast.LENGTH_SHORT).show()
                         return@FilePickerFinalPreviewDialog
                     }
@@ -228,7 +229,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
         }
 
         binding.btnConfirm.setOnClickListener {
-            Log.d("FilePickerFragment", "selectedData:${viewModel.getSelectedDataList().size},selectType:${viewModel.selectType.value}")
+            FilePickerLog.d("FilePickerFragment", "selectedData:${viewModel.getSelectedDataList().size},selectType:${viewModel.selectType.value}")
             callbackToChooser(ArrayList(viewModel.getSelectedDataList()))
         }
 
@@ -250,10 +251,10 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
         lifecycleScope.launch {
             launch {
                 viewModel.currentFolderDataList.collectLatest { list ->
-                    Log.d("FilePickerFragment", "initDataFlow currentFolderDataList: size:${list.size}, currentTabType:$currentTabType")
+                    FilePickerLog.d("FilePickerFragment", "initDataFlow currentFolderDataList: size:${list.size}, currentTabType:$currentTabType")
                     for (item in viewModel.selectedData) {
                         val isContains = viewModel.getAllDataEntityList().contains(item)
-                        Log.d("FilePickerFragment", "initDataFlow: item:${item.path}, isContains:$isContains")
+                        FilePickerLog.d("FilePickerFragment", "initDataFlow: item:${item.path}, isContains:$isContains")
                         if (!isContains) {
                             viewModel.removeSelectedData(item)
                         }
@@ -266,7 +267,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
 
             launch {
                 viewModel.originalCheckedFlow.collectLatest {
-                    Log.d("FilePickerFragment", "initDataFlow originalCheckedFlow: $it")
+                    FilePickerLog.d("FilePickerFragment", "initDataFlow originalCheckedFlow: $it")
                     binding.cboxOriginal.isChecked = it
                 }
             }
@@ -274,7 +275,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
     }
 
     private fun loadData() {
-        Log.d("FilePickerFragment", "loadData: selectType:${viewModel.selectType.value}")
+        FilePickerLog.d("FilePickerFragment", "loadData: selectType:${viewModel.selectType.value}")
         MediaScanner.scanMedia(viewModel.selectType.value, this, object : MediaScanner.ScanCallback {
             override fun onCompleted(folders: List<MediaFolder>) {
                 if (folders.isEmpty()) return
@@ -283,9 +284,9 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                 if (finalFolders.isEmpty()) return
 
                 finalFolders.forEach {
-                    Log.d("FilePickerFragment777", "mediaFolder: ${it.folderPath},==========================")
+                    FilePickerLog.d("FilePickerFragment777", "mediaFolder: ${it.folderPath},==========================")
                     it.mediaEntityList.forEach {
-                        Log.d("FilePickerFragment777", "mediaEntity: ${it.path}, size: ${it.size}")
+                        FilePickerLog.d("FilePickerFragment777", "mediaEntity: ${it.path}, size: ${it.size}")
                     }
                 }
 
@@ -357,13 +358,13 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
      * 滑动选择
      */
     private fun initRecyclerSlideChoose() {
-        binding.recyclerView.setOnItemSelectionChangedListener(object : OnItemSelectionChangedListener {
+        binding.recyclerView.setOnItemSelectionChangedListener(object : OnFilePickerItemSelectionChangedListener {
             override fun onItemSelectionChanged(startPosition: Int, currentPosition: Int, isSelected: Boolean) {
                 if (viewModel.slideChooseEnable.value.not()) {
                     // 不支持手滑。
                     return
                 }
-                Log.d("FilePickerFragment6665", "startPosition:$startPosition, currentPosition:$currentPosition, isSelected:$isSelected")
+                FilePickerLog.d("FilePickerFragment6665", "startPosition:$startPosition, currentPosition:$currentPosition, isSelected:$isSelected")
                 if (!isTouchSelectStart) {
                     return
                 }
@@ -377,7 +378,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                 } else {
                     rvData.subList(currentPosition, startPosition + 1).reversed()
                 }
-                Log.d("FilePickerFragment6665", "from:$from, to:$to, tempList.size:${tempList.size}, isSelected:$isSelected")
+                FilePickerLog.d("FilePickerFragment6665", "from:$from, to:$to, tempList.size:${tempList.size}, isSelected:$isSelected")
                 if (isSelected) {
                     // 这里需要区分 viewModel.maxSelectNumber.value==0 的情况。
                     // 如果是选中模式，那么 经过的都要选中。
@@ -390,7 +391,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                     } else {
                         val dx = list.size + viewModel.getSelectedCount() - viewModel.maxSelectNumber.value
 
-                        Log.d(
+                        FilePickerLog.d(
                             "FilePickerFragment",
                             "dx:$dx, list.size:${list.size}, selectedData.size:${viewModel.getSelectedCount()}, ----x=${viewModel.maxSelectNumber.value - viewModel.getSelectedCount()}"
                         )
@@ -492,7 +493,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                         return@setOnClickListener
                     }
 
-                    Log.d("FilePickerFragment", "item.path:${item.path},mimeType:${item.mimeType}")
+                    FilePickerLog.d("FilePickerFragment", "item.path:${item.path},mimeType:${item.mimeType}")
                     if (viewModel.containsSelectedData(item)) {
                         viewModel.removeSelectedData(item)
                         notifyItemChanged(modelPosition)
@@ -564,7 +565,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                 // 判断是否是最后一行
                 val lastRowStart = itemCount - itemCount % 4
 
-                Log.d("FilePickerFragment7777", "modelPosition:$modelPosition, lastRowStart:$lastRowStart, itemCount:$itemCount")
+                FilePickerLog.d("FilePickerFragment7777", "modelPosition:$modelPosition, lastRowStart:$lastRowStart, itemCount:$itemCount")
 
                 if (modelPosition >= lastRowStart && (viewModel.getSelectedCount() + viewModel.tempSelectData.size) > 0) {
                     itemBinding.clRoot.updateLayoutParams<ViewGroup.MarginLayoutParams> {
@@ -580,7 +581,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                     if (viewModel.isCanSingleClickSelect()) {
                         return@setOnClickListener
                     }
-                    Log.d("FilePickerFragment", "item.path:${item.path},mimeType:${item.mimeType}")
+                    FilePickerLog.d("FilePickerFragment", "item.path:${item.path},mimeType:${item.mimeType}")
                     if (viewModel.containsSelectedData(item)) {
                         viewModel.removeSelectedData(item)
                         itemBinding.root.isSelected = false
@@ -654,7 +655,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
             }
         }.models = viewModel.getSelectedDataList()
 
-        OnDragItemTouchHelperCallback(binding.rvSelected.bindingAdapter, viewModel, onDragEnd = {
+        OnFilePickerDragItemTouchHelperCallback(binding.rvSelected.bindingAdapter, viewModel, onDragEnd = {
             updateSelectDataUI()
         }).let { callback ->
             ItemTouchHelper(callback).attachToRecyclerView(binding.rvSelected)
@@ -683,7 +684,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
     private fun showFilePickerPreviewDialog(item: MediaEntity) {
         FilePickerPreviewDialog(requireContext(), viewModel, item, onSelect = { item, isSelect, position ->
             // 选择
-            Log.d("FilePickerFragment", "item.path:${item.path},isSelect:$isSelect")
+            FilePickerLog.d("FilePickerFragment", "item.path:${item.path},isSelect:$isSelect")
             if (isSelect) {
 //                if (isOverMaxSelectNumber(viewModel.getSelectedDataList().size + viewModel.tempSelectData.size)) {
 //                    return@FilePickerPreviewDialog
@@ -711,7 +712,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                     finalList.add(item)
                 }
             }
-            Log.d("FilePickerFragment", "onConfirm: finalList=${finalList.size}")
+            FilePickerLog.d("FilePickerFragment", "onConfirm: finalList=${finalList.size}")
             callbackToChooser(finalList)
         }).showPopupWindow()
 
@@ -739,7 +740,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
      * 选择数据返回
      */
     private fun callbackToChooser(selectList: ArrayList<MediaEntity>) {
-        Log.d("FilePickerFragment", "1111callbackToChooser: selectList size:${selectList.size}, selectType:${viewModel.selectType.value}")
+        FilePickerLog.d("FilePickerFragment", "1111callbackToChooser: selectList size:${selectList.size}, selectType:${viewModel.selectType.value}")
         // 这里可以回调到选择器，通知选择完成。
         if (selectList.isEmpty()) {
             Toast.makeText(context, viewModel.uiConfig.atLeastSelectOneToastContent, Toast.LENGTH_SHORT).show()
@@ -877,7 +878,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
             isFirstResume = false
             return
         }
-        Log.d("FilePickerFragment", "onResume: isFirstResume:$isFirstResume")
+        FilePickerLog.d("FilePickerFragment", "onResume: isFirstResume:$isFirstResume")
         loadData()
     }
 

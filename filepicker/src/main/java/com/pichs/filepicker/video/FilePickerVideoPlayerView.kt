@@ -2,7 +2,6 @@ package com.pichs.filepicker.video
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.graphics.Color
 import android.os.Handler
 import android.os.Looper
 import android.util.AttributeSet
@@ -27,7 +26,7 @@ import com.pichs.filepicker.utils.FilePickerClickHelper
 
 @SuppressLint("ClickableViewAccessibility")
 @UnstableApi
-class VideoPlayerView @JvmOverloads constructor(
+class FilePickerVideoPlayerView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null
 ) : FrameLayout(context, attrs) {
 
@@ -141,7 +140,6 @@ class VideoPlayerView @JvmOverloads constructor(
             return
         }
         val uri = coverUrl ?: mediaEntity?.path ?: return
-        Log.d("VideoPlayerView", "loadCover: uri=${mediaEntity?.uri}, path=${mediaEntity?.path}, uri=${uri}")
         // 在这里使用您项目中的图片加载库（如 Glide, Coil 等）
         MediaLoader.loadVideoCover(uri, binding.ivCover)
         binding.ivCover.visibility = View.VISIBLE

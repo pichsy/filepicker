@@ -2,7 +2,6 @@ package com.pichs.filepicker.widget
 
 import android.content.Context
 import android.util.AttributeSet
-import android.util.Log
 import android.view.MotionEvent
 import androidx.core.view.isNotEmpty
 import androidx.recyclerview.widget.RecyclerView
@@ -25,9 +24,9 @@ class FilePickerRecyclerView @JvmOverloads constructor(
     var maxSelectNumber: Int = 0  // 0表示无限制
     var currentSelectedCountProvider: (() -> Int)? = null
 
-    private var onItemSelectionChanged: OnItemSelectionChangedListener? = null
+    private var onItemSelectionChanged: OnFilePickerItemSelectionChangedListener? = null
 
-    fun setOnItemSelectionChangedListener(listener: OnItemSelectionChangedListener) {
+    fun setOnItemSelectionChangedListener(listener: OnFilePickerItemSelectionChangedListener) {
         onItemSelectionChanged = listener
     }
 
@@ -122,7 +121,6 @@ class FilePickerRecyclerView @JvmOverloads constructor(
                         lastTouchPosition = NO_POSITION
                         startPosition = NO_POSITION
                         stopAutoScroll()
-                        Log.d("FilePickerFragment", "数据列表：选择已达最大值，: $maxSelectNumber ， 停止滚动选择。")
                         onItemSelectionChanged?.onSelectionMaxStopped(maxSelectNumber)
                         onItemSelectionChanged?.onTouchSelectEnd()
                         return
@@ -211,7 +209,6 @@ class FilePickerRecyclerView @JvmOverloads constructor(
         if (edgeThreshold <= 0 && isNotEmpty()) {
             val firstChild = getChildAt(0)
             edgeThreshold = firstChild?.measuredHeight?.toFloat() ?: (80 * resources.displayMetrics.density)
-            Log.d("FilePickerFragment", "RecyclerView 获取item的高度：Edge threshold set to: $edgeThreshold")
         }
     }
 }

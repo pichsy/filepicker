@@ -6,7 +6,7 @@ import android.provider.Settings
 import android.view.WindowInsets
 import com.pichs.xwidget.utils.XDisplayHelper
 
-object NavigationBarUtils {
+object FilePickerNavigationBarUtils {
 
     fun getNavigationBarHeight(activity: Activity): Int {
         val hei = getBottomNavBarHeight(activity)

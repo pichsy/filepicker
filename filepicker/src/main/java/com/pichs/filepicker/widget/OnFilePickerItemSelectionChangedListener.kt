@@ -1,6 +1,6 @@
 package com.pichs.filepicker.widget
 
-fun interface OnItemSelectionChangedListener {
+fun interface OnFilePickerItemSelectionChangedListener {
     fun onItemSelectionChanged(startPosition: Int, currentPosition: Int, isSelected: Boolean)
     fun onSelectionMaxStopped(maxCount: Int) {
         // 默认实现，子类可以选择覆盖
