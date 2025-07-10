@@ -14,7 +14,6 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:scaleType="centerCrop"
-        android:src="#f00"
         app:layout_constraintDimensionRatio="H,1:1"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -22,30 +21,28 @@
 
     <!--    左上角 红色圆形背景数字-->
 
-    <androidx.constraintlayout.widget.ConstraintLayout
+    <FrameLayout
         android:id="@+id/cl_select_area"
-        android:layout_width="100dp"
-        android:layout_height="100dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toBottomOf="@+id/iv_cover_image"
+        app:layout_constraintEnd_toEndOf="@+id/iv_cover_image">
 
         <com.pichs.xwidget.cardview.XCardTextView
             android:id="@+id/tv_select_index"
             android:layout_width="22dp"
             android:layout_height="22dp"
-            android:layout_marginTop="6dp"
+            android:layout_gravity="end|bottom"
             android:layout_marginEnd="6dp"
+            android:layout_marginBottom="6dp"
             android:gravity="center"
             android:textColor="#fff"
             android:textSize="12dp"
-            app:layout_constraintDimensionRatio="H,1:1"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
             app:xp_borderColor="#fff"
             app:xp_borderWidth="2dp"
-            app:xp_radius="30dp" />
+            app:xp_radius="60dp" />
 
-    </androidx.constraintlayout.widget.ConstraintLayout>
+    </FrameLayout>
 
     <!--  右下角是个时长展示  -->
     <com.pichs.xwidget.cardview.XCardTextView
@@ -67,5 +64,18 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:xp_radius="4dp" />
+
+
+    <com.pichs.xwidget.cardview.XCardImageView
+        android:id="@+id/iv_preview_image"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:paddingStart="6dp"
+        android:paddingTop="6dp"
+        android:paddingEnd="20dp"
+        android:paddingBottom="20dp"
+        android:src="@drawable/filepicker_ic_scale_image"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

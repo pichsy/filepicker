@@ -527,10 +527,10 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
 
                 val itemBinding = getBinding<FilePickerItemRvAlbumBinding>()
 
-                itemBinding.clSelectArea.updateLayoutParams {
-                    width = screenWidth / 7
-                    height = width
-                }
+//                itemBinding.clSelectArea.updateLayoutParams {
+//                    width = screenWidth / 7
+//                    height = width
+//                }
 
                 MediaLoader.loadImageThumbnail(item.uri, item.mimeType, itemBinding.ivCoverImage)
 
@@ -576,7 +576,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                     }
                 }
 
-                itemBinding.clSelectArea.setOnClickListener {
+                itemBinding.ivCoverImage.setOnClickListener {
                     if (viewModel.isCanSingleClickSelect()) {
                         return@setOnClickListener
                     }
@@ -600,7 +600,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                         notifyItemRangeChanged(lastRowStart, itemCount - lastRowStart) // 刷新最后一行
                     }
                 }
-                itemBinding.ivCoverImage.setOnClickListener {
+                itemBinding.ivPreviewImage.setOnClickListener {
                     // 进入弹窗
                     if (viewModel.isCanSingleClickSelect()) {
                         callbackToChooser(arrayListOf(item))
