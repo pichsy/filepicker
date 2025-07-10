@@ -20,17 +20,22 @@
 
 ## 最新版本
 
-1. **filepicker** ![](https://img.shields.io/maven-metadata/v.svg?label=maven-central&metadataUrl=https%3A%2F%2Frepo1.maven.org%2Fmaven2%2Fcom%2Fgitee%2Fpichs%2Ffilepicker%2Fmaven-metadata.xml)
-2. **[xwidget](https://github.com/pichsy/xwidget)**  ![](https://img.shields.io/maven-metadata/v.svg?label=maven-central&metadataUrl=https%3A%2F%2Frepo1.maven.org%2Fmaven2%2Fcom%2Fgitee%2Fpichs%2Fxwidget%2Fmaven-metadata.xml)
-3. **BRV**  ![](https://camo.githubusercontent.com/a94b501a064dd623ccd416f3c8262e8309b5a5ac74373d41980797e9ba286522/68747470733a2f2f6a69747061636b2e696f2f762f6c69616e676a696e676b616e6a692f4252562e737667)
-4. **BasePopup** ![](https://camo.githubusercontent.com/a3d2af2f4eff2d27ff650b3ae97271ec783ebc4e12db2fd6213402d57929ed9b/68747470733a2f2f696d672e736869656c64732e696f2f6d6176656e2d63656e7472616c2f762f696f2e6769746875622e72617a657264702f42617365506f707570)
-5. **androidx.media3** 这里建议使用***1.7.1***稳定版 ![](https://img.shields.io/maven-metadata/v.svg?label=google-maven&metadataUrl=https%3A%2F%2Fdl.google.com%2Fandroid%2Fmaven2%2Fandroidx%2Fmedia3%2Fmedia3-exoplayer%2Fmaven-metadata.xml)
+1. **filepicker
+   ** ![](https://img.shields.io/maven-metadata/v.svg?label=maven-central&metadataUrl=https%3A%2F%2Frepo1.maven.org%2Fmaven2%2Fcom%2Fgitee%2Fpichs%2Ffilepicker%2Fmaven-metadata.xml)
+2. **[xwidget](https://github.com/pichsy/xwidget)
+   **  ![](https://img.shields.io/maven-metadata/v.svg?label=maven-central&metadataUrl=https%3A%2F%2Frepo1.maven.org%2Fmaven2%2Fcom%2Fgitee%2Fpichs%2Fxwidget%2Fmaven-metadata.xml)
+3. **BRV
+   **  ![](https://camo.githubusercontent.com/a94b501a064dd623ccd416f3c8262e8309b5a5ac74373d41980797e9ba286522/68747470733a2f2f6a69747061636b2e696f2f762f6c69616e676a696e676b616e6a692f4252562e737667)
+4. **BasePopup
+   ** ![](https://camo.githubusercontent.com/a3d2af2f4eff2d27ff650b3ae97271ec783ebc4e12db2fd6213402d57929ed9b/68747470733a2f2f696d672e736869656c64732e696f2f6d6176656e2d63656e7472616c2f762f696f2e6769746875622e72617a657264702f42617365506f707570)
+5. **androidx.media3** 这里建议使用***1.7.1***
+   稳定版 ![](https://img.shields.io/maven-metadata/v.svg?label=google-maven&metadataUrl=https%3A%2F%2Fdl.google.com%2Fandroid%2Fmaven2%2Fandroidx%2Fmedia3%2Fmedia3-exoplayer%2Fmaven-metadata.xml)
 6. **glide** ![](https://img.shields.io/badge/glide-4.16.0-brightgreen.svg)
 
 ```kotlin
 dependencies {
     // 基础组件库 （必须）
-    implementation("com.gitee.pichs:filepicker:4.6.0")
+    implementation("com.gitee.pichs:filepicker:4.6.1")
 
     // 基础组件库 （必须）
     implementation("com.gitee.pichs:xwidget:5.5.0")
@@ -119,46 +124,46 @@ FilePicker.with(this) // this: Fragment
 
 **注意**：选择图片、视频、音频时，申请读写权限即可。选择其他文件类型（如文档、APK、压缩包等）必须申请**文件管理权限**，否则无法获取数据。
 
-| 方法 | 说明 |
-|---|---|
-| `FilePicker.ofImage()` | 只选择图片 |
-| `FilePicker.ofVideo()` | 只选择视频 |
-| `FilePicker.ofAudio()` | 只选择音频 |
-| `FilePicker.ofAll()` | 图片、视频均可选择 |
+| 方法                          | 说明            |
+|-----------------------------|---------------|
+| `FilePicker.ofImage()`      | 只选择图片         |
+| `FilePicker.ofVideo()`      | 只选择视频         |
+| `FilePicker.ofAudio()`      | 只选择音频         |
+| `FilePicker.ofAll()`        | 图片、视频均可选择     |
 | `FilePicker.ofAllWithGif()` | 图片、视频、Gif均可选择 |
-| `FilePicker.ofGif()` | 只选择Gif |
-| `FilePicker.ofDocument()` | 选择所有文档类型 |
-| `FilePicker.ofPdf()` | 只选择PDF文件 |
-| `FilePicker.ofDoc()` | 只选择Doc/Docx文件 |
-| `FilePicker.ofPpt()` | 只选择Ppt/Pptx文件 |
-| `FilePicker.ofExcel()` | 只选择Xls/Xlsx文件 |
-| `FilePicker.ofTxt()` | 只选择Txt文件 |
-| `FilePicker.ofApk()` | 只选择Apk文件 |
-| `FilePicker.ofZipAll()` | 选择所有压缩包类型 |
-| `FilePicker.ofZip()` | 只选择Zip文件 |
-| `FilePicker.ofRar()` | 只选择Rar文件 |
-| `FilePicker.of7Z()` | 只选择7z文件 |
-| `FilePicker.ofTar()` | 只选择Tar文件 |
-| `FilePicker.ofGz()` | 只选择Gz文件 |
-| `FilePicker.ofBz2()` | 只选择Bz2文件 |
-| `FilePicker.ofIso()` | 只选择Iso文件 |
+| `FilePicker.ofGif()`        | 只选择Gif        |
+| `FilePicker.ofDocument()`   | 选择所有文档类型      |
+| `FilePicker.ofPdf()`        | 只选择PDF文件      |
+| `FilePicker.ofDoc()`        | 只选择Doc/Docx文件 |
+| `FilePicker.ofPpt()`        | 只选择Ppt/Pptx文件 |
+| `FilePicker.ofExcel()`      | 只选择Xls/Xlsx文件 |
+| `FilePicker.ofTxt()`        | 只选择Txt文件      |
+| `FilePicker.ofApk()`        | 只选择Apk文件      |
+| `FilePicker.ofZipAll()`     | 选择所有压缩包类型     |
+| `FilePicker.ofZip()`        | 只选择Zip文件      |
+| `FilePicker.ofRar()`        | 只选择Rar文件      |
+| `FilePicker.of7Z()`         | 只选择7z文件       |
+| `FilePicker.ofTar()`        | 只选择Tar文件      |
+| `FilePicker.ofGz()`         | 只选择Gz文件       |
+| `FilePicker.ofBz2()`        | 只选择Bz2文件      |
+| `FilePicker.ofIso()`        | 只选择Iso文件      |
 
 ---
 
 ## 常用配置参数
 
-| 配置方法 | 说明 | 默认值 |
-|---|---|---|
-| `setSelectType(type: String)` | 选择类型：图片、视频、全部等 | 全部 |
-| `setMaxSelectNumber(number: Int)` | 最大可选数量，0为不限制 | 0 |
-| `setMaxFileSize(size: Long)` | 文件最大大小（字节） | 不限制 |
-| `setMinFileSize(size: Long)` | 文件最小大小（字节） | 1 |
-| `setSelectedList(list: MutableList<MediaEntity>)` | 已选择的文件列表，初始化用 | 空列表 |
-| `setSelectedPathList(list: List<String>)` | 已选择的文件路径列表，自动转换为 `MediaEntity` | 空列表 |
-| `setSingleClickEnable(enable: Boolean)` | 单击立即返回，仅在 `maxSelectNumber=1` 时有效 | `false` |
-| `setSlideChooseEnable(enable: Boolean)` | 是否启用滑动选择 | `true` |
-| `setUiConfig(config: FilePickerUIConfig)` | 界面文案与UI配置 | 默认配置 |
-| `setOnSelectCallback(callback: OnSelectCallback)` | 选择完成回调 | 必填 |
+| 配置方法                                              | 说明                                | 默认值     |
+|---------------------------------------------------|-----------------------------------|---------|
+| `setSelectType(type: String)`                     | 选择类型：图片、视频、全部等                    | 全部      |
+| `setMaxSelectNumber(number: Int)`                 | 最大可选数量，0为不限制                      | 0       |
+| `setMaxFileSize(size: Long)`                      | 文件最大大小（字节）                        | 不限制     |
+| `setMinFileSize(size: Long)`                      | 文件最小大小（字节）                        | 1       |
+| `setSelectedList(list: MutableList<MediaEntity>)` | 已选择的文件列表，初始化用                     | 空列表     |
+| `setSelectedPathList(list: List<String>)`         | 已选择的文件路径列表，自动转换为 `MediaEntity`    | 空列表     |
+| `setSingleClickEnable(enable: Boolean)`           | 单击立即返回，仅在 `maxSelectNumber=1` 时有效 | `false` |
+| `setSlideChooseEnable(enable: Boolean)`           | 是否启用滑动选择                          | `true`  |
+| `setUiConfig(config: FilePickerUIConfig)`         | 界面文案与UI配置                         | 默认配置    |
+| `setOnSelectCallback(callback: OnSelectCallback)` | 选择完成回调                            | 必填      |
 
 ---
 
@@ -177,10 +182,10 @@ fun interface OnSelectCallback {
 
 ## 工具方法
 
-| 方法 | 说明 |
-|---|---|
+| 方法                                                             | 说明                         |
+|----------------------------------------------------------------|----------------------------|
 | `FilePicker.convertToPathList(list: MutableList<MediaEntity>)` | 将选中的 `MediaEntity` 转换为路径列表 |
-| `FilePicker.convertToEntityList(list: List<String>)` | 路径列表转换为 `MediaEntity` 列表 |
+| `FilePicker.convertToEntityList(list: List<String>)`           | 路径列表转换为 `MediaEntity` 列表   |
 
 ---
 
@@ -203,7 +208,6 @@ FilePicker.with(this)
     .setOnSelectCallback { isUseOriginal, list -> }
     .start()
 ```
-
 
 ---
 
@@ -233,28 +237,26 @@ FilePicker.with(this)
 
 ---
 
-
 ### 三、UIConfig解释
 
-| 字段名 | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| `isHideSelectTab` | `Boolean` | `false` | 在 `ofAll()` 时是否隐藏顶部的 "图片/视频" 切换Tab |
-| `confirmBtnText` | `String` | `"确定"` | 确认按钮文本，默认 "确定" |
-| `isPreviewPageIndexMode` | `Boolean` | `true` | 预览页面是否显示选中索引。`true` 显示序号，`false` 显示对号 ✅ |
-| `allAlbumName` | `String` | `"全部"` | 文件夹选择弹窗中，"全部"相册的名称 |
-| `previewText` | `String` | `"预览"` | 预览页面标题文本 |
-| `isShowBottomPreviewText` | `Boolean` | `true` | 是否显示底部 "预览" 按钮 |
-| `previewSelectText` | `String` | `"选择"` | 预览页面的选择按钮文本 |
-| `originalText` | `String` | `"原图"` | 原图选项的文本内容 |
-| `isShowOriginal` | `Boolean` | `true` | 是否显示原图选项 |
-| `isOriginalChecked` | `Boolean` | `false` | 原图选项是否默认勾选 |
-| `isShowHomePageSelectedBottomListWidget` | `Boolean` | `true` | 是否显示主界面的底部已选列表（仅对图片和视频有效） |
-| `isShowSelectedListDeleteIcon` | `Boolean` | `false` | 是否展示选中列表中的删除按钮 |
-| `selectedListDeleteIconResId` | `Int` | `0` | 选中列表删除按钮的图标资源ID |
-| `selectedListDeleteIconBackgroundColor` | `Int` | `Color.TRANSPARENT` | 选中列表中删除按钮的背景颜色 |
-| `atLeastSelectOneToastContent` | `String` | `"至少选择一个"` | 最少选择一个文件时的提示文本 |
-| `selectMaxNumberOverToastContent` | `String` | `"已达到最大选择数量"` | 达到最大选择数量限制时的提示文本 |
-
+| 字段名                                      | 类型        | 默认值                 | 说明                                      |
+|------------------------------------------|-----------|---------------------|-----------------------------------------|
+| `isHideSelectTab`                        | `Boolean` | `false`             | 在 `ofAll()` 时是否隐藏顶部的 "图片/视频" 切换Tab      |
+| `confirmBtnText`                         | `String`  | `"确定"`              | 确认按钮文本，默认 "确定"                          |
+| `isPreviewPageIndexMode`                 | `Boolean` | `true`              | 预览页面是否显示选中索引。`true` 显示序号，`false` 显示对号 ✅ |
+| `allAlbumName`                           | `String`  | `"全部"`              | 文件夹选择弹窗中，"全部"相册的名称                      |
+| `previewText`                            | `String`  | `"预览"`              | 预览页面标题文本                                |
+| `isShowBottomPreviewText`                | `Boolean` | `true`              | 是否显示底部 "预览" 按钮                          |
+| `previewSelectText`                      | `String`  | `"选择"`              | 预览页面的选择按钮文本                             |
+| `originalText`                           | `String`  | `"原图"`              | 原图选项的文本内容                               |
+| `isShowOriginal`                         | `Boolean` | `true`              | 是否显示原图选项                                |
+| `isOriginalChecked`                      | `Boolean` | `false`             | 原图选项是否默认勾选                              |
+| `isShowHomePageSelectedBottomListWidget` | `Boolean` | `true`              | 是否显示主界面的底部已选列表（仅对图片和视频有效）               |
+| `isShowSelectedListDeleteIcon`           | `Boolean` | `false`             | 是否展示选中列表中的删除按钮                          |
+| `selectedListDeleteIconResId`            | `Int`     | `0`                 | 选中列表删除按钮的图标资源ID                         |
+| `selectedListDeleteIconBackgroundColor`  | `Int`     | `Color.TRANSPARENT` | 选中列表中删除按钮的背景颜色                          |
+| `atLeastSelectOneToastContent`           | `String`  | `"至少选择一个"`          | 最少选择一个文件时的提示文本                          |
+| `selectMaxNumberOverToastContent`        | `String`  | `"已达到最大选择数量"`       | 达到最大选择数量限制时的提示文本                        |
 
 ---
 
@@ -283,11 +285,23 @@ FilePicker.with(this)
 感谢你们的无私奉献，让开发变得更加高效和有趣！
 
 ## 升级日志
+
+### 4.6.1
+
+- 剔除日志影响
+
+### 4.6.0
+
+- 新版UI 点击更丝滑
+
+
 ### 4.5.1
+
 - 适配底部小横导航栏
 - 优化UI选择样式
 
 ### 4.3.0 (预计)
+
 - **新增**：支持更多文件类型选择，如文档（audio, pdf, doc, ppt, excel, txt）、APK、各类压缩包等。
 - **新增**：`setSingleClickEnable(boolean)` API，支持单选模式下单击立即返回。
 - **新增**：`setSlideChooseEnable(boolean)` API，可禁用滑动选择手势。
