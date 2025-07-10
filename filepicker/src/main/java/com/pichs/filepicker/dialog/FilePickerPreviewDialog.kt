@@ -133,6 +133,16 @@ class FilePickerPreviewDialog(
                                 viewHolder.videoPlayerView.releasePlayer()
                             }
                         }
+                    } else if (it == Lifecycle.Event.ON_RESUME) {
+                        // 恢复播放
+                        if (mCurrentIndex >= 0 && mCurrentIndex < viewModel.getCurrentFolderDataList().size) {
+                            // 查找当前页面的 ViewHolder 并恢复播放器
+                            val recyclerView = binding.viewPager2.getChildAt(0) as RecyclerView
+                            val viewHolder = recyclerView.findViewHolderForAdapterPosition(mCurrentIndex)
+                            if (viewHolder is MediaPagerAdapter.VideoViewHolder) {
+                                viewHolder.videoPlayerView.loadCover(viewModel.getCurrentFolderDataList().getOrNull(mCurrentIndex))
+                            }
+                        }
                     }
                 }
             }
