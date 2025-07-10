@@ -30,7 +30,7 @@
 ```kotlin
 dependencies {
     // 基础组件库 （必须）
-    implementation("com.gitee.pichs:filepicker:4.5.1")
+    implementation("com.gitee.pichs:filepicker:4.6.0")
 
     // 基础组件库 （必须）
     implementation("com.gitee.pichs:xwidget:5.5.0")
