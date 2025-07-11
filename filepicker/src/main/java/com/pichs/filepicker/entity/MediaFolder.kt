@@ -10,7 +10,7 @@ import kotlinx.parcelize.Parcelize
 data class MediaFolder(
     var name: String? = null,
     var folderPath: String? = null,
-    var mediaEntityList: MutableList<MediaEntity> = arrayListOf(),
+    var mediaEntityList: MutableList<MediaEntity> = mutableListOf(),
 ) : Parcelable {
 
     fun add(imageItem: MediaEntity) {
