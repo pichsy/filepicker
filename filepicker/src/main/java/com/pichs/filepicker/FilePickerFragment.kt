@@ -536,6 +536,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                 MediaLoader.loadImageThumbnail(item.uri, item.mimeType, itemBinding.ivCoverImage)
 
                 itemBinding.clSelectArea.isVisible = !viewModel.isCanSingleClickSelect()
+                itemBinding.ivPreviewImage.isVisible = !viewModel.isCanSingleClickSelect()
 
                 if (item.isVideo()) {
                     itemBinding.tvDuration.visibility = View.VISIBLE
@@ -579,6 +580,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
 
                 itemBinding.ivCoverImage.setOnClickListener {
                     if (viewModel.isCanSingleClickSelect()) {
+                        callbackToChooser(arrayListOf(item))
                         return@setOnClickListener
                     }
                     FilePickerLog.d("FilePickerFragment", "item.path:${item.path},mimeType:${item.mimeType}")
@@ -601,6 +603,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                         notifyItemRangeChanged(lastRowStart, itemCount - lastRowStart) // 刷新最后一行
                     }
                 }
+
                 itemBinding.ivPreviewImage.setOnClickListener {
                     // 进入弹窗
                     if (viewModel.isCanSingleClickSelect()) {
