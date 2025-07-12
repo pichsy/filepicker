@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="filepicker_select_bg_color">#E60B4D</color>
+    <color name="filepicker_text_color_gray">#888888</color>
+</resources>

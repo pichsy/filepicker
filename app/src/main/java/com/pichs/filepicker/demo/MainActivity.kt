@@ -15,6 +15,9 @@ import com.pichs.filepicker.FilePickerUIConfig
 import com.pichs.filepicker.common.ImagePreviewDialog
 import com.pichs.filepicker.demo.databinding.ActivityMainBinding
 import com.pichs.filepicker.demo.databinding.ItemImageBinding
+import com.pichs.filepicker.demo.paging.PagingDemoActivity
+import com.pichs.filepicker.demo.paging.ImagePagingDemoActivity
+import com.pichs.filepicker.demo.newpicker.LocalMediaPickerActivity
 import com.pichs.filepicker.entity.MediaEntity
 import com.pichs.filepicker.common.VideoPreviewDialog
 import com.pichs.xbase.binding.BindingActivity
@@ -32,6 +35,21 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
 
         binding.previewFragment.fastClick {
             startActivity(Intent(this, TestActivity::class.java))
+        }
+
+        // Paging3 Demo 按钮点击事件
+        binding.btnPagingDemo.fastClick {
+            startActivity(Intent(this, PagingDemoActivity::class.java))
+        }
+
+        // 图片分页 Demo 按钮点击事件
+        binding.btnImagePagingDemo.fastClick {
+            startActivity(Intent(this, ImagePagingDemoActivity::class.java))
+        }
+
+        // 本地图库 Paging3 Demo 按钮点击事件
+        binding.btnLocalMediaPagingDemo.fastClick {
+            startActivity(Intent(this, LocalMediaPickerActivity::class.java))
         }
 
         // 开始按钮点击事件

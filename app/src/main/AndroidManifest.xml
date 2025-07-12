@@ -53,6 +53,21 @@
             android:exported="true"
             android:launchMode="singleTop" />
 
+        <activity
+            android:name=".paging.PagingDemoActivity"
+            android:exported="true"
+            android:launchMode="singleTop" />
+
+        <activity
+            android:name=".paging.ImagePagingDemoActivity"
+            android:exported="true"
+            android:launchMode="singleTop" />
+
+        <activity
+            android:name=".newpicker.LocalMediaPickerActivity"
+            android:exported="true"
+            android:launchMode="singleTop" />
+
     </application>
 
 </manifest>

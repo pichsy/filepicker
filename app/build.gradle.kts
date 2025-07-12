@@ -46,6 +46,12 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.coroutines.core)
 
+    // Paging3
+    implementation(libs.androidx.paging.runtime)
+
+    // SwipeRefreshLayout
+    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
+
     //#好用必不可少的三方库
     implementation(libs.xwidget)
     implementation(libs.xxpermissions)
