@@ -25,6 +25,12 @@ object FilePickerLog {
         }
     }
 
+    fun e(tag: String, msg: String) {
+        if (isDebug) {
+            Log.e(TAG, "$tag==>$msg")
+        }
+    }
+
     fun e(message: () -> String) {
         if (isDebug) {
             Log.e(TAG, message())

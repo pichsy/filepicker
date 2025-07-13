@@ -220,7 +220,7 @@ object FileQueryHelper {
                 )
 
                 val fileCheckTimeStart = System.currentTimeMillis()
-                Log.e("相册获取", " 开始文件判断---fileCheckTimeStart 耗时:${fileCheckTimeStart - endTimeOneWhile}")
+                FilePickerLog.e("相册获取", " 开始文件判断---fileCheckTimeStart 耗时:${fileCheckTimeStart - endTimeOneWhile}")
 
                 if (FilePickerFileUtils.isFileInHiddenDir(filePath)) {
                     FilePickerLog.d("相册获取", "文件判断: 在隐藏目录，不展示, 忽略======")
@@ -250,7 +250,7 @@ object FileQueryHelper {
                 }
 
                 val fileCheckTimeEnd = System.currentTimeMillis()
-                Log.e("相册获取", " 结束文件判断---fileCheckTimeEnd:${fileCheckTimeEnd}---耗时：${fileCheckTimeEnd - fileCheckTimeStart}")
+                FilePickerLog.e("相册获取", " 结束文件判断---fileCheckTimeEnd:${fileCheckTimeEnd}---耗时：${fileCheckTimeEnd - fileCheckTimeStart}")
 
                 val uri = ContentUris.withAppendedId(
                     if (mimeType?.startsWith("video/", true) == true) {
@@ -289,10 +289,10 @@ object FileQueryHelper {
                 mediaResult.addMediaEntity(
                     foldName ?: FilePickerFileUtils.getFolderName(filePath), FilePickerFileUtils.getFolderPath(filePath), mediaEntity
                 )
-                Log.e("相册获取", " 结束循环（单次 到底共) while----endtimewhile:--耗时：${System.currentTimeMillis() - startTimeOneWhile}")
+                FilePickerLog.e("相册获取", " 结束循环（单次 到底共) while----endtimewhile:--耗时：${System.currentTimeMillis() - startTimeOneWhile}")
             }
             val endTimeWhile = System.currentTimeMillis()
-            Log.e("相册获取", " 结束循环（整体）while---endTimeWhile:${endTimeWhile}---耗时：${endTimeWhile - startTimeWhile}")
+            FilePickerLog.e("相册获取", " 结束循环（整体）while---endTimeWhile:${endTimeWhile}---耗时：${endTimeWhile - startTimeWhile}")
             cursor.close()
             FilePickerLog.d("相册获取", "queryAlbums: 最终结果-执行完毕---------folder:size：${mediaResult.mediaFolders.size}")
             return@withContext mediaResult
