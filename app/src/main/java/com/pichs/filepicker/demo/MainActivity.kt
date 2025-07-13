@@ -63,18 +63,87 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
             startActivity(Intent(this, LocalMediaPickerActivity::class.java))
         }
 
-        // 开始按钮点击事件
-        binding.btnStart.fastClick {
-
+        binding.btnFileQuery.fastClick {
             lifecycleScope.launch(Dispatchers.Main) {
-                val mediaResult = FileQueryHelper.queryAlbums(
 
+                // 获取最大选择数量
+                val maxSelectCount = binding.etMaxSelectCount.text.toString().toIntOrNull() ?: 0
+                // 获取最大文件大小（MB转字节）
+                val maxFileSizeMB = binding.etMaxFileSize.text.toString().toIntOrNull() ?: 200
+                val maxFileSize = /*maxFileSizeMB * 1024 * 1024*/Int.MAX_VALUE
+                // 获取类型
+                var queryTypes = mutableSetOf(
+                    QueryType.VIDEO, QueryType.IMAGE,
+                )
+
+                when (binding.rgType.checkedRadioButtonId) {
+                    binding.rbAll.id -> {
+                        queryTypes = mutableSetOf(
+                            QueryType.VIDEO, QueryType.IMAGE
+                        )
+                    }
+
+                    binding.rbImage.id -> {
+                        queryTypes = mutableSetOf(
+                            QueryType.IMAGE
+                        )
+                    }
+
+                    binding.rbVideo.id -> {
+                        queryTypes = mutableSetOf(
+                            QueryType.VIDEO
+                        )
+                    }
+
+                    binding.rbAudio.id -> {
+                        queryTypes = mutableSetOf(
+                            QueryType.AUDIO
+                        )
+                    }
+
+                    binding.rbDocument.id -> {
+                        queryTypes = mutableSetOf(
+                            QueryType.NONE,
+                        )
+                    }
+
+                    binding.rbAip.id -> {
+                        queryTypes = mutableSetOf(
+                            QueryType.NONE,
+                        )
+                    }
+                }
+
+
+                val mediaResult = FileQueryHelper.queryAlbums(
                     this@MainActivity,
-                    queryTypes = mutableSetOf(
-                        QueryType.VIDEO, QueryType.IMAGE,
-                    ),
+                    queryTypes = queryTypes,
                     queryBuilder = { it ->
-                        it.sizeGreaterThan(0)
+                        it.sizeLessThan(maxFileSize)
+                        when (binding.rgType.checkedRadioButtonId) {
+                            binding.rbDocument.id -> {
+                                it.and().leftBracket().fileNameEndWith(".doc")
+                                    .or().fileNameEndWith(".docx")
+                                    .or().fileNameEndWith(".pdf")
+                                    .or().fileNameEndWith(".ppt")
+                                    .or().fileNameEndWith(".pptx")
+                                    .or().fileNameEndWith(".xls")
+                                    .or().fileNameEndWith(".xlsx")
+                                    .or().fileNameEndWith(".txt")
+                                    .rightBracket()
+                            }
+
+                            binding.rbAip.id -> {
+                                it.and().leftBracket().fileNameEndWith(".zip")
+                                    .or().fileNameEndWith(".rar")
+                                    .or().fileNameEndWith(".7z")
+                                    .or().fileNameEndWith(".tar")
+                                    .or().fileNameEndWith(".gz")
+                                    .or().fileNameEndWith(".bz2")
+                                    .or().fileNameEndWith(".iso")
+                                    .rightBracket()
+                            }
+                        }
                     }
                 )
 
@@ -90,14 +159,10 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
                 """.trimIndent()
 
             }
+        }
+        // 开始按钮点击事件
+        binding.btnStart.fastClick {
 
-
-
-
-
-            if (true) {
-                return@fastClick
-            }
             // 获取最大选择数量
             val maxSelectCount = binding.etMaxSelectCount.text.toString().toIntOrNull() ?: 0
             // 获取最大文件大小（MB转字节）
