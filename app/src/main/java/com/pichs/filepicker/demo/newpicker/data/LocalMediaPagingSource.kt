@@ -407,8 +407,7 @@ class LocalMediaPagingSource(
                     orientation = orientation,
                     size = size,
                     duration = duration,
-                    time = dateAdded,
-                    selectedCount = 0
+                    addTime = dateAdded,
                 )
 
                 mediaList.add(mediaEntity)
@@ -540,8 +539,7 @@ class LocalMediaPagingSource(
             orientation = orientation,
             size = size,
             duration = duration,
-            time = dateAdded,
-            selectedCount = 0
+            addTime = dateAdded,
         )
     }
 }

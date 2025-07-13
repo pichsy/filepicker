@@ -33,8 +33,8 @@ data class MediaFolder(
 
         other as MediaFolder
 
-        if (name != other.name) return false
-        if (folderPath != other.folderPath) return false
+        if (name.equals(other.name, true)) return false
+        if (folderPath.equals(other.folderPath, true)) return false
         if (mediaEntityList != other.mediaEntityList) return false
         if (mediaEntityList.size != other.mediaEntityList.size) return false
 

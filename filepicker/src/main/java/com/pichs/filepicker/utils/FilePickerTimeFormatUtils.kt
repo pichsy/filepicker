@@ -1,8 +1,16 @@
 package com.pichs.filepicker.utils
 
 import android.annotation.SuppressLint
+import java.text.SimpleDateFormat
 
 object FilePickerTimeFormatUtils {
+
+    @SuppressLint("SimpleDateFormat")
+    val timeFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+
+    fun formatTime(time: Long): String {
+        return timeFormat.format(time)
+    }
 
     /**
      * 格式化
@@ -46,7 +54,7 @@ object FilePickerTimeFormatUtils {
 
 
     @SuppressLint("DefaultLocale")
-    fun formatFileSize(byteSize: Long):String{
+    fun formatFileSize(byteSize: Long): String {
         if (byteSize < 1024) {
             return "$byteSize B"
         } else if (byteSize < 1024 * 1024) {

@@ -117,7 +117,7 @@ class LocalMediaViewModel : ViewModel() {
         }
         
         // 添加到选中列表
-        currentList.add(mediaEntity.copy(selectedCount = currentList.size + 1))
+        currentList.add(mediaEntity.copy())
         _selectedMediaList.value = currentList
         return true
     }
@@ -131,10 +131,6 @@ class LocalMediaViewModel : ViewModel() {
         
         if (index != -1) {
             currentList.removeAt(index)
-            // 重新设置选中序号
-            currentList.forEachIndexed { idx, media ->
-                currentList[idx] = media.copy(selectedCount = idx + 1)
-            }
             _selectedMediaList.value = currentList
         }
     }
@@ -150,8 +146,9 @@ class LocalMediaViewModel : ViewModel() {
      * 获取媒体的选中序号
      */
     fun getMediaSelectedIndex(mediaEntity: MediaEntity): Int {
-        val selectedMedia = _selectedMediaList.value.find { it.path == mediaEntity.path }
-        return selectedMedia?.selectedCount ?: 0
+//        val selectedMedia = _selectedMediaList.value.find { it.path == mediaEntity.path }
+//        return selectedMedia?.selectedCount ?: 0
+        return _selectedMediaList.value.indexOfFirst { it.path == mediaEntity.path } + 1
     }
     
     /**

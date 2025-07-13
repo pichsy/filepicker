@@ -1,8 +1,12 @@
 package com.pichs.filepicker.demo
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
+import android.service.autofill.Validators.and
+import android.util.Log
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.drake.brv.utils.linear
@@ -20,9 +24,15 @@ import com.pichs.filepicker.demo.paging.ImagePagingDemoActivity
 import com.pichs.filepicker.demo.newpicker.LocalMediaPickerActivity
 import com.pichs.filepicker.entity.MediaEntity
 import com.pichs.filepicker.common.VideoPreviewDialog
+import com.pichs.filepicker.query.FileQueryHelper
+import com.pichs.filepicker.query.QueryType
 import com.pichs.xbase.binding.BindingActivity
 import com.pichs.xbase.kotlinext.fastClick
 import com.pichs.xbase.xlog.XLog
+import com.pichs.xbase.xlog.XLogFileUtils
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class MainActivity : BindingActivity<ActivityMainBinding>() {
 
@@ -31,6 +41,7 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
 //        XStatusBarHelper.transparentStatusBar(window)
     }
 
+    @SuppressLint("SetTextI18n")
     override fun afterOnCreate() {
 
         binding.previewFragment.fastClick {
@@ -54,6 +65,39 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
 
         // 开始按钮点击事件
         binding.btnStart.fastClick {
+
+            lifecycleScope.launch(Dispatchers.Main) {
+                val mediaResult = FileQueryHelper.queryAlbums(
+
+                    this@MainActivity,
+                    queryTypes = mutableSetOf(
+                        QueryType.VIDEO, QueryType.IMAGE,
+                    ),
+                    queryBuilder = { it ->
+                        it.sizeGreaterThan(0)
+                    }
+                )
+
+                Log.d("MainActivity", "查询结果111：${mediaResult.mediaFolders.size} 个文件夹")
+                Log.d("MainActivity", "查询结果111：${mediaResult.mediaFolders.joinToString(",", transform = { it.name?.toString() ?: "" })}")
+                Log.d("MainActivity", "查询结果111 文件个数： ${mediaResult.mediaFolders.sumOf { it.mediaEntityList.size }}")
+
+                binding.tvResult.text = """
+                    查询结果：${mediaResult.mediaFolders.size} 个文件夹
+                    ${mediaResult.mediaFolders.joinToString(",", transform = { it.name?.toString() ?: "" })}
+                    -----------
+                    文件个数： ${mediaResult.mediaFolders.sumOf { it.mediaEntityList.size }}
+                """.trimIndent()
+
+            }
+
+
+
+
+
+            if (true) {
+                return@fastClick
+            }
             // 获取最大选择数量
             val maxSelectCount = binding.etMaxSelectCount.text.toString().toIntOrNull() ?: 0
             // 获取最大文件大小（MB转字节）

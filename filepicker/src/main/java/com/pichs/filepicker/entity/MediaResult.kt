@@ -1,5 +1,7 @@
 package com.pichs.filepicker.entity
 
+import com.pichs.filepicker.utils.FilePickerFileUtils
+
 /**
  * 媒体返回结果，全部
  */
@@ -29,25 +31,48 @@ data class MediaResult(
 
     fun addMediaEntity(mediaFolder: MediaFolder, mediaEntity: MediaEntity) {
         // 首先获取列表中的文件夹
-        val folder = mediaFolders.find { it == mediaFolder }
+        val folder = mediaFolders.find { mediaFolder.folderPath?.equals(it.folderPath, true) == true }
         if (folder != null) {
             folder.add(mediaEntity)
         } else {
             mediaFolder.add(mediaEntity)
+            mediaFolder.name = getFolderNickName(mediaFolder.name ?: "")
             mediaFolders.add(mediaFolder)
         }
     }
 
-    fun addMediaEntity(albumPath: String, mediaEntity: MediaEntity) {
+    fun addMediaEntity(albumName: String, albumPath: String, mediaEntity: MediaEntity) {
         // 首先获取列表中的文件夹
-        val folder = mediaFolders.find { it.folderPath == albumPath }
+        val folder = mediaFolders.find { albumPath.equals(it.folderPath, true) }
         if (folder != null) {
             folder.add(mediaEntity)
         } else {
             val mediaFolder = MediaFolder()
             mediaFolder.folderPath = albumPath
+            mediaFolder.name = getFolderNickName(albumName)
             mediaFolder.add(mediaEntity)
             mediaFolders.add(mediaFolder)
+        }
+    }
+
+    private fun getFolderNickName(name: String): String {
+        if (name.isEmpty()) return ""
+        return if (name.equals("DCIM", true) || name.equals("Camera", true)) {
+            "相机"
+        } else if (name.equals("Pictures", true)) {
+            "图片"
+        } else if (name.equals("Movies", true)) {
+            "视频"
+        } else if (name.equals("Audio", true)) {
+            "音频"
+        } else if (name.equals("Music", true)) {
+            "音乐"
+        } else if (name.equals("Screenshots", true)) {
+            "截图"
+        } else if (name.equals("Download", true)) {
+            "下载"
+        } else {
+            name
         }
     }
 

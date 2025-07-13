@@ -3,18 +3,20 @@ package com.pichs.filepicker.query
 import android.annotation.SuppressLint
 import android.content.ContentUris
 import android.content.Context
-import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
 import android.util.Log
 import com.pichs.filepicker.entity.MediaResult
-import com.pichs.filepicker.entity.MediaFolder
 import com.pichs.filepicker.entity.MediaEntity
+import com.pichs.filepicker.utils.FilePickerFileUtils
 import com.pichs.filepicker.utils.FilePickerLog
+import com.pichs.filepicker.utils.FilePickerTimeFormatUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
+import kotlin.math.max
+import kotlin.math.min
 
 
 /**
@@ -43,7 +45,6 @@ object FileQueryHelper {
             if (queryTypes.isEmpty()) {
                 return@withContext mediaResult
             }
-
 
             val isNoneMedia = queryTypes.contains(QueryType.NONE)
 
@@ -151,7 +152,7 @@ object FileQueryHelper {
                 MediaStore.Files.FileColumns.WIDTH,
                 MediaStore.Files.FileColumns.HEIGHT,
                 MediaStore.Files.FileColumns.DURATION,
-                MediaStore.Files.FileColumns.DATE_MODIFIED,
+                MediaStore.Files.FileColumns.DATE_ADDED,
                 MediaStore.Files.FileColumns.BUCKET_DISPLAY_NAME,
                 MediaStore.Files.FileColumns.BUCKET_ID,
             )
@@ -160,7 +161,8 @@ object FileQueryHelper {
                 projection += MediaStore.Files.FileColumns.ORIENTATION
             }
 
-            val sortOrder = MediaStore.Files.FileColumns.DATE_MODIFIED + " DESC"
+            val sortOrder = MediaStore.Files.FileColumns.DATE_ADDED + " DESC"
+
             if (contentUri == null) {
                 return@withContext mediaResult
             }
@@ -180,16 +182,16 @@ object FileQueryHelper {
 
                 val startTimeOneWhile = System.currentTimeMillis()
                 val id = cursor.getLong(cursor.getColumnIndex(MediaStore.Files.FileColumns._ID))
-                val data = cursor.getString(cursor.getColumnIndex(MediaStore.Files.FileColumns.DATA))
-                val displayName = cursor.getString(cursor.getColumnIndex(MediaStore.Files.FileColumns.DISPLAY_NAME))
+                val filePath = cursor.getString(cursor.getColumnIndex(MediaStore.Files.FileColumns.DATA))
+                val fileName = cursor.getString(cursor.getColumnIndex(MediaStore.Files.FileColumns.DISPLAY_NAME))
                 val size = cursor.getLong(cursor.getColumnIndex(MediaStore.Files.FileColumns.SIZE))
                 val mimeType = cursor.getString(cursor.getColumnIndex(MediaStore.Files.FileColumns.MIME_TYPE))
                 var width = cursor.getInt(cursor.getColumnIndex(MediaStore.Files.FileColumns.WIDTH))
                 var height = cursor.getInt(cursor.getColumnIndex(MediaStore.Files.FileColumns.HEIGHT))
                 val duration = cursor.getLong(cursor.getColumnIndex(MediaStore.Files.FileColumns.DURATION))
-                val dateModified = cursor.getLong(cursor.getColumnIndex(MediaStore.Files.FileColumns.DATE_MODIFIED))
+                val dateAdd = max(0, cursor.getLong(cursor.getColumnIndex(MediaStore.Files.FileColumns.DATE_ADDED)) * 1000)// 注意：dateAdd是秒级别的时间戳
                 val bucketId = cursor.getString(cursor.getColumnIndex(MediaStore.Files.FileColumns.BUCKET_ID))
-                val bucketDisplayName = cursor.getString(cursor.getColumnIndex(MediaStore.Files.FileColumns.BUCKET_DISPLAY_NAME))
+                val foldName = cursor.getString(cursor.getColumnIndex(MediaStore.Files.FileColumns.BUCKET_DISPLAY_NAME))
                 val orientation = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     cursor.getInt(cursor.getColumnIndex(MediaStore.Files.FileColumns.ORIENTATION))
                 } else {
@@ -200,41 +202,55 @@ object FileQueryHelper {
 
                 // 获取缩略图位置
                 FilePickerLog.d("相册获取", "queryAlbums: id:$id")
-                FilePickerLog.d("相册获取", "queryAlbums: data:$data")
-                FilePickerLog.d("相册获取", "queryAlbums: displayName:$displayName")
+                FilePickerLog.d("相册获取", "queryAlbums: data:$filePath")
+                FilePickerLog.d("相册获取", "queryAlbums: fileName:$fileName")
                 FilePickerLog.d("相册获取", "queryAlbums: size:$size")
                 FilePickerLog.d("相册获取", "queryAlbums: mimeType:$mimeType")
                 FilePickerLog.d("相册获取", "queryAlbums: width:$width")
                 FilePickerLog.d("相册获取", "queryAlbums: height:$height")
                 FilePickerLog.d("相册获取", "queryAlbums: duration:$duration")
-                FilePickerLog.d("相册获取", "queryAlbums: dateModified:$dateModified")
-                FilePickerLog.d("相册获取", "queryAlbums: bucketDisplayName:$bucketDisplayName")
+                FilePickerLog.d("相册获取", "queryAlbums: dateModified:${dateAdd}")
+                FilePickerLog.d("相册获取", "queryAlbums: foldName:$foldName")
+                FilePickerLog.d("相册获取", "queryAlbums: folderPath:${FilePickerFileUtils.getFolderPath(filePath)}")
                 FilePickerLog.d("相册获取", "queryAlbums: bucketId:$bucketId")
                 FilePickerLog.d("相册获取", "queryAlbums: orientation:$orientation")
+                FilePickerLog.d(
+                    "相册获取",
+                    "queryAlbums: addTime*1000=${dateAdd} ms,  formatTime=${FilePickerTimeFormatUtils.formatTime(dateAdd)}"
+                )
 
                 val fileCheckTimeStart = System.currentTimeMillis()
                 Log.e("相册获取", " 开始文件判断---fileCheckTimeStart 耗时:${fileCheckTimeStart - endTimeOneWhile}")
-                val file = File(data)
+
+                if (FilePickerFileUtils.isFileInHiddenDir(filePath)) {
+                    FilePickerLog.d("相册获取", "文件判断: 在隐藏目录，不展示, 忽略======")
+                    continue
+                }
+
+                val file = File(filePath)
                 // 文件有毛病,忽略。。。。
-                val isExists = file.exists()
-                val isFile = file.isFile
-                val length = file.length()
-                val isInHiddenDir = isFileInHiddenDir(data)
+                val isExists = FilePickerFileUtils.isFileExists(file)
+                if (!isExists) {
+                    FilePickerLog.d("相册获取", "queryAlbums: 文件不存在，忽略。。。。")
+                    continue
+                }
+
+                val isFile = FilePickerFileUtils.isFile(file)
+                // 文件大小为0，忽略。。。
+                if (!isFile) {
+                    FilePickerLog.d("相册获取", "queryAlbums: 文件不是文件，忽略。。。。")
+                    continue
+                }
+
+                val length = FilePickerFileUtils.getFileSize(file)
+                // 文件在隐藏目录，忽略。。。
+                if (length <= 0) {
+                    FilePickerLog.d("相册获取", "queryAlbums: 文件大小为0，忽略。。。。")
+                    continue
+                }
 
                 val fileCheckTimeEnd = System.currentTimeMillis()
                 Log.e("相册获取", " 结束文件判断---fileCheckTimeEnd:${fileCheckTimeEnd}---耗时：${fileCheckTimeEnd - fileCheckTimeStart}")
-
-                FilePickerLog.d("相册获取", "文件判断: isExists:$isExists")
-                FilePickerLog.d("相册获取", "文件判断: isFile:$isFile")
-                FilePickerLog.d("相册获取", "文件判断: length:$length")
-                FilePickerLog.d("相册获取", "文件判断: isInHiddenDir:$isInHiddenDir")
-
-                if (!isExists || !isFile || length == 0L || isInHiddenDir) {
-                    FilePickerLog.d("相册获取", "queryAlbums: 文件有毛病-或者-无权读取-在隐藏目录,忽略。。。。")
-                    continue
-                }
-                val fileCheckTimeEnd2 = System.currentTimeMillis()
-                Log.e("相册获取", " 结束循环（单次) 文件判断没有中断---耗时：${fileCheckTimeEnd2 - fileCheckTimeEnd}")
 
                 val uri = ContentUris.withAppendedId(
                     if (mimeType?.startsWith("video/", true) == true) {
@@ -248,38 +264,30 @@ object FileQueryHelper {
                     }, id
                 )
 
-                val withAppendedIdTimeEnd = System.currentTimeMillis()
-                Log.e("相册获取", " 结束循环（单次) withAppendedId---耗时：${withAppendedIdTimeEnd - fileCheckTimeEnd2}")
-
-                var bitmapEndTime = withAppendedIdTimeEnd
-                if (width == 0 || height == 0) {
-                    val options = BitmapFactory.Options()
-                    options.inJustDecodeBounds = true
-                    BitmapFactory.decodeFile(data, options)
-                    width = options.outWidth
-                    height = options.outHeight
-                    bitmapEndTime = System.currentTimeMillis()
-                    Log.e("相册获取", " 结束循环（单次) 图片处理了---耗时：${bitmapEndTime - withAppendedIdTimeEnd}")
-                }
+//                if (width == 0 || height == 0) {
+//                    val options = BitmapFactory.Options()
+//                    options.inJustDecodeBounds = true
+//                    BitmapFactory.decodeFile(data, options)
+//                    width = options.outWidth
+//                    height = options.outHeight
+//                }
 
                 val mediaEntity = MediaEntity(
                     uri = uri,
-                    name = displayName ?: bucketDisplayName,
-                    path = data,
+                    name = fileName ?: FilePickerFileUtils.getFileName(filePath = filePath),
+                    path = filePath,
                     size = size,
                     mimeType = mimeType,
                     width = width,
                     height = height,
                     duration = duration,
                     orientation = orientation,
-                    time = dateModified,
+                    addTime = dateAdd,
                 )
+
                 FilePickerLog.d("相册获取", "queryAlbums: mediaEntity:$mediaEntity")
                 mediaResult.addMediaEntity(
-                    MediaFolder(
-                        name = bucketDisplayName,
-                        folderPath = getFolderPath(data),
-                    ), mediaEntity
+                    foldName ?: FilePickerFileUtils.getFolderName(filePath), FilePickerFileUtils.getFolderPath(filePath), mediaEntity
                 )
                 Log.e("相册获取", " 结束循环（单次 到底共) while----endtimewhile:--耗时：${System.currentTimeMillis() - startTimeOneWhile}")
             }
@@ -293,37 +301,12 @@ object FileQueryHelper {
     }
 
 
-    private fun isFileInHiddenDir(path: String): Boolean {
-        // 判断路径中是否有某个路径以.开头的，如果有，那么就是隐藏目录
-        return path.contains("/.")
-    }
-
     /**
      * 仅仅有GIF类型，没有IMAGE类型
      */
     private fun isOnlyGifNotImage(queryTypes: MutableSet<QueryType>): Boolean {
         // 仅仅有GIF类型，没有IMAGE类型，数组不止一个，也可以有其他类型，但不能有IMAGE类型
         return queryTypes.contains(QueryType.GIF) && queryTypes.contains(QueryType.IMAGE).not()
-    }
-
-    /**
-     * 获取文件夹路径
-     */
-    private fun getFolderPath(filePath: String): String {
-        if (filePath.isEmpty() || filePath.isBlank()) {
-            return ""
-        }
-        return filePath.substring(0, filePath.lastIndexOf("/"))
-    }
-
-    private fun getMediaType(queryType: QueryType): Int {
-        return when (queryType) {
-            QueryType.IMAGE -> MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE
-            QueryType.GIF -> MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE
-            QueryType.VIDEO -> MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO
-            QueryType.AUDIO -> MediaStore.Files.FileColumns.MEDIA_TYPE_AUDIO
-            else -> MediaStore.Files.FileColumns.MEDIA_TYPE_NONE
-        }
     }
 
     private fun getMimeTypePrefix(queryType: QueryType): String {

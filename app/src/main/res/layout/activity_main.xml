@@ -155,6 +155,12 @@
             android:text="开始"
             android:textColor="#fff" />
 
+        <com.pichs.xwidget.view.XTextView
+            android:id="@+id/tv_result"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="#fff" />
+
         <!-- 开始按钮 -->
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/preview_fragment"

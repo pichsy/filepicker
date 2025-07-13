@@ -16,8 +16,7 @@ data class MediaEntity(
     var orientation: Int? = null,
     var size: Long = 0,
     var duration: Long = 0,
-    var time: Long? = null,
-    var selectedCount: Int = 0,
+    var addTime: Long? = null,
 ) : Parcelable {
 
     companion object {

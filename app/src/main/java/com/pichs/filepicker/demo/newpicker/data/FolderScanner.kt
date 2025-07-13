@@ -252,8 +252,7 @@ object FolderScanner {
             orientation = orientation,
             size = size,
             duration = duration,
-            time = dateAdded,
-            selectedCount = 0
+            addTime = dateAdded,
         )
     }
 }
