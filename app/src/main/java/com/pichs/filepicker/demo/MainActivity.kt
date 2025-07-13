@@ -119,10 +119,12 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
                     this@MainActivity,
                     queryTypes = queryTypes,
                     queryBuilder = { it ->
-                        it.sizeLessThan(maxFileSize)
+                        it.sizeGreaterThan(0).and().sizeLessThan(maxFileSize)
                         when (binding.rgType.checkedRadioButtonId) {
                             binding.rbDocument.id -> {
-                                it.and().leftBracket().fileNameEndWith(".doc")
+                                it.and()
+                                    .leftBracket()
+                                    .fileNameEndWith(".doc")
                                     .or().fileNameEndWith(".docx")
                                     .or().fileNameEndWith(".pdf")
                                     .or().fileNameEndWith(".ppt")
@@ -134,7 +136,9 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
                             }
 
                             binding.rbAip.id -> {
-                                it.and().leftBracket().fileNameEndWith(".zip")
+                                it.and()
+                                    .leftBracket()
+                                    .fileNameEndWith(".zip")
                                     .or().fileNameEndWith(".rar")
                                     .or().fileNameEndWith(".7z")
                                     .or().fileNameEndWith(".tar")
