@@ -2,6 +2,7 @@ package com.pichs.filepicker
 
 import android.content.pm.ActivityInfo
 import android.content.res.Configuration
+import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
@@ -16,6 +17,7 @@ import com.pichs.filepicker.databinding.ActivityFilepickerMainBinding
 import com.pichs.filepicker.entity.MediaEntity
 import com.pichs.filepicker.utils.FilePickerLog
 import com.pichs.filepicker.utils.FilePickerPadUtils
+import com.pichs.filepicker.FilePickerUIConfig
 import com.pichs.xwidget.utils.XNavigationBarUtils
 import com.pichs.xwidget.utils.XStatusBarHelper
 import kotlinx.coroutines.flow.update
@@ -58,7 +60,11 @@ class FilePickerPagingActivity : AppCompatActivity() {
         var slideChooseEnable = intent.getBooleanExtra("slideChooseEnable", true)
         var selectDataList = intent.getParcelableArrayListExtra<MediaEntity>("selectedDataList") ?: mutableListOf()
 
-        val uiConfig = intent.getParcelableExtra<FilePickerUIConfig>("uiConfig")
+        val uiConfig = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            intent.getParcelableExtra<FilePickerUIConfig>("uiConfig", FilePickerUIConfig::class.java)
+        } else {
+            intent.getParcelableExtra<FilePickerUIConfig>("uiConfig")
+        }
 
         if (uiConfig != null) {
             viewModel.uiConfig = uiConfig

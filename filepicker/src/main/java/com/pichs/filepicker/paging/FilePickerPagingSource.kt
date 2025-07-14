@@ -1,19 +1,23 @@
 package com.pichs.filepicker.paging
 
+import android.content.Context
+import android.os.Build.VERSION_CODES.Q
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import com.pichs.filepicker.entity.MediaEntity
+import com.pichs.filepicker.query.FileQueryHelper
+import com.pichs.filepicker.query.QueryType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
+import kotlin.math.min
 
-class FilePickerPagingSource(val onTotalCountChanged: ((Int) -> Unit)? = null) : PagingSource<Int, MediaEntity>() {
+class FilePickerPagingSource(val context: Context, val onTotalCountChanged: ((Int) -> Unit)? = null) : PagingSource<Int, MediaEntity>() {
 
     private val STARTING_PAGE_INDEX = 0
-    private val FIRST_BATCH_SIZE = 300  // 首批快速加载300条
     private val pageSize: Int = 100
 
     // 缓存全部数据，确保分页过程中数据稳定
@@ -33,72 +37,46 @@ class FilePickerPagingSource(val onTotalCountChanged: ((Int) -> Unit)? = null) :
     }
 
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, MediaEntity> {
+        val page = params.key ?: 0
         return try {
-            val page = params.key ?: STARTING_PAGE_INDEX
-
-            // 处理首次加载：快速显示前300条数据
-            if (allMediaList == null) {
-                if (page == 0 && !firstBatchLoaded) {
-                    // 首次加载：快速加载前300条数据
-                    val firstBatch = loadFirstBatch()
-                    firstBatchLoaded = true
-
-                    // 先显示首批数量
-                    onTotalCountChanged?.invoke(firstBatch.size)
-
-                    // 启动后台加载全量数据
-                    if (!isLoadingAll) {
-                        isLoadingAll = true
-                        loadRemainingDataInBackground()
-                    }
-
-                    return LoadResult.Page(
-                        data = firstBatch,
-                        prevKey = null,
-                        nextKey = if (firstBatch.size >= pageSize) 1 else null
-                    )
-                } else {
-                    // 等待全量数据加载完成
-                    waitForAllDataLoaded()
-                }
-            }
-
-            // 刷新时重新加载全部数据
-            if (params is LoadParams.Refresh) {
-                allMediaList = loadAllMediaFromDatabase()
-            }
-
-            // 正常分页逻辑
-            val totalList = allMediaList ?: emptyList()
+            val result = FileQueryHelper.queryAlbums(context, mutableSetOf(QueryType.IMAGE))
+            val allList = result.mediaFolders.flatMap { it.mediaEntityList }
             val startIndex = page * pageSize
-            val endIndex = minOf(startIndex + pageSize, totalList.size)
-
-            val pageData = if (startIndex < totalList.size) {
-                totalList.subList(startIndex, endIndex)
-            } else {
-                emptyList()
-            }
-
+            val endIndex = minOf(startIndex + pageSize, allList.size)
+            val pageData = if (startIndex < allList.size) allList.subList(startIndex, endIndex) else emptyList()
             LoadResult.Page(
                 data = pageData,
-                prevKey = if (page == STARTING_PAGE_INDEX) null else page - 1,
-                nextKey = if (endIndex >= totalList.size) null else page + 1
+                prevKey = if (page == 0) null else page - 1,
+                nextKey = if (endIndex >= allList.size) null else page + 1
             )
-        } catch (exception: Exception) {
-            LoadResult.Error(exception)
+        } catch (e: Exception) {
+            LoadResult.Error(e)
         }
     }
 
-    private suspend fun loadFirstBatch(): MutableList<MediaEntity> = withContext(Dispatchers.IO){
-
-        return@withContext mutableListOf()
+    private suspend fun loadFirstBatch(): MutableList<MediaEntity> = withContext(Dispatchers.IO) {
+        val result = FileQueryHelper.queryAlbums(
+            context, mutableSetOf(
+                QueryType.IMAGE
+            )
+        )
+        // 这里可以根据需要调整加载的数量
+        val allList = result.mediaFolders.flatMap { it.mediaEntityList }
+        val fl = allList.subList(0, min(300, allList.size)).toMutableList()
+        return@withContext fl
     }
 
 
-
-    private suspend fun loadRemainingDataInBackground(): MutableList<MediaEntity> = withContext(Dispatchers.IO){
-
-        return@withContext mutableListOf()
+    private suspend fun loadRemainingDataInBackground(): MutableList<MediaEntity> = withContext(Dispatchers.IO) {
+        val result = FileQueryHelper.queryAlbums(
+            context, mutableSetOf(
+                QueryType.IMAGE
+            )
+        )
+        // 这里可以根据需要调整加载的数量
+        val allList = result.mediaFolders.flatMap { it.mediaEntityList }
+        val fl = allList.subList(0, min(300, allList.size)).toMutableList()
+        return@withContext fl
     }
 
 
@@ -112,9 +90,15 @@ class FilePickerPagingSource(val onTotalCountChanged: ((Int) -> Unit)? = null) :
 
 
     private suspend fun loadAllMediaFromDatabase(): List<MediaEntity> = withContext(Dispatchers.IO) {
-        // 这里应该实现实际的数据加载逻辑
-        // 比如从数据库或文件系统加载所有媒体数据
-        return@withContext emptyList()  // 返回空列表作为示例
+        val result = FileQueryHelper.queryAlbums(
+            context, mutableSetOf(
+                QueryType.IMAGE
+            )
+        )
+        // 这里可以根据需要调整加载的数量
+        val allList = result.mediaFolders.flatMap { it.mediaEntityList }
+        val fl = allList.subList(0, min(300, allList.size)).toMutableList()
+        return@withContext fl
     }
 
 
@@ -127,7 +111,7 @@ class FilePickerPagingSource(val onTotalCountChanged: ((Int) -> Unit)? = null) :
 class FilePickerPagingRepository {
     var pagingSource: FilePickerPagingSource? = null
 
-    fun loadData(onTotalCountChanged: ((Int) -> Unit)? = null): Flow<PagingData<MediaEntity>> {
+    fun loadData(context: Context, onTotalCountChanged: ((Int) -> Unit)? = null): Flow<PagingData<MediaEntity>> {
         // 这里应该实现实际的数据加载逻辑
         return Pager(
             config = PagingConfig(
@@ -138,7 +122,7 @@ class FilePickerPagingRepository {
                 maxSize = PagingConfig.MAX_SIZE_UNBOUNDED  // 最大缓存不限制
             ),
             pagingSourceFactory = {
-                FilePickerPagingSource(onTotalCountChanged).apply {
+                FilePickerPagingSource(context, onTotalCountChanged).apply {
                     pagingSource = this
                 }
             }

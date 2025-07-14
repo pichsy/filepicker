@@ -263,20 +263,20 @@ class FilePickerPagingFragment : Fragment(), View.OnClickListener {
     private fun initDataFlow() {
         lifecycleScope.launch {
             launch {
-                viewModel.currentFolderDataList.collectLatest { list ->
-                    FilePickerLog.d("FilePickerFragment", "initDataFlow currentFolderDataList: size:${list.size}, currentTabType:$currentTabType")
-                    for (item in viewModel.selectedData) {
-                        val isContains = viewModel.getAllDataEntityList().contains(item)
-                        FilePickerLog.d("FilePickerFragment", "initDataFlow: item:${item.path}, isContains:$isContains")
-                        if (!isContains) {
-                            viewModel.removeSelectedData(item)
-                        }
-                    }
-                    // 这里处理数据
-                    binding.recyclerView.models = list
+//                viewModel.currentFolderDataList.collectLatest { list ->
+//                    FilePickerLog.d("FilePickerFragment", "initDataFlow currentFolderDataList: size:${list.size}, currentTabType:$currentTabType")
+//                    for (item in viewModel.selectedData) {
+//                        val isContains = viewModel.getAllDataEntityList().contains(item)
+//                        FilePickerLog.d("FilePickerFragment", "initDataFlow: item:${item.path}, isContains:$isContains")
+//                        if (!isContains) {
+//                            viewModel.removeSelectedData(item)
+//                        }
+//                    }
+//                    // 这里处理数据
+////                    binding.recyclerView.models = list
 //                    mPagingGridAdapter?.submitData(list)
-                    binding.llEmpty.isVisible = list.isEmpty()
-                }
+//                    binding.llEmpty.isVisible = list.isEmpty()
+//                }
             }
 
             launch {
@@ -290,26 +290,33 @@ class FilePickerPagingFragment : Fragment(), View.OnClickListener {
 
     private fun loadData() {
         FilePickerLog.d("FilePickerFragment", "loadData: selectType:${viewModel.selectType.value}")
-        MediaScanner.scanMedia(viewModel.selectType.value, this, object : MediaScanner.ScanCallback {
-            override fun onCompleted(folders: List<MediaFolder>) {
-                if (folders.isEmpty()) return
-                // 处理folder列表，过滤所需
-                val finalFolders = viewModel.filterAllData(folders)
-                if (finalFolders.isEmpty()) return
+//        MediaScanner.scanMedia(viewModel.selectType.value, this, object : MediaScanner.ScanCallback {
+//            override fun onCompleted(folders: List<MediaFolder>) {
+//                if (folders.isEmpty()) return
+//                // 处理folder列表，过滤所需
+//                val finalFolders = viewModel.filterAllData(folders)
+//                if (finalFolders.isEmpty()) return
+//
+//                finalFolders.forEach {
+//                    FilePickerLog.d("FilePickerFragment777", "mediaFolder: ${it.folderPath},==========================")
+//                    it.mediaEntityList.forEach {
+//                        FilePickerLog.d("FilePickerFragment777", "mediaEntity: ${it.path}, size: ${it.size}")
+//                    }
+//                }
+//
+//                viewModel.updateAllDataList(finalFolders)
+//                viewModel.initUserSelectDataList(finalFolders)
+//
+//                resetListDataWithSelectData()
+//            }
+//        })
 
-                finalFolders.forEach {
-                    FilePickerLog.d("FilePickerFragment777", "mediaFolder: ${it.folderPath},==========================")
-                    it.mediaEntityList.forEach {
-                        FilePickerLog.d("FilePickerFragment777", "mediaEntity: ${it.path}, size: ${it.size}")
-                    }
-                }
-
-                viewModel.updateAllDataList(finalFolders)
-                viewModel.initUserSelectDataList(finalFolders)
-
-                resetListDataWithSelectData()
+        lifecycleScope.launch {
+            viewModel.loadData(requireContext()).collectLatest {
+                mPagingGridAdapter?.submitData(it)
+                mPagingLinearAdapter?.submitData(it)
             }
-        })
+        }
     }
 
     private fun resetListDataWithSelectData() {
@@ -653,7 +660,13 @@ class FilePickerPagingFragment : Fragment(), View.OnClickListener {
 
     inner class MediaPagingGridAdapter : PagingDataAdapter<MediaEntity, PagingGridBindingViewHolder>(DIFFER_CALLBACK) {
         override fun onCreateViewHolder(parent: ViewGroup, posotion: Int): PagingGridBindingViewHolder {
-            return PagingGridBindingViewHolder(FilePickerItemRvAlbumBinding.inflate(LayoutInflater.from(context), parent, false))
+            return PagingGridBindingViewHolder(
+                FilePickerItemRvAlbumBinding.inflate(
+                    LayoutInflater.from(parent.context),
+                    parent,
+                    false
+                )
+            )
         }
 
         override fun onBindViewHolder(holder: PagingGridBindingViewHolder, posotion: Int) {
@@ -667,7 +680,10 @@ class FilePickerPagingFragment : Fragment(), View.OnClickListener {
     /**
      * ViewHolder for the media grid items.
      */
-    inner class PagingGridBindingViewHolder(val itemBinding: FilePickerItemRvAlbumBinding) : RecyclerView.ViewHolder(binding.root) {
+    inner class PagingGridBindingViewHolder(val itemBinding: FilePickerItemRvAlbumBinding) : RecyclerView.ViewHolder(itemBinding.root) {
+        /**
+         * 绑定数据 to the ViewHolder.
+         */
         fun bind(adapter: MediaPagingGridAdapter, item: MediaEntity, position: Int) {
             MediaLoader.loadImageThumbnail(item.uri, item.mimeType, itemBinding.ivCoverImage)
 
@@ -760,7 +776,7 @@ class FilePickerPagingFragment : Fragment(), View.OnClickListener {
 
     inner class MediaPagingLinearAdapter : PagingDataAdapter<MediaEntity, PagingLinearBindingViewHolder>(DIFFER_CALLBACK) {
         override fun onCreateViewHolder(parent: ViewGroup, posotion: Int): PagingLinearBindingViewHolder {
-            return PagingLinearBindingViewHolder(FilePickerItemRvAudioAlbumBinding.inflate(LayoutInflater.from(context), parent, false))
+            return PagingLinearBindingViewHolder(FilePickerItemRvAudioAlbumBinding.inflate(LayoutInflater.from(parent.context), parent, false))
         }
 
         override fun onBindViewHolder(holder: PagingLinearBindingViewHolder, posotion: Int) {
@@ -772,7 +788,7 @@ class FilePickerPagingFragment : Fragment(), View.OnClickListener {
     }
 
 
-    inner class PagingLinearBindingViewHolder(val itemBinding: FilePickerItemRvAudioAlbumBinding) : RecyclerView.ViewHolder(binding.root) {
+    inner class PagingLinearBindingViewHolder(val itemBinding: FilePickerItemRvAudioAlbumBinding) : RecyclerView.ViewHolder(itemBinding.root) {
         fun bind(adapter: MediaPagingLinearAdapter, item: MediaEntity, position: Int) {
             itemBinding.tvName.text = item.name ?: ""
 

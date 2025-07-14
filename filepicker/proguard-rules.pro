@@ -19,5 +19,6 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
--keep class com.pichs.xwidget.**{*;}
--keep class com.pichs.filepicker.**{*;}
+-keep class com.pichs.filepicker.** { *; }
+-keep class com.pichs.xwidget.** { *; }
+-keep class com.pichs.xbase.** { *; }

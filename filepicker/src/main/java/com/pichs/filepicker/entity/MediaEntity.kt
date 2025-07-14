@@ -18,6 +18,7 @@ data class MediaEntity(
     var duration: Long = 0,
     var addTime: Long? = null,
     var isSelected: Boolean = false,
+    internal var selectedIndex: Int = -1,
 ) : Parcelable {
 
     companion object {
@@ -32,6 +33,7 @@ data class MediaEntity(
                     path.endsWith(".wav", true) -> "audio/wav"
                     path.endsWith(".flac", true) -> "audio/flac"
                     path.endsWith(".m4a", true) -> "audio/mp4"
+                    path.endsWith(".amr", true) -> "audio/amr"
                     path.endsWith(".txt", true) -> "text/plain"
                     path.endsWith(".pdf", true) -> "application/pdf"
                     path.endsWith(".doc", true) || path.endsWith(".docx", true) -> "application/msword"
@@ -76,6 +78,10 @@ data class MediaEntity(
 
     fun isM4a(): Boolean {
         return mimeType?.equals("audio/mp4", true) == true
+    }
+
+    fun isAmr(): Boolean {
+        return mimeType?.equals("audio/amr", true) == true
     }
 
     fun isGif(): Boolean {
@@ -166,19 +172,4 @@ data class MediaEntity(
 }
 
 
-data class FilePickerTempSelected(
-    var isDelete: Boolean = false,
-    val mediaEntity: MediaEntity,
-) : Serializable {
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is FilePickerTempSelected) return false
-        return mediaEntity == other.mediaEntity
-    }
-
-    override fun hashCode(): Int {
-        return mediaEntity?.path?.hashCode() ?: 0
-    }
-}
 

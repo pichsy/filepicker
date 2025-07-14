@@ -196,7 +196,7 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
                     Permission.READ_MEDIA_AUDIO,
                 ).request { permissions, all ->
                     if (all) {
-                        selectFile(type, maxSelectCount, maxFileSize)
+                        selectFilePaging(type, maxSelectCount, maxFileSize)
                     } else {
                         XXPermissions.startPermissionActivity(this, permissions)
                     }
@@ -207,7 +207,7 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
                     Permission.MANAGE_EXTERNAL_STORAGE,
                 ).request { permissions, all ->
                     if (all) {
-                        selectFile(type, maxSelectCount, maxFileSize)
+                        selectFilePaging(type, maxSelectCount, maxFileSize)
                     } else {
                         XXPermissions.startPermissionActivity(this, permissions)
                     }
@@ -292,7 +292,6 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
                 val itemBinding = getBinding<ItemImageBinding>()
                 itemBinding.tvIndex.text = "${modelPosition + 1}"
                 Glide.with(this@MainActivity).load(mediaEntity.path).into(itemBinding.ivImg)
-
                 itemBinding.ivImg.setOnClickListener {
                     XLog.d("MainActivity", "Clicked on image: ${mediaEntity.path}")
                     if (mediaEntity.isVideo()) {
@@ -337,6 +336,7 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
             .setSingleClickEnable(true)
             .setOnSelectCallback { isUseOriginal, list ->
                 XLog.d("FilePicker", "Selected files: ${list.size}")
+
                 binding.recyclerView.models = list
             }.setUiConfig(
                 FilePickerUIConfig(

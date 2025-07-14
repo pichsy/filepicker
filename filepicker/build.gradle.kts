@@ -61,6 +61,10 @@ dependencies {
     implementation(libs.basepopup)
     // 图片加载
     implementation(libs.glide)
+
+    // Paging3
+    implementation(libs.androidx.paging.runtime)
+
 }
 
 tasks.register<Javadoc>("javadoc") {

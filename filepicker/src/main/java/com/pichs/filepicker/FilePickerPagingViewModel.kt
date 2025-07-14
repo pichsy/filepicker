@@ -1,11 +1,17 @@
 package com.pichs.filepicker
 
+import android.content.Context
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.paging.Pager
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
 import com.pichs.filepicker.entity.MediaEntity
 import com.pichs.filepicker.entity.MediaFolder
+import com.pichs.filepicker.paging.FilePickerPagingRepository
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -23,11 +29,18 @@ class FilePickerPagingViewModel : ViewModel() {
         }
     }
 
+    val filePickerPagingRepository: FilePickerPagingRepository = FilePickerPagingRepository()
+
+    fun loadData(context: Context): Flow<PagingData<MediaEntity>> {
+        return filePickerPagingRepository.loadData(context, onTotalCountChanged = {
+
+        }).cachedIn(viewModelScope)
+    }
+
     /**
      * 原图是否勾选，默认不勾选
      */
     val originalCheckedFlow = MutableStateFlow(false)
-
     val maxSelectNumber = MutableStateFlow(0)
     val singleClickEnable = MutableStateFlow(false)
     val slideChooseEnable = MutableStateFlow(true)

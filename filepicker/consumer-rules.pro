@@ -1,2 +1,3 @@
--keep class com.pichs.xwidget.**{*;}
--keep class com.pichs.filepicker.**{*;}
+-keep class com.pichs.filepicker.** { *; }
+-keep class com.pichs.xwidget.** { *; }
+-keep class com.pichs.xbase.** { *; }

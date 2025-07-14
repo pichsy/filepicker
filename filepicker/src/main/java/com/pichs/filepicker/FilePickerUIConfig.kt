@@ -5,7 +5,7 @@ import android.os.Parcelable
 import kotlinx.parcelize.Parcelize
 
 @Parcelize
-data class FilePickerUIConfig(
+public data class FilePickerUIConfig(
 
     /**
      * 是否隐藏选择标签页
