@@ -164,8 +164,58 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
 
             }
         }
+
         // 开始按钮点击事件
         binding.btnStart.fastClick {
+
+            // 获取最大选择数量
+            val maxSelectCount = binding.etMaxSelectCount.text.toString().toIntOrNull() ?: 0
+            // 获取最大文件大小（MB转字节）
+            val maxFileSizeMB = binding.etMaxFileSize.text.toString().toIntOrNull() ?: 200
+            val maxFileSize = maxFileSizeMB * 1024 * 1024
+            // 获取类型
+            val type = when (binding.rgType.checkedRadioButtonId) {
+                binding.rbAll.id -> FilePicker.ofAll()
+                binding.rbImage.id -> FilePicker.ofImage()
+                binding.rbVideo.id -> FilePicker.ofVideo()
+                binding.rbAudio.id -> FilePicker.ofAudio()
+                binding.rbDocument.id -> FilePicker.ofDocument()
+                binding.rbAip.id -> FilePicker.ofZipAll()
+                else -> FilePicker.ofAll()
+            }
+
+            if (type == FilePicker.ofAll()
+                || type == FilePicker.ofVideo()
+                || type == FilePicker.ofImage()
+                || type == FilePicker.ofAudio()
+            ) {
+                // 权限请求
+                XXPermissions.with(this).unchecked().permission(
+                    Permission.READ_MEDIA_IMAGES,
+                    Permission.READ_MEDIA_VIDEO,
+                    Permission.READ_MEDIA_AUDIO,
+                ).request { permissions, all ->
+                    if (all) {
+                        selectFile(type, maxSelectCount, maxFileSize)
+                    } else {
+                        XXPermissions.startPermissionActivity(this, permissions)
+                    }
+                }
+            } else {
+                // 权限请求
+                XXPermissions.with(this).unchecked().permission(
+                    Permission.MANAGE_EXTERNAL_STORAGE,
+                ).request { permissions, all ->
+                    if (all) {
+                        selectFile(type, maxSelectCount, maxFileSize)
+                    } else {
+                        XXPermissions.startPermissionActivity(this, permissions)
+                    }
+                }
+            }
+        }
+        // 开始按钮点击事件
+        binding.btnStartPaging.fastClick {
 
             // 获取最大选择数量
             val maxSelectCount = binding.etMaxSelectCount.text.toString().toIntOrNull() ?: 0
@@ -277,5 +327,26 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
                     isShowSelectedListDeleteIcon = true,
                 )
             ).start()
+    }
+
+    fun selectFilePaging(type: String, maxSelectCount: Int, maxFileSize: Int) {
+        FilePicker.with(this)
+            .setMaxSelectNumber(maxSelectCount)
+            .setMaxFileSize(maxFileSize.toLong())
+            .setSelectType(type)
+            .setSingleClickEnable(true)
+            .setOnSelectCallback { isUseOriginal, list ->
+                XLog.d("FilePicker", "Selected files: ${list.size}")
+                binding.recyclerView.models = list
+            }.setUiConfig(
+                FilePickerUIConfig(
+                    isHideSelectTab = false,
+                    allAlbumName = "全部",
+                    confirmBtnText = "下一步",
+                    isShowOriginal = false,
+                    isPreviewPageIndexMode = true,
+                    isShowSelectedListDeleteIcon = true,
+                )
+            ).startPaging()
     }
 }

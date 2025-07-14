@@ -4,6 +4,8 @@ import android.app.Activity.RESULT_OK
 import android.content.Intent
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
 import com.pichs.filepicker.empty.CallbackFragment
 import com.pichs.filepicker.entity.MediaEntity
 import kotlin.collections.toMutableList
@@ -265,45 +267,72 @@ class FilePicker {
         fun start() {
             FilePicker.get().start()
         }
+
+        fun startPaging() {
+            FilePicker.get().startPaging()
+        }
     }
 
     private var existingFragment: CallbackFragment? = null
 
-    fun start() {
+    private fun start() {
+        doStart(FilePickerActivity::class.java)
+    }
+
+    private fun startPaging() {
+        doStart(FilePickerPagingActivity::class.java)
+    }
+
+    private fun doStart(clazz: Class<out FragmentActivity>) {
         builder?.let { bd ->
             if (bd.getFragment() != null) {
-                bd.getFragment()?.context?.let { ctx ->
-                    val fm = bd.getFragment()!!.childFragmentManager
-                    val tag = "CallbackFragment"
-                    existingFragment = fm.findFragmentByTag(tag) as? CallbackFragment
-                    if (existingFragment == null) {
-                        existingFragment = CallbackFragment()
-                    }
-                    existingFragment?.apply {
-                        onResult = { resultCode: Int, data: Intent? ->
-                            if (resultCode == RESULT_OK) {
-                                val resultData = data?.getParcelableArrayListExtra<MediaEntity>("selectedDataList")?.toMutableList()
-                                val isUseOriginal = data?.getBooleanExtra("isUseOriginal", false) == true
-                                if (resultData != null) {
-                                    builder?.mOnSelectCallback?.onCallback(isUseOriginal, resultData)
+                bd.getFragment()?.apply {
+                    lifecycle.addObserver(object : DefaultLifecycleObserver {
+                        override fun onDestroy(owner: LifecycleOwner) {
+
+
+                        }
+                    })
+                    context?.let { ctx ->
+                        val fm = childFragmentManager
+                        val tag = "CallbackFragment"
+                        existingFragment = fm.findFragmentByTag(tag) as? CallbackFragment
+                        if (existingFragment == null) {
+                            existingFragment = CallbackFragment()
+                        }
+                        existingFragment?.apply {
+                            onResult = { resultCode: Int, data: Intent? ->
+                                if (resultCode == RESULT_OK) {
+                                    val resultData = data?.getParcelableArrayListExtra<MediaEntity>("selectedDataList")?.toMutableList()
+                                    val isUseOriginal = data?.getBooleanExtra("isUseOriginal", false) == true
+                                    if (resultData != null) {
+                                        builder?.mOnSelectCallback?.onCallback(isUseOriginal, resultData)
+                                    }
                                 }
                             }
+                            fm.beginTransaction().add(this, tag).commitNowAllowingStateLoss()
+                            val intent = Intent(ctx, clazz)
+                            intent.putExtra("maxSelectNumber", bd.mMaxSelectNumber)
+                            intent.putExtra("selectType", bd.mSelectType)
+                            intent.putExtra("maxFileSize", bd.mMaxFileSize)
+                            intent.putExtra("minFileSize", bd.mMinFileSize)
+                            intent.putExtra("uiConfig", bd.mUiConfig)
+                            intent.putExtra("singleClickEnable", bd.mSingleClickEnable)
+                            intent.putExtra("slideChooseEnable", bd.mSlideChooseEnable)
+                            intent.putParcelableArrayListExtra("selectedDataList", ArrayList(bd.mSelectedList))
+                            launch(intent)
                         }
-                        fm.beginTransaction().add(this, tag).commitNowAllowingStateLoss()
-                        val intent = Intent(ctx, FilePickerActivity::class.java)
-                        intent.putExtra("maxSelectNumber", bd.mMaxSelectNumber)
-                        intent.putExtra("selectType", bd.mSelectType)
-                        intent.putExtra("maxFileSize", bd.mMaxFileSize)
-                        intent.putExtra("minFileSize", bd.mMinFileSize)
-                        intent.putExtra("uiConfig", bd.mUiConfig)
-                        intent.putExtra("singleClickEnable", bd.mSingleClickEnable)
-                        intent.putExtra("slideChooseEnable", bd.mSlideChooseEnable)
-                        intent.putParcelableArrayListExtra("selectedDataList", ArrayList(bd.mSelectedList))
-                        launch(intent)
                     }
                 }
+
             } else {
                 bd.getActivity()?.let { act ->
+                    act.lifecycle.addObserver(object : DefaultLifecycleObserver {
+                        override fun onDestroy(owner: LifecycleOwner) {
+                            // Clean up if needed
+
+                        }
+                    })
                     val fm = act.supportFragmentManager
                     val tag = "CallbackFragment"
                     existingFragment = fm.findFragmentByTag(tag) as? CallbackFragment
@@ -320,9 +349,8 @@ class FilePicker {
                                 }
                             }
                         }
-
                         fm.beginTransaction().add(this, tag).commitNowAllowingStateLoss()
-                        val intent = Intent(act, FilePickerActivity::class.java)
+                        val intent = Intent(act, clazz)
                         intent.putExtra("maxSelectNumber", bd.mMaxSelectNumber)
                         intent.putExtra("selectType", bd.mSelectType)
                         intent.putExtra("maxFileSize", bd.mMaxFileSize)

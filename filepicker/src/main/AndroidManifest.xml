@@ -6,14 +6,13 @@
             android:name=".FilePickerActivity"
             android:exported="true"
             android:theme="@style/Theme.SelectMedia"
-            android:windowSoftInputMode="stateHidden|adjustResize">
-            <intent-filter>
-                <action android:name="com.filepicker.PICK_FILE" />
-                <data
-                    android:host="com.filepicker"
-                    android:scheme="filepicker" />
-            </intent-filter>
-        </activity>
+            android:windowSoftInputMode="stateHidden|adjustResize" />
+
+        <activity
+            android:name=".FilePickerPagingActivity"
+            android:exported="true"
+            android:theme="@style/Theme.SelectMedia"
+            android:windowSoftInputMode="stateHidden|adjustResize" />
 
         <activity
             android:name=".common.VideoPreviewActivity"

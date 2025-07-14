@@ -154,6 +154,17 @@
             android:backgroundTint="#E60B4D"
             android:text="开始"
             android:textColor="#fff" />
+        <!-- 开始按钮 -->
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btn_start_paging"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="16dp"
+            android:layout_marginStart="56dp"
+            android:layout_marginEnd="56dp"
+            android:backgroundTint="#E60B4D"
+            android:text="开始paging"
+            android:textColor="#fff" />
 
         <!-- 开始按钮 -->
         <androidx.appcompat.widget.AppCompatButton
