@@ -267,20 +267,12 @@ class FilePicker {
         fun start() {
             FilePicker.get().start()
         }
-
-        fun startPaging() {
-            FilePicker.get().startPaging()
-        }
     }
 
     private var existingFragment: CallbackFragment? = null
 
     private fun start() {
         doStart(FilePickerActivity::class.java)
-    }
-
-    private fun startPaging() {
-        doStart(FilePickerPagingActivity::class.java)
     }
 
     private fun doStart(clazz: Class<out FragmentActivity>) {

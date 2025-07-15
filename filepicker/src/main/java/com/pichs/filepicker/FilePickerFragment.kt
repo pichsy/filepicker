@@ -24,6 +24,7 @@ import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.drake.brv.listener.ItemDifferCallback
 import com.drake.brv.utils.bindingAdapter
 import com.drake.brv.utils.grid
 import com.drake.brv.utils.linear
@@ -48,6 +49,7 @@ import com.pichs.filepicker.widget.OnFilePickerDragItemTouchHelperCallback
 import com.pichs.filepicker.widget.OnFilePickerItemSelectionChangedListener
 import com.pichs.xwidget.utils.XDisplayHelper
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import razerdp.basepopup.BasePopupWindow
@@ -59,8 +61,6 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
     private lateinit var binding: FragmentFilepickerHomeBinding
 
     private var currentTabType = FilePickerSelectType.IMAGE_VIDEO
-
-    private val screenWidth by lazy { XDisplayHelper.getScreenWidth(requireContext()) }
 
     private var isTouchSelectStart = false
 
@@ -250,6 +250,14 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
     private fun initDataFlow() {
         lifecycleScope.launch {
             launch {
+                viewModel.allFolderDataList.debounce(100).collectLatest { folderList ->
+                    viewModel.updateAllDataList(folderList)
+                    viewModel.initUserSelectDataList(folderList)
+                    resetListDataWithSelectData()
+                }
+            }
+
+            launch {
                 viewModel.currentFolderDataList.collectLatest { list ->
                     FilePickerLog.d("FilePickerFragment", "initDataFlow currentFolderDataList: size:${list.size}, currentTabType:$currentTabType")
                     for (item in viewModel.selectedData) {
@@ -276,28 +284,31 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
 
     private fun loadData() {
         FilePickerLog.d("FilePickerFragment", "loadData: selectType:${viewModel.selectType.value}")
-        MediaScanner.scanMedia(viewModel.selectType.value, this, object : MediaScanner.ScanCallback {
-            override fun onCompleted(folders: List<MediaFolder>) {
-                if (folders.isEmpty()) return
-                // 处理folder列表，过滤所需
-                val finalFolders = viewModel.filterAllData(folders)
-                if (finalFolders.isEmpty()) return
-
-                finalFolders.forEach {
-                    FilePickerLog.d("FilePickerFragment777", "mediaFolder: ${it.folderPath},==========================")
-                    it.mediaEntityList.forEach {
-                        FilePickerLog.d("FilePickerFragment777", "mediaEntity: ${it.path}, size: ${it.size}")
-                    }
-                }
-
-                viewModel.updateAllDataList(finalFolders)
-                viewModel.initUserSelectDataList(finalFolders)
-
-                resetListDataWithSelectData()
-            }
-        })
+        viewModel.loadData(requireContext())
+//        MediaScanner.scanMedia(viewModel.selectType.value, this, object : MediaScanner.ScanCallback {
+//            override fun onCompleted(folders: List<MediaFolder>) {
+//                if (folders.isEmpty()) return
+//                // 处理folder列表，过滤所需
+//                val finalFolders = viewModel.filterAllData(folders)
+//                if (finalFolders.isEmpty()) return
+//
+//                finalFolders.forEach {
+//                    FilePickerLog.d("FilePickerFragment777", "mediaFolder: ${it.folderPath},==========================")
+//                    it.mediaEntityList.forEach {
+//                        FilePickerLog.d("FilePickerFragment777", "mediaEntity: ${it.path}, size: ${it.size}")
+//                    }
+//                }
+//
+//                viewModel.updateAllDataList(finalFolders)
+//                viewModel.initUserSelectDataList(finalFolders)
+//
+//                resetListDataWithSelectData()
+//            }
+//        })
     }
 
+
+    // todo
     private fun resetListDataWithSelectData() {
         lifecycleScope.launch {
             if (isSelectTypeEqualsAll(viewModel.selectType.value)) {
@@ -450,8 +461,11 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                     }
                 })
         }
+
         binding.recyclerView.linear(RecyclerView.VERTICAL).setup {
             addType<MediaEntity>(R.layout.file_picker_item_rv_audio_album)
+
+            itemDifferCallback = BrvItemDifferCallback()
 
             onBind {
                 val item = getModel<MediaEntity>()
@@ -486,6 +500,17 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                     itemBinding.root.isSelected = false
                 }
 
+                // 判断是否是最后一行
+                if (modelPosition >= viewModel.currentFolderDataList.value.size && (viewModel.getSelectedCount() + viewModel.tempSelectData.size) > 0) {
+                    itemBinding.clRoot.updateLayoutParams<ViewGroup.MarginLayoutParams> {
+                        bottomMargin = XDisplayHelper.dp2px(requireContext(), 80f)
+                    }
+                } else {
+                    itemBinding.clRoot.updateLayoutParams<ViewGroup.MarginLayoutParams> {
+                        bottomMargin = XDisplayHelper.dp2px(requireContext(), 1f)
+                    }
+                }
+
                 itemBinding.root.setOnClickListener {
                     if (viewModel.isCanSingleClickSelect()) {
                         // 单击选择模式，直接回调选择器
@@ -514,6 +539,23 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
         }
     }
 
+
+    class BrvItemDifferCallback : ItemDifferCallback {
+        override fun areItemsTheSame(oldItem: Any, newItem: Any): Boolean {
+            if (oldItem is MediaEntity && newItem is MediaEntity) {
+                return oldItem.path == newItem.path
+            }
+            return false
+        }
+
+        override fun areContentsTheSame(oldItem: Any, newItem: Any): Boolean {
+            if (oldItem is MediaEntity && newItem is MediaEntity) {
+                return oldItem.path == newItem.path && oldItem.selectedIndex == newItem.selectedIndex
+            }
+            return false
+        }
+    }
+
     /**
      * 图库选择使用的样式和组件
      */
@@ -523,6 +565,9 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
         binding.recyclerView.itemAnimator = null
         binding.recyclerView.grid(4).setup {
             addType<MediaEntity>(R.layout.file_picker_item_rv_album)
+
+            itemDifferCallback = BrvItemDifferCallback()
+
             onBind {
                 val item = getModel<MediaEntity>()
 
@@ -910,5 +955,11 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                 binding.ivArrowDown.animate().rotation(180f).setDuration(200).start()
             }
         }
+    }
+
+
+    override fun onDestroy() {
+        viewModel.onDestroy()
+        super.onDestroy()
     }
 }

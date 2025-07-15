@@ -19,9 +19,9 @@ object FilePickerLog {
         }
     }
 
-    fun d(message: () -> String) {
+    fun d(msg: String) {
         if (isDebug) {
-            Log.d(TAG, message())
+            Log.d(TAG, msg)
         }
     }
 
@@ -31,9 +31,9 @@ object FilePickerLog {
         }
     }
 
-    fun e(message: () -> String) {
+    fun e(msg: String) {
         if (isDebug) {
-            Log.e(TAG, message())
+            Log.e(TAG, msg)
         }
     }
 

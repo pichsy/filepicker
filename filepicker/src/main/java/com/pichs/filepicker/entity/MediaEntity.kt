@@ -17,7 +17,7 @@ data class MediaEntity(
     var size: Long = 0,
     var duration: Long = 0,
     var addTime: Long? = null,
-    var isSelected: Boolean = false,
+    // 是否为选中状态， -1 表示未选中，0标识选中列表中的位置， 默认值为 -1
     internal var selectedIndex: Int = -1,
 ) : Parcelable {
 

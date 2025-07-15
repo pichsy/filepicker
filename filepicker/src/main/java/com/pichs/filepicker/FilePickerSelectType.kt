@@ -57,13 +57,80 @@ object FilePickerSelectType {
 
 }
 
+object FilePickerMimeType {
+
+    /**
+     * 根据文件后缀获得mimeType
+     */
+    fun of(extension: String): String {
+        return when (extension.lowercase()) {
+            "jpg", "jpeg" -> IMAGE
+            "png" -> IMAGE
+            "gif" -> GIF
+            "mp4" -> VIDEO
+            "mp3" -> AUDIO_MP3
+            "wav" -> AUDIO_WAV
+            "flac" -> AUDIO_FLAC
+            "m4a" -> AUDIO_M4A
+            "amr" -> AUDIO_AMR
+            "pdf" -> PDF
+            "doc" -> DOC
+            "docx" -> DOCX
+            "ppt" -> PPT
+            "pptx" -> PPTX
+            "xls" -> EXCEL
+            "xlsx" -> EXCELX
+            "txt" -> TXT
+            "apk" -> APK
+            "zip" -> ZIP
+            "rar" -> RAR
+            "7z" -> SEVEN_Z
+            "tar" -> TAR
+            "gz" -> GZ
+            "bz2" -> BZ2
+            "iso" -> ISO
+            else -> ""
+        }
+    }
+
+    const val IMAGE = "image/*"
+    const val VIDEO = "video/*"
+    const val GIF = "image/gif"
+
+    const val AUDIO = "audio/*"
+    const val AUDIO_MP3 = "audio/mpeg"
+    const val AUDIO_WAV = "audio/wav"
+    const val AUDIO_FLAC = "audio/flac"
+    const val AUDIO_M4A = "audio/mp4"
+    const val AUDIO_AMR = "audio/amr"
+
+
+    const val PDF = "application/pdf"
+    const val DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    const val DOC = "application/msword"
+    const val PPTX = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+    const val PPT = "application/vnd.ms-powerpoint"
+    const val EXCEL = "application/vnd.ms-excel"
+    const val EXCELX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    const val TXT = "text/plain"
+
+    const val APK = "application/vnd.android.package-archive"
+
+    const val ZIP = "application/zip"
+    const val RAR = "application/x-rar-compressed"
+    const val SEVEN_Z = "application/x-7z-compressed"
+    const val TAR = "application/x-tar"
+    const val GZ = "application/gzip"
+    const val BZ2 = "application/x-bzip2"
+    const val ISO = "application/x-iso9660-image"
+
+}
+
 object SelectTypeUtil {
 
     fun getAllTypes(): List<String> {
         return listOf(
-            IMAGE_VIDEO, IMAGE_VIDEO_GIF, IMAGE, VIDEO, GIF,
-            AUDIO, DOCUMENT, PDF, DOC, PPT, EXCEL, TXT,
-            APK, ZIP_ALL, ZIP, RAR, SEVEN_Z, TAR, GZ, BZ2, ISO
+            IMAGE_VIDEO, IMAGE_VIDEO_GIF, IMAGE, VIDEO, GIF, AUDIO, DOCUMENT, PDF, DOC, PPT, EXCEL, TXT, APK, ZIP_ALL, ZIP, RAR, SEVEN_Z, TAR, GZ, BZ2, ISO
         )
     }
 

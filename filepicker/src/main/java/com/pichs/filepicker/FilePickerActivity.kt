@@ -64,7 +64,16 @@ class FilePickerActivity : AppCompatActivity() {
         }
 
         viewModel.originalCheckedFlow.update { viewModel.uiConfig.isOriginalChecked }
-        FilePickerLog.d {
+
+        if (maxFileSize < 0) {
+            maxFileSize = 0L
+        }
+
+        if (minFileSize < 0) {
+            minFileSize = 0L
+        }
+
+        FilePickerLog.d (
             """
             maxSelectNumber: $maxSelectNumber, 
             maxFileSize: $maxFileSize, 
@@ -72,7 +81,7 @@ class FilePickerActivity : AppCompatActivity() {
              selectType: $selectType, 
              selectDataList: ${selectDataList.size}
         """.trimIndent()
-        }
+        )
 
         // 强行 纠正数据。
         if (maxSelectNumber < 0 || maxSelectNumber == Int.MAX_VALUE) {

@@ -6,6 +6,7 @@ import android.graphics.Color
 import android.os.Bundle
 import android.service.autofill.Validators.and
 import android.util.Log
+import androidx.activity.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
@@ -16,6 +17,7 @@ import com.hjq.permissions.Permission
 import com.hjq.permissions.XXPermissions
 import com.pichs.filepicker.FilePicker
 import com.pichs.filepicker.FilePickerUIConfig
+import com.pichs.filepicker.FilePickerViewModel
 import com.pichs.filepicker.common.ImagePreviewDialog
 import com.pichs.filepicker.demo.databinding.ActivityMainBinding
 import com.pichs.filepicker.demo.databinding.ItemImageBinding
@@ -41,6 +43,8 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
 //        XStatusBarHelper.transparentStatusBar(window)
     }
 
+    val mViewModel by viewModels<FilePickerViewModel>()
+
     @SuppressLint("SetTextI18n")
     override fun afterOnCreate() {
 
@@ -65,109 +69,109 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
 
         binding.btnFileQuery.fastClick {
             lifecycleScope.launch(Dispatchers.Main) {
+                mViewModel.loadData(this@MainActivity)
 
-                // 获取最大选择数量
-                val maxSelectCount = binding.etMaxSelectCount.text.toString().toIntOrNull() ?: 0
-                // 获取最大文件大小（MB转字节）
-                val maxFileSizeMB = binding.etMaxFileSize.text.toString().toIntOrNull() ?: 200
-                val maxFileSize = /*maxFileSizeMB * 1024 * 1024*/Int.MAX_VALUE
-                // 获取类型
-                var queryTypes = mutableSetOf(
-                    QueryType.VIDEO, QueryType.IMAGE,
-                )
-
-                when (binding.rgType.checkedRadioButtonId) {
-                    binding.rbAll.id -> {
-                        queryTypes = mutableSetOf(
-                            QueryType.VIDEO, QueryType.IMAGE
-                        )
-                    }
-
-                    binding.rbImage.id -> {
-                        queryTypes = mutableSetOf(
-                            QueryType.IMAGE
-                        )
-                    }
-
-                    binding.rbVideo.id -> {
-                        queryTypes = mutableSetOf(
-                            QueryType.VIDEO
-                        )
-                    }
-
-                    binding.rbAudio.id -> {
-                        queryTypes = mutableSetOf(
-                            QueryType.AUDIO
-                        )
-                    }
-
-                    binding.rbDocument.id -> {
-                        queryTypes = mutableSetOf(
-                            QueryType.NONE,
-                        )
-                    }
-
-                    binding.rbAip.id -> {
-                        queryTypes = mutableSetOf(
-                            QueryType.NONE,
-                        )
-                    }
-                }
-
-
-                val mediaResult = FileQueryHelper.queryAlbums(
-                    this@MainActivity,
-                    queryTypes = queryTypes,
-                    queryBuilder = { it ->
-                        it.sizeGreaterThan(0).and().sizeLessThan(maxFileSize)
-                        when (binding.rgType.checkedRadioButtonId) {
-                            binding.rbDocument.id -> {
-                                it.and()
-                                    .leftBracket()
-                                    .fileNameEndWith(".doc")
-                                    .or().fileNameEndWith(".docx")
-                                    .or().fileNameEndWith(".pdf")
-                                    .or().fileNameEndWith(".ppt")
-                                    .or().fileNameEndWith(".pptx")
-                                    .or().fileNameEndWith(".xls")
-                                    .or().fileNameEndWith(".xlsx")
-                                    .or().fileNameEndWith(".txt")
-                                    .rightBracket()
-                            }
-
-                            binding.rbAip.id -> {
-                                it.and()
-                                    .leftBracket()
-                                    .fileNameEndWith(".zip")
-                                    .or().fileNameEndWith(".rar")
-                                    .or().fileNameEndWith(".7z")
-                                    .or().fileNameEndWith(".tar")
-                                    .or().fileNameEndWith(".gz")
-                                    .or().fileNameEndWith(".bz2")
-                                    .or().fileNameEndWith(".iso")
-                                    .rightBracket()
-                            }
-                        }
-                    }
-                )
-
-                Log.d("MainActivity", "查询结果111：${mediaResult.mediaFolders.size} 个文件夹")
-                Log.d("MainActivity", "查询结果111：${mediaResult.mediaFolders.joinToString(",", transform = { it.name?.toString() ?: "" })}")
-                Log.d("MainActivity", "查询结果111 文件个数： ${mediaResult.mediaFolders.sumOf { it.mediaEntityList.size }}")
-
-                binding.tvResult.text = """
-                    查询结果：${mediaResult.mediaFolders.size} 个文件夹
-                    ${mediaResult.mediaFolders.joinToString(",", transform = { it.name?.toString() ?: "" })}
-                    -----------
-                    文件个数： ${mediaResult.mediaFolders.sumOf { it.mediaEntityList.size }}
-                """.trimIndent()
-
+//                // 获取最大选择数量
+//                val maxSelectCount = binding.etMaxSelectCount.text.toString().toIntOrNull() ?: 0
+//                // 获取最大文件大小（MB转字节）
+//                val maxFileSizeMB = binding.etMaxFileSize.text.toString().toIntOrNull() ?: 200
+//                val maxFileSize = /*maxFileSizeMB * 1024 * 1024*/Long.MAX_VALUE
+//                // 获取类型
+//                var queryTypes = mutableSetOf(
+//                    QueryType.VIDEO, QueryType.IMAGE,
+//                )
+//
+//                when (binding.rgType.checkedRadioButtonId) {
+//                    binding.rbAll.id -> {
+//                        queryTypes = mutableSetOf(
+//                            QueryType.VIDEO, QueryType.IMAGE
+//                        )
+//                    }
+//
+//                    binding.rbImage.id -> {
+//                        queryTypes = mutableSetOf(
+//                            QueryType.IMAGE
+//                        )
+//                    }
+//
+//                    binding.rbVideo.id -> {
+//                        queryTypes = mutableSetOf(
+//                            QueryType.VIDEO
+//                        )
+//                    }
+//
+//                    binding.rbAudio.id -> {
+//                        queryTypes = mutableSetOf(
+//                            QueryType.AUDIO
+//                        )
+//                    }
+//
+//                    binding.rbDocument.id -> {
+//                        queryTypes = mutableSetOf(
+//                            QueryType.NONE,
+//                        )
+//                    }
+//
+//                    binding.rbAip.id -> {
+//                        queryTypes = mutableSetOf(
+//                            QueryType.NONE,
+//                        )
+//                    }
+//                }
+//
+//
+//                val mediaResult = FileQueryHelper.queryAlbums(
+//                    this@MainActivity,
+//                    queryTypes = queryTypes,
+//                    queryBuilder = { it ->
+//                        it.sizeGreaterThan(0).and().sizeLessThan(maxFileSize)
+//                        when (binding.rgType.checkedRadioButtonId) {
+//                            binding.rbDocument.id -> {
+//                                it.and()
+//                                    .leftBracket()
+//                                    .fileNameEndWith(".doc")
+//                                    .or().fileNameEndWith(".docx")
+//                                    .or().fileNameEndWith(".pdf")
+//                                    .or().fileNameEndWith(".ppt")
+//                                    .or().fileNameEndWith(".pptx")
+//                                    .or().fileNameEndWith(".xls")
+//                                    .or().fileNameEndWith(".xlsx")
+//                                    .or().fileNameEndWith(".txt")
+//                                    .rightBracket()
+//                            }
+//
+//                            binding.rbAip.id -> {
+//                                it.and()
+//                                    .leftBracket()
+//                                    .fileNameEndWith(".zip")
+//                                    .or().fileNameEndWith(".rar")
+//                                    .or().fileNameEndWith(".7z")
+//                                    .or().fileNameEndWith(".tar")
+//                                    .or().fileNameEndWith(".gz")
+//                                    .or().fileNameEndWith(".bz2")
+//                                    .or().fileNameEndWith(".iso")
+//                                    .rightBracket()
+//                            }
+//                        }
+//                    }
+//                )
+//
+//                Log.d("MainActivity", "查询结果111：${mediaResult.mediaFolders.size} 个文件夹")
+//                Log.d("MainActivity", "查询结果111：${mediaResult.mediaFolders.joinToString(",", transform = { it.name?.toString() ?: "" })}")
+//                Log.d("MainActivity", "查询结果111 文件个数： ${mediaResult.mediaFolders.sumOf { it.mediaEntityList.size }}")
+//
+//                binding.tvResult.text = """
+//                    查询结果：${mediaResult.mediaFolders.size} 个文件夹
+//                    ${mediaResult.mediaFolders.joinToString(",", transform = { it.name?.toString() ?: "" })}
+//                    -----------
+//                    文件个数： ${mediaResult.mediaFolders.sumOf { it.mediaEntityList.size }}
+//                """.trimIndent()
+//
             }
         }
 
         // 开始按钮点击事件
         binding.btnStart.fastClick {
-
             // 获取最大选择数量
             val maxSelectCount = binding.etMaxSelectCount.text.toString().toIntOrNull() ?: 0
             // 获取最大文件大小（MB转字节）
@@ -196,7 +200,7 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
                     Permission.READ_MEDIA_AUDIO,
                 ).request { permissions, all ->
                     if (all) {
-                        selectFilePaging(type, maxSelectCount, maxFileSize)
+                        selectFile(type, maxSelectCount, maxFileSize)
                     } else {
                         XXPermissions.startPermissionActivity(this, permissions)
                     }
@@ -245,7 +249,7 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
                     Permission.READ_MEDIA_AUDIO,
                 ).request { permissions, all ->
                     if (all) {
-                        selectFile(type, maxSelectCount, maxFileSize)
+                        selectFilePaging(type, maxSelectCount, maxFileSize)
                     } else {
                         XXPermissions.startPermissionActivity(this, permissions)
                     }
@@ -347,6 +351,6 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
                     isPreviewPageIndexMode = true,
                     isShowSelectedListDeleteIcon = true,
                 )
-            ).startPaging()
+            ).start()
     }
 }

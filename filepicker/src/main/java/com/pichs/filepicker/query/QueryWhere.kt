@@ -211,17 +211,41 @@ data class QueryWhere(
             return this
         }
 
-        fun sizeGreaterThan(size: Int): Builder {
+        fun sizeGreaterThanEqualTo(size: Long): Builder {
+            initSection()
+            sectionBuilder?.append("${MediaStore.Files.FileColumns.SIZE} >= ? ")
+            sectionArgsList?.add("${size}")
+            return this
+        }
+
+
+        fun sizeGreaterThan(size: Long): Builder {
             initSection()
             sectionBuilder?.append("${MediaStore.Files.FileColumns.SIZE} > ? ")
             sectionArgsList?.add("${size}")
             return this
         }
 
-        fun sizeLessThan(size: Int): Builder {
+        fun sizeLessThan(size: Long): Builder {
             initSection()
             sectionBuilder?.append("${MediaStore.Files.FileColumns.SIZE} < ? ")
             sectionArgsList?.add("$size")
+            return this
+        }
+
+        fun sizeLessThanEqualTo(size: Long): Builder {
+            initSection()
+            sectionBuilder?.append("${MediaStore.Files.FileColumns.SIZE} <= ? ")
+            sectionArgsList?.add("$size")
+            return this
+        }
+
+        /**
+         * 判断是否1等于1，防注入
+         */
+        fun oneEqualsOne(): Builder {
+            initSection()
+            sectionBuilder?.append("1 == 1")
             return this
         }
 
