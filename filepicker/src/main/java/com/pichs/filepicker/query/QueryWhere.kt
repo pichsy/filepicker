@@ -81,17 +81,39 @@ data class QueryWhere(
          * 本质是匹配文件夹名字的前缀是否是参数这个
          * @param folderName 文件夹名字
          */
-        fun folderNameStartWith(folderName: String): Builder {
+        fun filePathStartWith(folderName: String): Builder {
             initSection()
             sectionBuilder?.append("${MediaStore.Files.FileColumns.DATA} LIKE ? ")
             sectionArgsList?.add("$folderName%")
             return this
         }
 
-        fun folderNameNotStartWith(folderName: String): Builder {
+        fun filePathNotStartWith(folderName: String): Builder {
             initSection()
             sectionBuilder?.append("${MediaStore.Files.FileColumns.DATA} NOT LIKE ? ")
             sectionArgsList?.add("$folderName%")
+            return this
+        }
+
+        /**
+         * 本质是匹配文件夹名字的后缀是否是参数这个
+         * @param folderName 文件夹名字
+         */
+        fun filePathContains(folderName: String): Builder {
+            initSection()
+            sectionBuilder?.append("${MediaStore.Files.FileColumns.DATA} LIKE ? ")
+            sectionArgsList?.add("%$folderName%")
+            return this
+        }
+
+        /**
+         * 本质是匹配文件夹名字的后缀是否是参数这个
+         * @param folderName 文件夹名字
+         */
+        fun filePathNotContains(folderName: String): Builder {
+            initSection()
+            sectionBuilder?.append("${MediaStore.Files.FileColumns.DATA} NOT LIKE ? ")
+            sectionArgsList?.add("%$folderName%")
             return this
         }
 

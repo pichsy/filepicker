@@ -169,7 +169,7 @@ object FileQueryHelper {
                 projection += MediaStore.Files.FileColumns.ORIENTATION
             }
 
-            val sortOrder = MediaStore.Files.FileColumns.DATE_ADDED + " DESC"
+            val sortOrder = "${MediaStore.Files.FileColumns.DATE_ADDED} DESC"
 
             if (contentUri == null) {
                 return@withContext mediaResult
@@ -525,10 +525,10 @@ object FileQueryHelper {
                 val fileCheckTimeStart = System.currentTimeMillis()
                 FilePickerLog.e("相册获取", " 开始文件判断---fileCheckTimeStart 耗时:${fileCheckTimeStart - endTimeOneWhile}")
 
-                if (FilePickerFileUtils.isFileInHiddenDir(filePath)) {
-                    FilePickerLog.d("相册获取", "文件判断: 在隐藏目录，不展示, 忽略======")
-                    continue
-                }
+//                if (FilePickerFileUtils.isFileInHiddenDir(filePath)) {
+//                    FilePickerLog.d("相册获取", "文件判断: 在隐藏目录，不展示, 忽略======")
+//                    continue
+//                }
 
                 val file = File(filePath)
                 // 文件有毛病,忽略。。。。

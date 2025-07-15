@@ -16,7 +16,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.concurrent.CopyOnWriteArrayList
-import kotlin.math.min
 
 class FilePickerViewModel : ViewModel() {
 
@@ -202,7 +201,7 @@ class FilePickerViewModel : ViewModel() {
                     builder.sizeGreaterThan(minFileSize.value)
                     if (!(maxFileSize.value <= 0L || maxFileSize.value == Long.MAX_VALUE)) {
                         // 如果没有设置最大文件大小，则不添加此条件
-                        builder.and().sizeLessThanEqualTo(maxFileSize.value)
+                        builder.and().sizeLessThanEqualTo(maxFileSize.value).and().filePathNotContains("/.")
                     }
                     if (queryType.size == 1 && queryType.contains(QueryType.NONE)) {
                         builder.and().leftBracket()
@@ -244,7 +243,7 @@ class FilePickerViewModel : ViewModel() {
                         builder.rightBracket()
                     }
                 },
-                fastNumber = 50,
+                fastNumber = 100,
                 onFastCallBack = { fastList ->
                     val fastLoadTime = System.currentTimeMillis() - startTime
                     FilePickerLog.d(
@@ -268,7 +267,6 @@ class FilePickerViewModel : ViewModel() {
             )
 
             updateAllDataList(result.mediaFolders)
-
         }
     }
 

@@ -18,6 +18,7 @@ import kotlin.concurrent.thread
 
 /**
  * 相册、视频扫描工具，输出现成 MediaFolder 和 MediaEntity
+ * 过时的api，忽略
  */
 object MediaScanner {
 
@@ -266,33 +267,15 @@ object MediaScanner {
             }
 
             override fun onLoadFinished(loader: Loader<Cursor>, data: Cursor?) {
-
                 thread {
-
                     try {
                         val folderMap = mutableMapOf<String, MediaFolder>()
-
                         data?.let {
-
                             val idIndex = try {
                                 it.getColumnIndexOrThrow(MediaStore.Files.FileColumns._ID)
                             } catch (e: IllegalArgumentException) {
                                 -1
                             }
-
-                            //                    val mimeTypeIndex = it.getColumnIndexOrThrow(MediaStore.Files.FileColumns.MIME_TYPE)
-                            //                    val bucketNameIndex = it.getColumnIndexOrThrow(MediaStore.Files.FileColumns.BUCKET_DISPLAY_NAME)
-                            //                    val bucketIdIndex = it.getColumnIndexOrThrow(MediaStore.Files.FileColumns.BUCKET_ID)
-                            //                    val dateAddedIndex = it.getColumnIndexOrThrow(MediaStore.Files.FileColumns.DATE_ADDED)
-                            //                    val displayNameIndex = it.getColumnIndexOrThrow(MediaStore.MediaColumns.DISPLAY_NAME)
-                            //                    val dataPathIndex = it.getColumnIndexOrThrow(MediaStore.MediaColumns.DATA)
-                            //                    val sizeIndex = it.getColumnIndexOrThrow(MediaStore.MediaColumns.SIZE)
-                            //                    val mediaTypeIndex = it.getColumnIndexOrThrow(MediaStore.Files.FileColumns.MEDIA_TYPE)
-
-                            //                    val widthIndex = it.getColumnIndexOrThrow(MediaStore.MediaColumns.WIDTH)
-                            //                    val heightIndex = it.getColumnIndexOrThrow(MediaStore.MediaColumns.HEIGHT)
-                            //                    val orientationIndex = it.getColumnIndexOrThrow(MediaStore.MediaColumns.ORIENTATION)
-                            //                    val durationIndex = it.getColumnIndexOrThrow(MediaStore.Video.VideoColumns.DURATION)
 
                             val mimeTypeIndex = try {
                                 it.getColumnIndexOrThrow(MediaStore.Files.FileColumns.MIME_TYPE)
@@ -385,18 +368,6 @@ object MediaScanner {
                                 } else {
                                     -1L
                                 }
-
-                                //                        val bucketName = it.getString(bucketNameIndex) ?: "未命名相册"
-                                //                        val bucketId = it.getString(bucketIdIndex) ?: bucketName
-                                //                        val dateAdded = it.getLong(dateAddedIndex)
-                                //                        val displayName = it.getString(displayNameIndex)
-                                //                        val width = it.getInt(widthIndex)
-                                //                        val height = it.getInt(heightIndex)
-                                //                        val orientation = it.getInt(orientationIndex)
-                                //                        val size = it.getLong(sizeIndex)
-                                //                        val duration = it.getLong(durationIndex)
-                                //                        val mediaType = it.getInt(mediaTypeIndex)
-                                // 都判断 -1
 
                                 val bucketName = if (bucketNameIndex != -1) {
                                     it.getString(bucketNameIndex) ?: "未命名相册"

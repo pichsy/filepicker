@@ -207,7 +207,6 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
             currentTabType = FilePickerSelectType.IMAGE
             resetListDataWithSelectData()
             selectImageTabUI()
-
         }
 
         binding.llTypeVideo.setOnClickListener {
@@ -285,26 +284,6 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
     private fun loadData() {
         FilePickerLog.d("FilePickerFragment", "loadData: selectType:${viewModel.selectType.value}")
         viewModel.loadData(requireContext())
-//        MediaScanner.scanMedia(viewModel.selectType.value, this, object : MediaScanner.ScanCallback {
-//            override fun onCompleted(folders: List<MediaFolder>) {
-//                if (folders.isEmpty()) return
-//                // 处理folder列表，过滤所需
-//                val finalFolders = viewModel.filterAllData(folders)
-//                if (finalFolders.isEmpty()) return
-//
-//                finalFolders.forEach {
-//                    FilePickerLog.d("FilePickerFragment777", "mediaFolder: ${it.folderPath},==========================")
-//                    it.mediaEntityList.forEach {
-//                        FilePickerLog.d("FilePickerFragment777", "mediaEntity: ${it.path}, size: ${it.size}")
-//                    }
-//                }
-//
-//                viewModel.updateAllDataList(finalFolders)
-//                viewModel.initUserSelectDataList(finalFolders)
-//
-//                resetListDataWithSelectData()
-//            }
-//        })
     }
 
 
