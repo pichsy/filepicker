@@ -201,7 +201,6 @@ object FileQueryHelper {
                     return@withContext MediaResult()
                 }
 
-                val startTimeOneWhile = System.currentTimeMillis()
                 val id = cursor.getLong(cursor.getColumnIndex(MediaStore.Files.FileColumns._ID))
                 val filePath = cursor.getString(cursor.getColumnIndex(MediaStore.Files.FileColumns.DATA))
                 val fileName = cursor.getString(cursor.getColumnIndex(MediaStore.Files.FileColumns.DISPLAY_NAME))
@@ -218,8 +217,6 @@ object FileQueryHelper {
                 } else {
                     0
                 }
-
-                val endTimeOneWhile = System.currentTimeMillis()
 
                 // 获取缩略图位置
 //                FilePickerLog.e {
@@ -241,9 +238,6 @@ object FileQueryHelper {
 //                        addTime*1000=${dateAdd} ms,  formatTime=${FilePickerTimeFormatUtils.formatTime(dateAdd)}
 //                    """.trimIndent()
 //                }
-
-                val fileCheckTimeStart = System.currentTimeMillis()
-//                FilePickerLog.e { "相册获取, 开始文件判断---fileCheckTimeStart 耗时:${fileCheckTimeStart - endTimeOneWhile}" }
 
                 if (size <= minSize) {
                     FilePickerLog.d("相册获取, queryAlbums: 文件大小小于最小值，忽略。。。。")
@@ -276,16 +270,6 @@ object FileQueryHelper {
                     FilePickerLog.e("相册获取, queryAlbums: 文件不是文件，忽略。。。。")
                     continue
                 }
-
-                val length = FilePickerFileUtils.getFileSize(file)
-                // 文件在隐藏目录，忽略。。。
-                if (length <= 0) {
-                    FilePickerLog.e("相册获取, queryAlbums: 文件大小为0，忽略。。。。")
-                    continue
-                }
-
-                val fileCheckTimeEnd = System.currentTimeMillis()
-//                FilePickerLog.e { "相册获取, 结束文件判断---fileCheckTimeEnd:${fileCheckTimeEnd}---耗时：${fileCheckTimeEnd - fileCheckTimeStart}" }
 
                 val uri = ContentUris.withAppendedId(
                     if (mimeType?.startsWith("video/", true) == true) {
@@ -467,7 +451,7 @@ object FileQueryHelper {
                 projection += MediaStore.Files.FileColumns.ORIENTATION
             }
 
-            val sortOrder = MediaStore.Files.FileColumns.DATE_ADDED + " DESC"
+            val sortOrder = "${MediaStore.Files.FileColumns.DATE_ADDED} DESC"
 
             if (contentUri == null) {
                 return@withContext mediaResult

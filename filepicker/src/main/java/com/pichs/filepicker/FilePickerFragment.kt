@@ -295,9 +295,9 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                     FilePickerSelectType.IMAGE_VIDEO, FilePickerSelectType.IMAGE_VIDEO_GIF -> {
                         viewModel.updateCurrentFolderDataList(
                             if (viewModel.currentFolder.value != null) {
-                                viewModel.currentFolder.value?.mediaEntityList ?: mutableListOf()
+                                viewModel.currentFolder.value?.mediaEntityList?.sortedByDescending { it.addTime } ?: mutableListOf()
                             } else {
-                                viewModel.getAllDataList().flatMap { it.mediaEntityList }.toMutableList()
+                                viewModel.getAllDataList().flatMap { it.mediaEntityList }.sortedByDescending { it.addTime }.toMutableList()
                             }
                         )
                     }
@@ -305,9 +305,9 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                     FilePickerSelectType.IMAGE -> {
                         viewModel.updateCurrentFolderDataList(
                             if (viewModel.currentFolder.value != null) {
-                                viewModel.currentFolder.value?.mediaEntityList?.filter { it.isImage() }?.toMutableList() ?: mutableListOf()
+                                viewModel.currentFolder.value?.mediaEntityList?.filter { it.isImage() }?.sortedByDescending { it.addTime }?.toMutableList() ?: mutableListOf()
                             } else {
-                                viewModel.getAllDataList().flatMap { it.mediaEntityList.filter { it.isImage() } }.toMutableList()
+                                viewModel.getAllDataList().flatMap { it.mediaEntityList.filter { it.isImage() } }.sortedByDescending { it.addTime }.toMutableList()
                             }
                         )
                     }
@@ -315,9 +315,9 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                     FilePickerSelectType.VIDEO -> {
                         viewModel.updateCurrentFolderDataList(
                             if (viewModel.currentFolder.value != null) {
-                                viewModel.currentFolder.value?.mediaEntityList?.filter { it.isVideo() }?.toMutableList() ?: mutableListOf()
+                                viewModel.currentFolder.value?.mediaEntityList?.filter { it.isVideo() }?.sortedByDescending { it.addTime }?.toMutableList() ?: mutableListOf()
                             } else {
-                                viewModel.getAllDataList().flatMap { it.mediaEntityList.filter { it.isVideo() } }.toMutableList()
+                                viewModel.getAllDataList().flatMap { it.mediaEntityList.filter { it.isVideo() } }.sortedByDescending { it.addTime }.toMutableList()
                             }
                         )
                     }
@@ -325,9 +325,9 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                     FilePickerSelectType.GIF -> {
                         viewModel.updateCurrentFolderDataList(
                             if (viewModel.currentFolder.value != null) {
-                                viewModel.currentFolder.value?.mediaEntityList?.filter { it.isGif() }?.toMutableList() ?: mutableListOf()
+                                viewModel.currentFolder.value?.mediaEntityList?.filter { it.isGif() }?.sortedByDescending { it.addTime }?.toMutableList() ?: mutableListOf()
                             } else {
-                                viewModel.getAllDataList().flatMap { it.mediaEntityList.filter { it.isGif() } }.toMutableList()
+                                viewModel.getAllDataList().flatMap { it.mediaEntityList.filter { it.isGif() } }.sortedByDescending { it.addTime }.toMutableList()
                             }
                         )
                     }
@@ -335,9 +335,9 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
             } else {
                 viewModel.updateCurrentFolderDataList(
                     if (viewModel.currentFolder.value != null) {
-                        viewModel.currentFolder.value?.mediaEntityList?.toMutableList() ?: mutableListOf()
+                        viewModel.currentFolder.value?.mediaEntityList?.toMutableList()?.sortedByDescending { it.addTime } ?: mutableListOf()
                     } else {
-                        viewModel.getAllDataList().flatMap { it.mediaEntityList }.toMutableList()
+                        viewModel.getAllDataList().flatMap { it.mediaEntityList }.sortedByDescending { it.addTime }.toMutableList()
                     }
                 )
             }
