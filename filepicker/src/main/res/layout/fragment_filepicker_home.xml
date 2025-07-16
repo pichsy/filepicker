@@ -57,128 +57,25 @@
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <com.pichs.xwidget.view.XLinearLayout
-        android:id="@+id/ll_select_type"
+    <com.google.android.material.tabs.TabLayout
+        android:id="@+id/select_type_tab_layout"
         android:layout_width="match_parent"
         android:layout_height="40dp"
-        app:layout_constraintTop_toBottomOf="@+id/cl_toolbar">
-
-        <com.pichs.xwidget.view.XLinearLayout
-            android:id="@+id/ll_type_all"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:orientation="vertical">
-
-            <com.pichs.xwidget.view.XTextView
-                android:id="@+id/tv_type_all"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:checked="true"
-                android:text="全部"
-                android:textColor="#999"
-                android:textSize="14dp"
-                app:xp_checkedTextColor="#fff" />
-
-            <com.pichs.xwidget.roundview.XRoundFrameLayout
-                android:id="@+id/line_type_all"
-                android:layout_width="30dp"
-                android:layout_height="3dp"
-                android:layout_marginTop="5dp"
-                android:background="#fff"
-                app:xp_radius="4dp" />
-
-        </com.pichs.xwidget.view.XLinearLayout>
-
-        <com.pichs.xwidget.view.XLinearLayout
-            android:id="@+id/ll_type_image"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:orientation="vertical">
-
-            <com.pichs.xwidget.view.XTextView
-                android:id="@+id/tv_type_image"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:checked="true"
-                android:text="图片"
-                android:textColor="#999"
-                android:textSize="14dp"
-                app:xp_checkedTextColor="#fff" />
-
-            <com.pichs.xwidget.roundview.XRoundFrameLayout
-                android:id="@+id/line_type_image"
-                android:layout_width="30dp"
-                android:layout_height="3dp"
-                android:layout_marginTop="5dp"
-                android:background="#fff"
-                android:visibility="invisible"
-                app:xp_radius="4dp" />
-
-        </com.pichs.xwidget.view.XLinearLayout>
-
-        <com.pichs.xwidget.view.XLinearLayout
-            android:id="@+id/ll_type_video"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:orientation="vertical">
-
-            <com.pichs.xwidget.view.XTextView
-                android:id="@+id/tv_type_video"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:checked="true"
-                android:text="视频"
-                android:textColor="#999"
-                android:textSize="14dp"
-                app:xp_checkedTextColor="#fff" />
-
-            <com.pichs.xwidget.roundview.XRoundFrameLayout
-                android:id="@+id/line_type_video"
-                android:layout_width="30dp"
-                android:layout_height="3dp"
-                android:layout_marginTop="5dp"
-                android:background="#fff"
-                android:visibility="invisible"
-                app:xp_radius="4dp" />
-
-        </com.pichs.xwidget.view.XLinearLayout>
-
-        <com.pichs.xwidget.view.XLinearLayout
-            android:id="@+id/ll_type_gif"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:orientation="vertical"
-            android:visibility="gone">
-
-            <com.pichs.xwidget.view.XTextView
-                android:id="@+id/tv_type_gif"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:checked="true"
-                android:text="动图"
-                android:textColor="#999"
-                android:textSize="14dp"
-                app:xp_checkedTextColor="#fff" />
-
-            <com.pichs.xwidget.roundview.XRoundFrameLayout
-                android:id="@+id/line_type_gif"
-                android:layout_width="30dp"
-                android:layout_height="3dp"
-                android:layout_marginTop="5dp"
-                android:background="#fff"
-                android:visibility="invisible"
-                app:xp_radius="4dp" />
-
-        </com.pichs.xwidget.view.XLinearLayout>
-    </com.pichs.xwidget.view.XLinearLayout>
+        android:background="#121212"
+        app:layout_constraintTop_toBottomOf="@+id/cl_toolbar"
+        app:tabGravity="fill"
+        app:tabIndicatorAnimationMode="linear"
+        app:tabIndicatorColor="#fff"
+        app:tabIndicatorFullWidth="false"
+        app:tabIndicatorGravity="bottom"
+        app:tabIndicatorHeight="2.5dp"
+        app:tabMode="fixed"
+        app:tabRippleColor="#0000"
+        app:tabSelectedTextAppearance="@style/FilePickerSelfTabSelectedTextAppearance"
+        app:tabSelectedTextColor="#fff"
+        app:tabTextAppearance="@style/FilePickerSelfTabUnselectedTextAppearance"
+        app:tabTextColor="#ff888888"
+        app:tabUnboundedRipple="false" />
 
     <com.pichs.filepicker.widget.FilePickerRecyclerView
         android:id="@+id/recycler_view"
@@ -186,7 +83,7 @@
         android:layout_height="0dp"
         android:background="#000"
         app:layout_constraintBottom_toTopOf="@+id/ll_bottom_bar"
-        app:layout_constraintTop_toBottomOf="@+id/ll_select_type" />
+        app:layout_constraintTop_toBottomOf="@+id/select_type_tab_layout" />
 
     <LinearLayout
         android:id="@+id/ll_empty"
@@ -232,14 +129,15 @@
         android:visibility="visible"
         app:layout_constraintBottom_toBottomOf="parent">
 
-        <LinearLayout
+        <com.pichs.xwidget.view.XLinearLayout
             android:id="@+id/ll_preview"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent">
+            app:layout_constraintTop_toTopOf="parent"
+            app:xp_pressedAlpha="0.8">
 
             <com.pichs.xwidget.view.XTextView
                 android:id="@+id/tv_preview"
@@ -254,7 +152,7 @@
                 android:textSize="14dp"
                 app:xp_disabledTextColor="#555" />
 
-        </LinearLayout>
+        </com.pichs.xwidget.view.XLinearLayout>
 
         <LinearLayout
             android:id="@+id/ll_original"

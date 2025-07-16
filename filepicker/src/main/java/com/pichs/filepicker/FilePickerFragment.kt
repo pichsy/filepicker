@@ -4,16 +4,13 @@ import android.annotation.SuppressLint
 import android.app.Activity.RESULT_OK
 import android.content.Intent
 import android.graphics.Color
-import android.graphics.Typeface
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.annotation.OptIn
 import androidx.core.content.ContextCompat
-import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
 import androidx.core.view.updateLayoutParams
 import androidx.fragment.app.Fragment
@@ -30,6 +27,7 @@ import com.drake.brv.utils.grid
 import com.drake.brv.utils.linear
 import com.drake.brv.utils.models
 import com.drake.brv.utils.setup
+import com.google.android.material.tabs.TabLayout
 import com.pichs.filepicker.databinding.FilePickerItemRvAlbumBinding
 import com.pichs.filepicker.databinding.FilePickerItemRvAlbumSelectedBinding
 import com.pichs.filepicker.databinding.FilePickerItemRvAudioAlbumBinding
@@ -38,9 +36,7 @@ import com.pichs.filepicker.dialog.FilePickerFinalPreviewDialog
 import com.pichs.filepicker.dialog.FilePickerPreviewDialog
 import com.pichs.filepicker.dialog.FolderChooseDialog
 import com.pichs.filepicker.entity.MediaEntity
-import com.pichs.filepicker.entity.MediaFolder
 import com.pichs.filepicker.loader.MediaLoader
-import com.pichs.filepicker.scanner.MediaScanner
 import com.pichs.filepicker.utils.FilePickerClickHelper
 import com.pichs.filepicker.utils.FilePickerIconUtils
 import com.pichs.filepicker.utils.FilePickerLog
@@ -50,6 +46,7 @@ import com.pichs.filepicker.widget.OnFilePickerItemSelectionChangedListener
 import com.pichs.xwidget.utils.XDisplayHelper
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import razerdp.basepopup.BasePopupWindow
@@ -84,15 +81,29 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
         currentTabType = viewModel.selectType.value
 
         if (!isSelectTypeEqualsAll(viewModel.selectType.value) || viewModel.uiConfig.isHideSelectTab) {
-            // 隐藏掉tab切换。
-            binding.llSelectType.isVisible = false
+            binding.selectTypeTabLayout.isVisible = false
         } else {
-            if (viewModel.selectType.value == FilePickerSelectType.IMAGE_VIDEO_GIF) {
-                binding.llTypeGif.isVisible = true
-            } else {
-                binding.llTypeGif.isVisible = false
+            binding.selectTypeTabLayout.isVisible = true
+            binding.selectTypeTabLayout.apply {
+                addTab(newTab().apply {
+                    text = "全部"
+                    tag = "all"
+                })
+                addTab(newTab().apply {
+                    text = "视频"
+                    tag = "video"
+                })
+                addTab(newTab().apply {
+                    text = "图片"
+                    tag = "image"
+                })
+                if (viewModel.selectType.value == FilePickerSelectType.IMAGE_VIDEO_GIF) {
+                    addTab(newTab().apply {
+                        text = "GIF"
+                        tag = "gif"
+                    })
+                }
             }
-            binding.llSelectType.isVisible = true
         }
 
         binding.tvAlbum.text = viewModel.uiConfig.allAlbumName
@@ -191,41 +202,49 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
         binding.tvAlbum.setOnClickListener(this)
         binding.ivArrowDown.setOnClickListener(this)
 
-        binding.llTypeAll.setOnClickListener {
-            if (currentTabType == viewModel.selectType.value) {
-                return@setOnClickListener
-            }
-            currentTabType = viewModel.selectType.value
-            resetListDataWithSelectData()
-            selectAllTabUI()
-        }
+        binding.selectTypeTabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
+            override fun onTabSelected(tab: TabLayout.Tab?) {
+                when (tab?.tag) {
+                    "all" -> {
+                        if (currentTabType == viewModel.selectType.value) {
+                            return
+                        }
+                        currentTabType = viewModel.selectType.value
+                        resetListDataWithSelectData()
+                    }
 
-        binding.llTypeImage.setOnClickListener {
-            if (currentTabType == FilePickerSelectType.IMAGE) {
-                return@setOnClickListener
-            }
-            currentTabType = FilePickerSelectType.IMAGE
-            resetListDataWithSelectData()
-            selectImageTabUI()
-        }
+                    "video" -> {
+                        if (currentTabType == FilePickerSelectType.VIDEO) {
+                            return
+                        }
+                        currentTabType = FilePickerSelectType.VIDEO
+                        resetListDataWithSelectData()
+                    }
 
-        binding.llTypeVideo.setOnClickListener {
-            if (currentTabType == FilePickerSelectType.VIDEO) {
-                return@setOnClickListener
-            }
-            currentTabType = FilePickerSelectType.VIDEO
-            resetListDataWithSelectData()
-            selectVideoTabUI()
-        }
+                    "image" -> {
+                        if (currentTabType == FilePickerSelectType.IMAGE) {
+                            return
+                        }
+                        currentTabType = FilePickerSelectType.IMAGE
+                        resetListDataWithSelectData()
+                    }
 
-        binding.llTypeGif.setOnClickListener {
-            if (currentTabType == FilePickerSelectType.GIF) {
-                return@setOnClickListener
+                    "gif" -> {
+                        if (currentTabType == FilePickerSelectType.GIF) {
+                            return
+                        }
+                        currentTabType = FilePickerSelectType.GIF
+                        resetListDataWithSelectData()
+                    }
+                }
             }
-            currentTabType = FilePickerSelectType.GIF
-            resetListDataWithSelectData()
-            selectGIFTabUI()
-        }
+
+            override fun onTabUnselected(tab: TabLayout.Tab?) {
+            }
+
+            override fun onTabReselected(tab: TabLayout.Tab?) {
+            }
+        })
 
         binding.btnConfirm.setOnClickListener {
             FilePickerLog.d("FilePickerFragment", "selectedData:${viewModel.getSelectedDataList().size},selectType:${viewModel.selectType.value}")
@@ -234,9 +253,10 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
 
 
         if (isSelectTypeEqualsAll(currentTabType)) {
-            selectAllTabUI()
+            if (binding.selectTypeTabLayout.selectedTabPosition != 0) {
+                binding.selectTypeTabLayout.getTabAt(0)?.select()
+            }
         }
-
     }
 
     /**
@@ -248,8 +268,16 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
 
     private fun initDataFlow() {
         lifecycleScope.launch {
+//            launch {
+//                viewModel.refreshIndexChannel.receiveAsFlow().collect { size ->
+//                    FilePickerLog.d("FilePickerFragment", "initDataFlow refreshIndexChannel: size:$size")
+//
+//                    binding.recyclerView.models = viewModel.currentFolderDataList.value
+//                }
+//            }
             launch {
                 viewModel.allFolderDataList.debounce(100).collectLatest { folderList ->
+                    FilePickerLog.d("FilePickerFragment8848", "initDataFlow: allFolderDataList.collectLatest-folderList-${folderList.size}")
                     viewModel.updateAllDataList(folderList)
                     viewModel.initUserSelectDataList(folderList)
                     resetListDataWithSelectData()
@@ -258,11 +286,11 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
 
             launch {
                 viewModel.currentFolderDataList.collectLatest { list ->
-                    FilePickerLog.d("FilePickerFragment", "initDataFlow currentFolderDataList: size:${list.size}, currentTabType:$currentTabType")
+                    FilePickerLog.d("FilePickerFragment8848", "initDataFlow currentFolderDataList: size:${list.size}, currentTabType:$currentTabType")
                     for (item in viewModel.selectedData) {
                         val isContains = viewModel.getAllDataEntityList().contains(item)
-                        FilePickerLog.d("FilePickerFragment", "initDataFlow: item:${item.path}, isContains:$isContains")
                         if (!isContains) {
+                            FilePickerLog.d("FilePickerFragment8848", "initDataFlow: item:${item.path}, isContains:$isContains")
                             viewModel.removeSelectedData(item)
                         }
                     }
@@ -286,17 +314,23 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
         viewModel.loadData(requireContext())
     }
 
-
     // todo
     private fun resetListDataWithSelectData() {
         lifecycleScope.launch {
             if (isSelectTypeEqualsAll(viewModel.selectType.value)) {
                 when (currentTabType) {
                     FilePickerSelectType.IMAGE_VIDEO, FilePickerSelectType.IMAGE_VIDEO_GIF -> {
+                        FilePickerLog.d(
+                            "FilePickerFragment8848",
+                            "resetListDataWithSelectData: allFolderDataList collectLatest-viewModel.selectType.value=${viewModel.selectType.value}"
+                        )
+
                         viewModel.updateCurrentFolderDataList(
                             if (viewModel.currentFolder.value != null) {
+                                FilePickerLog.d("FilePickerFragment8848", "resetListDataWithSelectData: currentFolder=有了- ----")
                                 viewModel.currentFolder.value?.mediaEntityList?.sortedByDescending { it.addTime } ?: mutableListOf()
                             } else {
+                                FilePickerLog.d("FilePickerFragment8848", "resetListDataWithSelectData: currentFolder=全部 ----")
                                 viewModel.getAllDataList().flatMap { it.mediaEntityList }.sortedByDescending { it.addTime }.toMutableList()
                             }
                         )
@@ -305,9 +339,11 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                     FilePickerSelectType.IMAGE -> {
                         viewModel.updateCurrentFolderDataList(
                             if (viewModel.currentFolder.value != null) {
-                                viewModel.currentFolder.value?.mediaEntityList?.filter { it.isImage() }?.sortedByDescending { it.addTime }?.toMutableList() ?: mutableListOf()
+                                viewModel.currentFolder.value?.mediaEntityList?.filter { it.isImage() }?.sortedByDescending { it.addTime }?.toMutableList()
+                                    ?: mutableListOf()
                             } else {
-                                viewModel.getAllDataList().flatMap { it.mediaEntityList.filter { it.isImage() } }.sortedByDescending { it.addTime }.toMutableList()
+                                viewModel.getAllDataList().flatMap { it.mediaEntityList.filter { it.isImage() } }.sortedByDescending { it.addTime }
+                                    .toMutableList()
                             }
                         )
                     }
@@ -315,9 +351,11 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                     FilePickerSelectType.VIDEO -> {
                         viewModel.updateCurrentFolderDataList(
                             if (viewModel.currentFolder.value != null) {
-                                viewModel.currentFolder.value?.mediaEntityList?.filter { it.isVideo() }?.sortedByDescending { it.addTime }?.toMutableList() ?: mutableListOf()
+                                viewModel.currentFolder.value?.mediaEntityList?.filter { it.isVideo() }?.sortedByDescending { it.addTime }?.toMutableList()
+                                    ?: mutableListOf()
                             } else {
-                                viewModel.getAllDataList().flatMap { it.mediaEntityList.filter { it.isVideo() } }.sortedByDescending { it.addTime }.toMutableList()
+                                viewModel.getAllDataList().flatMap { it.mediaEntityList.filter { it.isVideo() } }.sortedByDescending { it.addTime }
+                                    .toMutableList()
                             }
                         )
                     }
@@ -325,9 +363,11 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                     FilePickerSelectType.GIF -> {
                         viewModel.updateCurrentFolderDataList(
                             if (viewModel.currentFolder.value != null) {
-                                viewModel.currentFolder.value?.mediaEntityList?.filter { it.isGif() }?.sortedByDescending { it.addTime }?.toMutableList() ?: mutableListOf()
+                                viewModel.currentFolder.value?.mediaEntityList?.filter { it.isGif() }?.sortedByDescending { it.addTime }?.toMutableList()
+                                    ?: mutableListOf()
                             } else {
-                                viewModel.getAllDataList().flatMap { it.mediaEntityList.filter { it.isGif() } }.sortedByDescending { it.addTime }.toMutableList()
+                                viewModel.getAllDataList().flatMap { it.mediaEntityList.filter { it.isGif() } }.sortedByDescending { it.addTime }
+                                    .toMutableList()
                             }
                         )
                     }
@@ -511,6 +551,9 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                         }
                         viewModel.addSelectedData(item)
                         notifyItemChanged(modelPosition)
+                        if (modelPosition != itemCount - 1) {
+                            notifyItemChanged(itemCount - 1) // 刷新最后一行
+                        }
                         updateBottomMenuSelectNumberUI()
                     }
                 }
@@ -542,10 +585,15 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
     private fun initGridRecycler() {
 //        binding.tvMaxSelectNumber.text = "${viewModel.maxSelectNumber.value}"
         binding.recyclerView.itemAnimator = null
+
         binding.recyclerView.grid(4).setup {
             addType<MediaEntity>(R.layout.file_picker_item_rv_album)
 
             itemDifferCallback = BrvItemDifferCallback()
+
+            onPayload {
+                FilePickerLog.d("FilePickerFragment5656", "onPayload: modelPosition:$modelPosition, payloads:${it.joinToString(",")}")
+            }
 
             onBind {
                 val item = getModel<MediaEntity>()
@@ -574,7 +622,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                 }
 
                 val indexOfSelect = viewModel.indexOfSelected(item)
-
+                FilePickerLog.d("FilePickerFragment", "item:${item.path}, selectedIndex:${indexOfSelect}, modelPosition:$modelPosition")
                 if (indexOfSelect != -1) {
                     itemBinding.tvSelectIndex.text = "${indexOfSelect + 1}"
                     itemBinding.tvSelectIndex.setNormalBackgroundColor(ContextCompat.getColor(context, R.color.file_picker_index_bg_color))
@@ -625,6 +673,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                         notifyItemChanged(modelPosition)
                         updateBottomMenuSelectNumberUI()
                         notifyItemRangeChanged(lastRowStart, itemCount - lastRowStart) // 刷新最后一行
+//                        updateSelectDataUI()
                     }
                 }
 
@@ -690,7 +739,6 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
 
     }
 
-
     fun scrollItemToCenter(recyclerView: RecyclerView, position: Int) {
         if (position == -1) return
         val layoutManager = recyclerView.layoutManager as? LinearLayoutManager ?: return
@@ -702,7 +750,6 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
 
         layoutManager.scrollToPositionWithOffset(position, offset)
     }
-
 
     /**
      * 展示文件预览对话框
@@ -818,80 +865,13 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
         }
     }
 
-    private fun selectAllTabUI() {
-        binding.tvTypeImage.isChecked = false
-        binding.tvTypeVideo.isChecked = false
-        binding.tvTypeAll.isChecked = true
-        binding.tvTypeImage.setTypeface(Typeface.DEFAULT, Typeface.NORMAL)
-        binding.tvTypeVideo.setTypeface(Typeface.DEFAULT, Typeface.NORMAL)
-        binding.tvTypeAll.setTypeface(Typeface.DEFAULT, Typeface.BOLD)
-        binding.lineTypeAll.isInvisible = false
-        binding.lineTypeImage.isInvisible = true
-        binding.lineTypeVideo.isInvisible = true
-
-        binding.tvTypeGif.setTypeface(Typeface.DEFAULT, Typeface.NORMAL)
-        binding.tvTypeGif.isChecked = false
-        binding.lineTypeGif.isInvisible = true
-    }
-
-    private fun selectImageTabUI() {
-        binding.tvTypeImage.isChecked = true
-        binding.tvTypeVideo.isChecked = false
-        binding.tvTypeAll.isChecked = false
-        binding.tvTypeImage.setTypeface(Typeface.DEFAULT, Typeface.BOLD)
-        binding.tvTypeVideo.setTypeface(Typeface.DEFAULT, Typeface.NORMAL)
-        binding.tvTypeAll.setTypeface(Typeface.DEFAULT, Typeface.NORMAL)
-
-        binding.lineTypeAll.isInvisible = true
-        binding.lineTypeImage.isInvisible = false
-        binding.lineTypeVideo.isInvisible = true
-
-        binding.tvTypeGif.setTypeface(Typeface.DEFAULT, Typeface.NORMAL)
-        binding.tvTypeGif.isChecked = false
-        binding.lineTypeGif.isInvisible = true
-    }
-
-    private fun selectVideoTabUI() {
-        binding.tvTypeImage.isChecked = false
-        binding.tvTypeVideo.isChecked = true
-        binding.tvTypeAll.isChecked = false
-        binding.tvTypeImage.setTypeface(Typeface.DEFAULT, Typeface.NORMAL)
-        binding.tvTypeVideo.setTypeface(Typeface.DEFAULT, Typeface.BOLD)
-        binding.tvTypeAll.setTypeface(Typeface.DEFAULT, Typeface.NORMAL)
-
-        binding.lineTypeAll.isInvisible = true
-        binding.lineTypeImage.isInvisible = true
-        binding.lineTypeVideo.isInvisible = false
-
-        binding.tvTypeGif.setTypeface(Typeface.DEFAULT, Typeface.NORMAL)
-        binding.tvTypeGif.isChecked = false
-        binding.lineTypeGif.isInvisible = true
-    }
-
-
-    private fun selectGIFTabUI() {
-        binding.tvTypeImage.isChecked = false
-        binding.tvTypeVideo.isChecked = false
-        binding.tvTypeAll.isChecked = false
-        binding.tvTypeImage.setTypeface(Typeface.DEFAULT, Typeface.NORMAL)
-        binding.tvTypeVideo.setTypeface(Typeface.DEFAULT, Typeface.NORMAL)
-        binding.tvTypeAll.setTypeface(Typeface.DEFAULT, Typeface.NORMAL)
-
-        binding.lineTypeAll.isInvisible = true
-        binding.lineTypeImage.isInvisible = true
-        binding.lineTypeVideo.isInvisible = true
-
-        binding.tvTypeGif.setTypeface(Typeface.DEFAULT, Typeface.BOLD)
-        binding.tvTypeGif.isChecked = true
-        binding.lineTypeGif.isInvisible = false
-    }
-
     /**
      * 更新选择数据的UI。 主要是角标。
      * 有优化点，就是 针对性刷新，
      * 移除的那些需要刷新，新增的也需要刷新。
      */
     private fun updateSelectDataUI() {
+//        viewModel.updateCurrentSelectIndex()
         binding.recyclerView.post {
             binding.recyclerView.bindingAdapter.notifyItemRangeChanged(0, viewModel.currentFolderDataList.value.size)
         }

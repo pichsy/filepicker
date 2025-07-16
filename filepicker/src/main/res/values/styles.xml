@@ -20,9 +20,17 @@
         <!--        <item name="android:windowLayoutInDisplayCutoutMode" tools:targetApi="o_mr1">always</item>-->
     </style>
 
-
     <color name="file_picker_index_bg_color">#03C10D</color>
 
+    <!-- 选中 Tab 的文本样式 -->
+    <style name="FilePickerSelfTabSelectedTextAppearance" parent="TextAppearance.MaterialComponents.Subtitle1">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
 
-
+    <!-- 未选中 Tab 的文本样式（可选） -->
+    <style name="FilePickerSelfTabUnselectedTextAppearance" parent="TextAppearance.MaterialComponents.Subtitle1">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textStyle">normal</item>
+    </style>
 </resources>

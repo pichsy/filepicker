@@ -29,6 +29,27 @@
 
         </com.pichs.xwidget.view.XConstraintLayout>
 
+        <com.google.android.material.tabs.TabLayout
+            android:id="@+id/tab_layout"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:background="#121212"
+            app:tabGravity="fill"
+            app:tabIndicatorAnimationDuration="200"
+            app:tabIndicatorAnimationMode="elastic"
+            app:tabIndicatorColor="#fff"
+            app:tabIndicatorFullWidth="false"
+            app:tabIndicatorGravity="bottom"
+            app:tabIndicatorHeight="2dp"
+            app:tabInlineLabel="true"
+            app:tabMode="fixed"
+            app:tabRippleColor="#0000"
+            app:tabSelectedTextAppearance="@style/TabSelectedTextAppearance"
+            app:tabSelectedTextColor="#fff"
+            app:tabTextAppearance="@style/TabUnselectedTextAppearance"
+            app:tabUnboundedRipple="false" />
+
+
         <!-- 数量 maxSelectCount 输入框 -->
         <LinearLayout
             android:layout_width="match_parent"

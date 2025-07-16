@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.common.collect.Multimaps.index
 import com.pichs.filepicker.entity.MediaEntity
 import com.pichs.filepicker.entity.MediaFolder
 import com.pichs.filepicker.query.FileQueryHelper
@@ -14,6 +15,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.updateAndGet
 import kotlinx.coroutines.launch
 import java.util.concurrent.CopyOnWriteArrayList
 
@@ -286,5 +288,45 @@ class FilePickerViewModel : ViewModel() {
     fun onDestroy() {
         loadJob?.cancel()
         loadJob = null
+    }
+
+
+//    val refreshIndexChannel = Channel<Int>()
+
+    /**
+     * 更新当前选中数据的索引
+     * 主要用于在选择数据后，更新所有文件夹中的数据的选中索引
+     * 用户刷新数据。
+     * 失败了，这样刷新效率并不高，触摸后刷新延迟更加严重。除非有更高级的算法。 效率不如 notifyItemChanged(position)
+     */
+    fun updateCurrentSelectIndex() {
+        viewModelScope.launch {
+            FilePickerLog.d(
+                "FilePickerFragment8848",
+                "updateCurrentSelectIndex: selectedData size = ${selectedData.size}, tempSelectData size = ${tempSelectData.size}"
+            )
+            val combineDataList = (selectedData + tempSelectData).distinctBy { it.path }
+            FilePickerLog.d("FilePickerFragment8848", "combineDataList=${combineDataList.size}")
+
+            val allDataList = _allFolderDataList.value.toMutableList()
+
+            FilePickerLog.d("FilePickerFragment8848", "allDataList=${allDataList.size}")
+
+            allDataList.forEach { folder ->
+                folder.mediaEntityList.forEach { entity ->
+                    val index = combineDataList.indexOfFirst { entity.path.equals(it.path, true) }
+                    entity.selectedIndex = index
+                }
+            }
+
+            FilePickerLog.d(
+                "FilePickerFragment8848",
+                "666666updateCurrentSelectIndex: allFolderDataList updated=${getAllDataEntityList().filter { it.selectedIndex != -1 }.size}"
+            )
+
+            _allFolderDataList.update { allDataList }
+//        updateAllDataList(allDataList)
+//            refreshIndexChannel.send(combineDataList.size)
+        }
     }
 }

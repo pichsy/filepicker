@@ -132,4 +132,20 @@
         <attr name="gest_aspect" format="reference|float" />
     </declare-styleable>
 
+
+
+    <!-- 选中 Tab 的文本样式 -->
+    <style name="TabSelectedTextAppearance" parent="TextAppearance.MaterialComponents.Subtitle1">
+        <item name="android:textColor">#fff</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <!-- 未选中 Tab 的文本样式（可选） -->
+    <style name="TabUnselectedTextAppearance" parent="TextAppearance.MaterialComponents.Subtitle1">
+        <item name="android:textColor">#888</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:textStyle">normal</item>
+    </style>
+
 </resources>

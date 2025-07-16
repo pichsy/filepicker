@@ -16,6 +16,7 @@ import com.drake.brv.utils.setup
 import com.hjq.permissions.Permission
 import com.hjq.permissions.XXPermissions
 import com.pichs.filepicker.FilePicker
+import com.pichs.filepicker.FilePickerSelectType
 import com.pichs.filepicker.FilePickerUIConfig
 import com.pichs.filepicker.FilePickerViewModel
 import com.pichs.filepicker.common.ImagePreviewDialog
@@ -48,6 +49,7 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
     @SuppressLint("SetTextI18n")
     override fun afterOnCreate() {
 
+        initTabLayout()
         binding.previewFragment.fastClick {
             startActivity(Intent(this, TestActivity::class.java))
         }
@@ -166,7 +168,7 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
 //                    -----------
 //                    文件个数： ${mediaResult.mediaFolders.sumOf { it.mediaEntityList.size }}
 //                """.trimIndent()
-//
+
             }
         }
 
@@ -270,6 +272,26 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
 
         initRecyclerView()
         initListener()
+    }
+
+    private fun initTabLayout() {
+        binding.tabLayout.apply {
+            addTab(
+                newTab().also {
+                    it.text = "全部"
+                }
+            )
+            addTab(
+                newTab().also {
+                    it.text = "视频"
+                }
+            )
+            addTab(
+                newTab().also {
+                    it.text = "图片"
+                }
+            )
+        }
     }
 
     private fun initListener() {
