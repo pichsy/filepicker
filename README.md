@@ -1,7 +1,8 @@
 # 图库选择器
 
 ### 最新版本 ![](https://img.shields.io/maven-metadata/v.svg?label=maven-central&metadataUrl=https%3A%2F%2Frepo1.maven.org%2Fmaven2%2Fcom%2Fgitee%2Fpichs%2Ffilepicker%2Fmaven-metadata.xml)
- - 使用最新版的 filepicker 库，必须使用最新版的xwidget库。都是 5.6.3 以上确保。
+
+- 使用最新版的 filepicker 库，必须使用最新版的xwidget库。都是 5.6.3 以上确保。
 - 用了很多，都没有丝滑的选择效果的开源库，滑动选择丝滑。闲来没事，随手写一个吧。
 - 图库选择，文件选择
 - 仿华为相册滑动选择手势逻辑，
@@ -35,7 +36,7 @@
 ```kotlin
 dependencies {
     // 基础组件库 （必须）
-    implementation("com.gitee.pichs:filepicker:5.8.0")
+    implementation("com.gitee.pichs:filepicker:5.9.0")
 
     // 基础组件库 （必须）
     implementation("com.gitee.pichs:xwidget:5.6.3")
@@ -107,19 +108,19 @@ FilePicker.with(this) // this: FragmentActivity
             // 取消选择
         }
     })
-   .setUiConfig(
-      FilePickerUIConfig(
-         isHideSelectTab = false,
-         allAlbumName = "全部",
-         confirmBtnText = "发送",
-         isShowOriginal = false,
-         isPreviewPageIndexMode = true,
-         isShowSelectedListDeleteIcon = true,
-         folderNickNameMap = hashMapOf(
-            "DCIM" to "相册"
-         )
-      )
-   ).
+    .setUiConfig(
+        FilePickerUIConfig(
+            isHideSelectTab = false,
+            allAlbumName = "全部",
+            confirmBtnText = "发送",
+            isShowOriginal = false,
+            isPreviewPageIndexMode = true,
+            isShowSelectedListDeleteIcon = true,
+            folderNickNameMap = hashMapOf(
+                "DCIM" to "相册"
+            )
+        )
+    ).
     .start()
 ```
 
@@ -134,20 +135,20 @@ FilePicker.with(this) // this: Fragment
     .setOnSelectCallback { isUseOriginal, list ->
         // 选择完成回调
     }
-   .setUiConfig(
-      FilePickerUIConfig(
-         isHideSelectTab = true,
-         allAlbumName = "全部",
-         confirmBtnText = "下一步",
-         isShowOriginal = false,
-         isPreviewPageIndexMode = true,
-         isShowSelectedListDeleteIcon = true,
-         folderNickNameMap = hashMapOf(
-            "DICM" to "相机",
-            "Download" to "下载"
-         )
-      )
-   ).
+    .setUiConfig(
+        FilePickerUIConfig(
+            isHideSelectTab = true,
+            allAlbumName = "全部",
+            confirmBtnText = "下一步",
+            isShowOriginal = false,
+            isPreviewPageIndexMode = true,
+            isShowSelectedListDeleteIcon = true,
+            folderNickNameMap = hashMapOf(
+                "DICM" to "相机",
+                "Download" to "下载"
+            )
+        )
+    ).
     .start()
 ```
 
@@ -157,49 +158,49 @@ FilePicker.with(this) // this: Fragment
 
 ### FilePicker
 
-| 方法名 | 描述 |
-| --- | --- |
-| `with(activity)` | 使用 `FragmentActivity` 初始化 |
-| `with(fragment)` | 使用 `Fragment` 初始化 |
-| `ofImage()` | 只选择图片 |
-| `ofVideo()` | 只选择视频 |
-| `ofAll()` | 选择图片和视频 |
-| `ofAllWithGif()` | 选择图片、视频和GIF |
-| `ofGif()` | 只选择GIF |
-| `ofAudio()` | 只选择音频 |
-| `ofDocument()` | 选择所有文档类型 |
-| `ofPdf()` | 只选择PDF |
-| `ofDoc()` | 只选择DOC和DOCX |
-| `ofPpt()` | 只选择PPT和PPTX |
-| `ofExcel()` | 只选择XLS和XLSX |
-| `ofTxt()` | 只选择TXT |
-| `ofApk()` | 只选择APK |
-| `ofZipAll()` | 选择所有压缩包类型 |
-| `ofZip()` | 只选择ZIP |
-| `ofRar()` | 只选择RAR |
-| `of7Z()` | 只选择7Z |
-| `ofTar()` | 只选择TAR |
-| `ofGz()` | 只选择GZ |
-| `ofBz2()` | 只选择BZ2 |
-| `ofIso()` | 只选择ISO |
-| `convertToPathList(list)` | 将 `MediaEntity` 列表转换为路径列表 |
+| 方法名                         | 描述                        |
+|-----------------------------|---------------------------|
+| `with(activity)`            | 使用 `FragmentActivity` 初始化 |
+| `with(fragment)`            | 使用 `Fragment` 初始化         |
+| `ofImage()`                 | 只选择图片                     |
+| `ofVideo()`                 | 只选择视频                     |
+| `ofAll()`                   | 选择图片和视频                   |
+| `ofAllWithGif()`            | 选择图片、视频和GIF               |
+| `ofGif()`                   | 只选择GIF                    |
+| `ofAudio()`                 | 只选择音频                     |
+| `ofDocument()`              | 选择所有文档类型                  |
+| `ofPdf()`                   | 只选择PDF                    |
+| `ofDoc()`                   | 只选择DOC和DOCX               |
+| `ofPpt()`                   | 只选择PPT和PPTX               |
+| `ofExcel()`                 | 只选择XLS和XLSX               |
+| `ofTxt()`                   | 只选择TXT                    |
+| `ofApk()`                   | 只选择APK                    |
+| `ofZipAll()`                | 选择所有压缩包类型                 |
+| `ofZip()`                   | 只选择ZIP                    |
+| `ofRar()`                   | 只选择RAR                    |
+| `of7Z()`                    | 只选择7Z                     |
+| `ofTar()`                   | 只选择TAR                    |
+| `ofGz()`                    | 只选择GZ                     |
+| `ofBz2()`                   | 只选择BZ2                    |
+| `ofIso()`                   | 只选择ISO                    |
+| `convertToPathList(list)`   | 将 `MediaEntity` 列表转换为路径列表 |
 | `convertToEntityList(list)` | 将路径列表转换为 `MediaEntity` 列表 |
 
 ### Builder
 
-| 方法名 | 描述 |
-| --- | --- |
-| `setSelectType(type)` | 设置选择的文件类型 |
-| `setMaxSelectNumber(num)` | 设置最大选择数量 |
-| `setMaxFileSize(size)` | 设置最大文件大小（字节） |
-| `setMinFileSize(size)` | 设置最小文件大小（字节） |
-| `setSlideChooseEnable(enable)` | 是否启用滑动选择，默认 `true` |
-| `setSingleClickEnable(enable)` | 是否启用单选立即返回，默认 `false`。仅在 `maxSelectNumber` 为1时生效 |
-| `setSelectedList(list)` | 设置已选中的 `MediaEntity` 列表 |
-| `setSelectedPathList(list)` | 设置已选中的文件路径列表 |
-| `setUiConfig(config)` | 设置自定义UI配置 |
-| `setOnSelectCallback(callback)` | 设置选择结果回调 |
-| `start()` | 启动选择器 |
+| 方法名                             | 描述                                               |
+|---------------------------------|--------------------------------------------------|
+| `setSelectType(type)`           | 设置选择的文件类型                                        |
+| `setMaxSelectNumber(num)`       | 设置最大选择数量                                         |
+| `setMaxFileSize(size)`          | 设置最大文件大小（字节）                                     |
+| `setMinFileSize(size)`          | 设置最小文件大小（字节）                                     |
+| `setSlideChooseEnable(enable)`  | 是否启用滑动选择，默认 `true`                               |
+| `setSingleClickEnable(enable)`  | 是否启用单选立即返回，默认 `false`。仅在 `maxSelectNumber` 为1时生效 |
+| `setSelectedList(list)`         | 设置已选中的 `MediaEntity` 列表                          |
+| `setSelectedPathList(list)`     | 设置已选中的文件路径列表                                     |
+| `setUiConfig(config)`           | 设置自定义UI配置                                        |
+| `setOnSelectCallback(callback)` | 设置选择结果回调                                         |
+| `start()`                       | 启动选择器                                            |
 
 ### UI 自定义配置 (FilePickerUIConfig)
 
@@ -214,25 +215,25 @@ val uiConfig = FilePickerUIConfig().apply {
 }
 ```
 
-| 属性 | 类型 | 描述 | 默认值 |
-| --- | --- | --- | --- |
-| `isHideSelectTab` | `Boolean` | 是否隐藏顶部分类Tab | `false` |
-| `confirmBtnText` | `String` | 确定按钮的文本 | `"确定"` |
-| `isPreviewPageIndexMode` | `Boolean` | 预览页面是否显示页码 | `true` |
-| `allAlbumName` | `String` | “全部”文件夹的显示名称 | `"全部"` |
-| `previewText` | `String` | 预览页面的标题 | `"预览"` |
-| `isShowBottomPreviewText` | `Boolean` | 是否显示底部预览按钮 | `true` |
-| `previewSelectText` | `String` | 预览页面底部“选择”按钮文本 | `"选择"` |
-| `originalText` | `String` | “原图”选项的文本 | `"原图"` |
-| `isShowOriginal` | `Boolean` | 是否显示“原图”选项 | `true` |
-| `isOriginalChecked` | `Boolean` | “原图”选项是否默认选中 | `false` |
-| `isShowHomePageSelectedBottomListWidget` | `Boolean` | 是否显示主页底部已选列表 | `true` |
-| `isShowSelectedListDeleteIcon` | `Boolean` | 是否显示已选列表项的删除按钮 | `false` |
-| `selectedListDeleteIconResId` | `Int` | 已选列表项删除按钮的图标资源ID | `0` |
-| `selectedListDeleteIconBackgroundColor` | `Int` | 已选列表项删除按钮的背景色 | `Color.TRANSPARENT` |
-| `atLeastSelectOneToastContent` | `String` | 未选择任何文件时的提示 | `"至少选择一个"` |
-| `selectMaxNumberOverToastContent` | `String` | 超出最大选择数量时的提示 | `"已达到最大选择数量"` |
-| `folderNickNameMap` | `HashMap<String, String>` | 文件夹名称映射，用于自定义显示名称 | `emptyHashMap()` |
+| 属性                                       | 类型                        | 描述                | 默认值                 |
+|------------------------------------------|---------------------------|-------------------|---------------------|
+| `isHideSelectTab`                        | `Boolean`                 | 是否隐藏顶部分类Tab       | `false`             |
+| `confirmBtnText`                         | `String`                  | 确定按钮的文本           | `"确定"`              |
+| `isPreviewPageIndexMode`                 | `Boolean`                 | 预览页面是否显示页码        | `true`              |
+| `allAlbumName`                           | `String`                  | “全部”文件夹的显示名称      | `"全部"`              |
+| `previewText`                            | `String`                  | 预览页面的标题           | `"预览"`              |
+| `isShowBottomPreviewText`                | `Boolean`                 | 是否显示底部预览按钮        | `true`              |
+| `previewSelectText`                      | `String`                  | 预览页面底部“选择”按钮文本    | `"选择"`              |
+| `originalText`                           | `String`                  | “原图”选项的文本         | `"原图"`              |
+| `isShowOriginal`                         | `Boolean`                 | 是否显示“原图”选项        | `true`              |
+| `isOriginalChecked`                      | `Boolean`                 | “原图”选项是否默认选中      | `false`             |
+| `isShowHomePageSelectedBottomListWidget` | `Boolean`                 | 是否显示主页底部已选列表      | `true`              |
+| `isShowSelectedListDeleteIcon`           | `Boolean`                 | 是否显示已选列表项的删除按钮    | `false`             |
+| `selectedListDeleteIconResId`            | `Int`                     | 已选列表项删除按钮的图标资源ID  | `0`                 |
+| `selectedListDeleteIconBackgroundColor`  | `Int`                     | 已选列表项删除按钮的背景色     | `Color.TRANSPARENT` |
+| `atLeastSelectOneToastContent`           | `String`                  | 未选择任何文件时的提示       | `"至少选择一个"`          |
+| `selectMaxNumberOverToastContent`        | `String`                  | 超出最大选择数量时的提示      | `"已达到最大选择数量"`       |
+| `folderNickNameMap`                      | `HashMap<String, String>` | 文件夹名称映射，用于自定义显示名称 | `emptyHashMap()`    |
 
 ---
 
@@ -261,17 +262,30 @@ val uiConfig = FilePickerUIConfig().apply {
 感谢你们的无私奉献，让开发变得更加高效和有趣！
 
 ## 升级日志
+
+### 5.9.0
+
+- 解决选择图片过多，intent超过1M的问题。随便选无上限
+- 优化index数字过大展示不全的问题。目前支持到 99999 张
+- 增加文件夹别名设置setUiConfig中folderNickNameMap里自行添加，默认不添加。也可做翻译文件夹用。仅文件夹哦。
+- 其他的UI上的文字都在FilePickerUIConfig中有对应属性，请仔细查看文档。
+
+
 ### 5.8.0 stable版本
+
 - 修复最后一行选中图片被遮挡的问题
 - 优化放大图标，更好看了。
 
 ### 5.7.0
+
 - 优化过多图片首屏展示慢的问题。
 
-### 5.6.3 
+### 5.6.3
+
 - 修复音频播放放到后台还在继续的问题。
 
 ### 5.6.2
+
 - 适配xwidget的工具类，适配底部导航栏。xwidget库务必使用最新 5.6.2 版本。
 - 为了让版本 跟[xwidget](https://github.com/pichsy/xwidget)关联，方便使用和记忆，版本号跟[xwidget](https://github.com/pichsy/xwidget)统一了。
 
@@ -282,7 +296,6 @@ val uiConfig = FilePickerUIConfig().apply {
 ### 4.6.0
 
 - 新版UI 点击更丝滑
-
 
 ### 4.5.1
 
