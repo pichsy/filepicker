@@ -66,7 +66,7 @@ class ImagePreviewDialog(
         }
 
         if (url.isNullOrEmpty()) {
-            Toast.makeText(context.applicationContext, "请传入正确的视频地址", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context.applicationContext, "请传入正确的图片地址", Toast.LENGTH_SHORT).show()
             dismiss()
             return
         }
@@ -75,7 +75,7 @@ class ImagePreviewDialog(
             dismiss()
         }
 
-        binding.tvTitle.text = title ?: "视频预览"
+        binding.tvTitle.text = title ?: "图片预览"
 
         binding.photoView.setOnClickListener {
             isShowToolbarFlow.update { isShowToolbarFlow.value.not() }

@@ -67,11 +67,7 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
                 else -> FilePicker.ofAll()
             }
 
-            if (type == FilePicker.ofAll()
-                || type == FilePicker.ofVideo()
-                || type == FilePicker.ofImage()
-                || type == FilePicker.ofAudio()
-            ) {
+            if (type == FilePicker.ofAll() || type == FilePicker.ofVideo() || type == FilePicker.ofImage() || type == FilePicker.ofAudio()) {
                 // 权限请求
                 XXPermissions.with(this).unchecked().permission(
                     Permission.READ_MEDIA_IMAGES,
@@ -114,11 +110,16 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
                     XLog.d("MainActivity", "Clicked on image: ${mediaEntity.path}")
                     if (mediaEntity.isVideo()) {
                         VideoPreviewDialog(
-                            this@MainActivity,
-                            mediaEntity.path,
+                            context = this@MainActivity,
+                            title = "视频预览",
+                            videoUrl = mediaEntity.path,
                         ).showPopupWindow()
                     } else {
-                        ImagePreviewDialog(this@MainActivity, mediaEntity.path).showPopupWindow()
+                        ImagePreviewDialog(
+                            context = this@MainActivity,
+                            title = "图片预览",
+                            url = mediaEntity.path
+                        ).showPopupWindow()
                     }
                 }
             }
@@ -126,11 +127,7 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
     }
 
     fun selectFile(type: String, maxSelectCount: Int, maxFileSize: Int) {
-        FilePicker.with(this)
-            .setMaxSelectNumber(maxSelectCount)
-            .setMaxFileSize(maxFileSize.toLong())
-            .setSelectType(type)
-            .setSingleClickEnable(true)
+        FilePicker.with(this).setMaxSelectNumber(maxSelectCount).setMaxFileSize(maxFileSize.toLong()).setSelectType(type).setSingleClickEnable(true)
             .setOnSelectCallback { isUseOriginal, list ->
                 XLog.d("FilePicker", "Selected files: ${list.size}")
                 binding.recyclerView.models = list
@@ -147,11 +144,7 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
     }
 
     fun selectFilePaging(type: String, maxSelectCount: Int, maxFileSize: Int) {
-        FilePicker.with(this)
-            .setMaxSelectNumber(maxSelectCount)
-            .setMaxFileSize(maxFileSize.toLong())
-            .setSelectType(type)
-            .setSingleClickEnable(true)
+        FilePicker.with(this).setMaxSelectNumber(maxSelectCount).setMaxFileSize(maxFileSize.toLong()).setSelectType(type).setSingleClickEnable(true)
             .setOnSelectCallback { isUseOriginal, list ->
                 XLog.d("FilePicker", "Selected files: ${list.size}")
 
