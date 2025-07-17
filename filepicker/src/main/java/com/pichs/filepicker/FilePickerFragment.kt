@@ -520,7 +520,9 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                 }
 
                 // 判断是否是最后一行
-                if (modelPosition >= viewModel.currentFolderDataList.value.size && (viewModel.getSelectedCount() + viewModel.tempSelectData.size) > 0) {
+                if (modelPosition == (itemCount - 1)
+                    && (viewModel.getSelectedCount() + viewModel.tempSelectData.size) > 0
+                ) {
                     itemBinding.clRoot.updateLayoutParams<ViewGroup.MarginLayoutParams> {
                         bottomMargin = XDisplayHelper.dp2px(requireContext(), 80f)
                     }
@@ -636,7 +638,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                 }
 
                 // 判断是否是最后一行
-                val lastRowStart = itemCount - itemCount % 4
+                var lastRowStart = itemCount - (itemCount % 4).let { if (it == 0) 4 else it }
 
                 FilePickerLog.d("FilePickerFragment7777", "modelPosition:$modelPosition, lastRowStart:$lastRowStart, itemCount:$itemCount")
 
