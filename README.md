@@ -35,7 +35,7 @@
 ```kotlin
 dependencies {
     // 基础组件库 （必须）
-    implementation("com.gitee.pichs:filepicker:5.7.0")
+    implementation("com.gitee.pichs:filepicker:5.8.0")
 
     // 基础组件库 （必须）
     implementation("com.gitee.pichs:xwidget:5.6.3")
@@ -285,6 +285,10 @@ FilePicker.with(this)
 感谢你们的无私奉献，让开发变得更加高效和有趣！
 
 ## 升级日志
+### 5.8.0 stable版本
+- 修复最后一行选中图片被遮挡的问题
+- 优化放大图标，更好看了。
+
 ### 5.7.0
 - 优化过多图片首屏展示慢的问题。
 
