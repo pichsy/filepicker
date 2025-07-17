@@ -80,183 +80,159 @@ dependencies {
 * **支持多选、最大数量控制、文件大小限制**
 * **支持返回原图选项**
 * **支持 UI 文案与界面定制**
+* **支持滑动选择**
+* **支持单选立即返回**
+* **支持预选列表**
 
 ---
 
 ## 基本用法
 
-### 1. Activity 中启动
+### 1. 在 Activity 中启动
 
 ```kotlin
 FilePicker.with(this) // this: FragmentActivity
-    .setSelectType(FilePicker.ofImage()) // 选择类型，图片、视频、全部
-    .setMaxSelectNumber(9) // 最大选择数量
-    .setOnSelectCallback { isUseOriginal, list ->
-        // 选择完成回调
-        println("是否使用原图: $isUseOriginal")
-        list.forEach {
-            println("文件路径: ${it.path}")
+    .setSelectType(FilePicker.ofImage()) // 设置选择类型
+    .setMaxSelectNumber(9) // 设置最大选择数量
+    .setSlideChooseEnable(true) // 开启滑动选择
+    .setOnSelectCallback(object : OnSelectCallback {
+        override fun onSelectedCallback(isUseOriginal: Boolean, list: MutableList<MediaEntity>) {
+            // 选择完成回调
+            println("是否使用原图: $isUseOriginal")
+            list.forEach {
+                println("文件路径: ${it.path}")
+            }
         }
-    }
+        override fun onCancel() {
+            // 取消选择
+        }
+    })
+   .setUiConfig(
+      FilePickerUIConfig(
+         isHideSelectTab = false,
+         allAlbumName = "全部",
+         confirmBtnText = "发送",
+         isShowOriginal = false,
+         isPreviewPageIndexMode = true,
+         isShowSelectedListDeleteIcon = true,
+         folderNickNameMap = hashMapOf(
+            "DCIM" to "相册"
+         )
+      )
+   ).
     .start()
 ```
 
----
-
-### 2. Fragment 中启动
+### 2. 在 Fragment 中启动
 
 ```kotlin
 FilePicker.with(this) // this: Fragment
-    .setSelectType(FilePicker.ofAll())
+    .setSelectType(FilePicker.ofImage())
     .setMaxSelectNumber(5)
     .setMaxFileSize(50 * 1024 * 1024) // 50MB
-    .setMinFileSize(10 * 1024) // 10KB
-    .setSelectedList(existingList) // 已选列表（MediaEntity对象）
+    .setMinFileSize(1 * 1024) // 1KB
     .setOnSelectCallback { isUseOriginal, list ->
-        println("是否使用原图: $isUseOriginal")
+        // 选择完成回调
     }
+   .setUiConfig(
+      FilePickerUIConfig(
+         isHideSelectTab = true,
+         allAlbumName = "全部",
+         confirmBtnText = "下一步",
+         isShowOriginal = false,
+         isPreviewPageIndexMode = true,
+         isShowSelectedListDeleteIcon = true,
+         folderNickNameMap = hashMapOf(
+            "DICM" to "相机",
+            "Download" to "下载"
+         )
+      )
+   ).
     .start()
 ```
 
 ---
 
-## 选择类型
+## API 文档
 
-**注意**：选择图片、视频、音频时，申请读写权限即可。选择其他文件类型（如文档、APK、压缩包等）必须申请**文件管理权限**，否则无法获取数据。
+### FilePicker
 
-| 方法                          | 说明            |
-|-----------------------------|---------------|
-| `FilePicker.ofImage()`      | 只选择图片         |
-| `FilePicker.ofVideo()`      | 只选择视频         |
-| `FilePicker.ofAudio()`      | 只选择音频         |
-| `FilePicker.ofAll()`        | 图片、视频均可选择     |
-| `FilePicker.ofAllWithGif()` | 图片、视频、Gif均可选择 |
-| `FilePicker.ofGif()`        | 只选择Gif        |
-| `FilePicker.ofDocument()`   | 选择所有文档类型      |
-| `FilePicker.ofPdf()`        | 只选择PDF文件      |
-| `FilePicker.ofDoc()`        | 只选择Doc/Docx文件 |
-| `FilePicker.ofPpt()`        | 只选择Ppt/Pptx文件 |
-| `FilePicker.ofExcel()`      | 只选择Xls/Xlsx文件 |
-| `FilePicker.ofTxt()`        | 只选择Txt文件      |
-| `FilePicker.ofApk()`        | 只选择Apk文件      |
-| `FilePicker.ofZipAll()`     | 选择所有压缩包类型     |
-| `FilePicker.ofZip()`        | 只选择Zip文件      |
-| `FilePicker.ofRar()`        | 只选择Rar文件      |
-| `FilePicker.of7Z()`         | 只选择7z文件       |
-| `FilePicker.ofTar()`        | 只选择Tar文件      |
-| `FilePicker.ofGz()`         | 只选择Gz文件       |
-| `FilePicker.ofBz2()`        | 只选择Bz2文件      |
-| `FilePicker.ofIso()`        | 只选择Iso文件      |
+| 方法名 | 描述 |
+| --- | --- |
+| `with(activity)` | 使用 `FragmentActivity` 初始化 |
+| `with(fragment)` | 使用 `Fragment` 初始化 |
+| `ofImage()` | 只选择图片 |
+| `ofVideo()` | 只选择视频 |
+| `ofAll()` | 选择图片和视频 |
+| `ofAllWithGif()` | 选择图片、视频和GIF |
+| `ofGif()` | 只选择GIF |
+| `ofAudio()` | 只选择音频 |
+| `ofDocument()` | 选择所有文档类型 |
+| `ofPdf()` | 只选择PDF |
+| `ofDoc()` | 只选择DOC和DOCX |
+| `ofPpt()` | 只选择PPT和PPTX |
+| `ofExcel()` | 只选择XLS和XLSX |
+| `ofTxt()` | 只选择TXT |
+| `ofApk()` | 只选择APK |
+| `ofZipAll()` | 选择所有压缩包类型 |
+| `ofZip()` | 只选择ZIP |
+| `ofRar()` | 只选择RAR |
+| `of7Z()` | 只选择7Z |
+| `ofTar()` | 只选择TAR |
+| `ofGz()` | 只选择GZ |
+| `ofBz2()` | 只选择BZ2 |
+| `ofIso()` | 只选择ISO |
+| `convertToPathList(list)` | 将 `MediaEntity` 列表转换为路径列表 |
+| `convertToEntityList(list)` | 将路径列表转换为 `MediaEntity` 列表 |
 
----
+### Builder
 
-## 常用配置参数
+| 方法名 | 描述 |
+| --- | --- |
+| `setSelectType(type)` | 设置选择的文件类型 |
+| `setMaxSelectNumber(num)` | 设置最大选择数量 |
+| `setMaxFileSize(size)` | 设置最大文件大小（字节） |
+| `setMinFileSize(size)` | 设置最小文件大小（字节） |
+| `setSlideChooseEnable(enable)` | 是否启用滑动选择，默认 `true` |
+| `setSingleClickEnable(enable)` | 是否启用单选立即返回，默认 `false`。仅在 `maxSelectNumber` 为1时生效 |
+| `setSelectedList(list)` | 设置已选中的 `MediaEntity` 列表 |
+| `setSelectedPathList(list)` | 设置已选中的文件路径列表 |
+| `setUiConfig(config)` | 设置自定义UI配置 |
+| `setOnSelectCallback(callback)` | 设置选择结果回调 |
+| `start()` | 启动选择器 |
 
-| 配置方法                                              | 说明                                | 默认值     |
-|---------------------------------------------------|-----------------------------------|---------|
-| `setSelectType(type: String)`                     | 选择类型：图片、视频、全部等                    | 全部      |
-| `setMaxSelectNumber(number: Int)`                 | 最大可选数量，0为不限制                      | 0       |
-| `setMaxFileSize(size: Long)`                      | 文件最大大小（字节）                        | 不限制     |
-| `setMinFileSize(size: Long)`                      | 文件最小大小（字节）                        | 1       |
-| `setSelectedList(list: MutableList<MediaEntity>)` | 已选择的文件列表，初始化用                     | 空列表     |
-| `setSelectedPathList(list: List<String>)`         | 已选择的文件路径列表，自动转换为 `MediaEntity`    | 空列表     |
-| `setSingleClickEnable(enable: Boolean)`           | 单击立即返回，仅在 `maxSelectNumber=1` 时有效 | `false` |
-| `setSlideChooseEnable(enable: Boolean)`           | 是否启用滑动选择                          | `true`  |
-| `setUiConfig(config: FilePickerUIConfig)`         | 界面文案与UI配置                         | 默认配置    |
-| `setOnSelectCallback(callback: OnSelectCallback)` | 选择完成回调                            | 必填      |
+### UI 自定义配置 (FilePickerUIConfig)
 
----
-
-## 回调说明
+通过 `FilePicker.with(this).setUiConfig(uiConfig)` 进行设置。
 
 ```kotlin
-fun interface OnSelectCallback {
-    fun onCallback(isUseOriginal: Boolean, list: MutableList<MediaEntity>)
+val uiConfig = FilePickerUIConfig().apply {
+    isHideSelectTab = false
+    confirmBtnText = "完成"
+    allAlbumName = "所有文件"
+    // ... 更多配置
 }
 ```
 
-* `isUseOriginal`: 是否选择了“原图”
-* `list`: 最终选择的文件列表
-
----
-
-## 工具方法
-
-| 方法                                                             | 说明                         |
-|----------------------------------------------------------------|----------------------------|
-| `FilePicker.convertToPathList(list: MutableList<MediaEntity>)` | 将选中的 `MediaEntity` 转换为路径列表 |
-| `FilePicker.convertToEntityList(list: List<String>)`           | 路径列表转换为 `MediaEntity` 列表   |
-
----
-
-## UI 文案自定义
-
-通过 `FilePickerUIConfig` 配置界面显示：
-
-```kotlin
-val config = FilePickerUIConfig(
-    confirmBtnText = "完成",
-    previewText = "预览文件",
-    isShowOriginal = true,
-    originalText = "原图查看",
-    atLeastSelectOneToastContent = "请至少选择一项"
-)
-
-FilePicker.with(this)
-    .setUiConfig(config)
-    .setMaxSelectNumber(3)
-    .setOnSelectCallback { isUseOriginal, list -> }
-    .start()
-```
-
----
-
-## 注意事项
-
-* 必须在 `FragmentActivity` 或 `Fragment` 中调用
-* `setOnSelectCallback` 为必填，否则无法接收结果
-* 已选列表支持预填充，避免重复选择
-* 支持多次调用，内部通过单例模式管理
-
----
-
-## 典型示例
-
-```kotlin
-    FilePicker.with(this)
-    .setSelectType(FilePicker.ofImage())
-    .setMaxSelectNumber(5)
-    .setMinFileSize(1024) // 最小1KB
-    .setMaxFileSize(10 * 1024 * 1024) // 最大10MB
-    .setOnSelectCallback { isUseOriginal, list ->
-        val paths = FilePicker.convertToPathList(list)
-        println("选中文件路径: $paths")
-    }
-    .start()
-```
-
----
-
-### 三、UIConfig解释
-
-| 字段名                                      | 类型        | 默认值                 | 说明                                      |
-|------------------------------------------|-----------|---------------------|-----------------------------------------|
-| `isHideSelectTab`                        | `Boolean` | `false`             | 在 `ofAll()` 时是否隐藏顶部的 "图片/视频" 切换Tab      |
-| `confirmBtnText`                         | `String`  | `"确定"`              | 确认按钮文本，默认 "确定"                          |
-| `isPreviewPageIndexMode`                 | `Boolean` | `true`              | 预览页面是否显示选中索引。`true` 显示序号，`false` 显示对号 ✅ |
-| `allAlbumName`                           | `String`  | `"全部"`              | 文件夹选择弹窗中，"全部"相册的名称                      |
-| `previewText`                            | `String`  | `"预览"`              | 预览页面标题文本                                |
-| `isShowBottomPreviewText`                | `Boolean` | `true`              | 是否显示底部 "预览" 按钮                          |
-| `previewSelectText`                      | `String`  | `"选择"`              | 预览页面的选择按钮文本                             |
-| `originalText`                           | `String`  | `"原图"`              | 原图选项的文本内容                               |
-| `isShowOriginal`                         | `Boolean` | `true`              | 是否显示原图选项                                |
-| `isOriginalChecked`                      | `Boolean` | `false`             | 原图选项是否默认勾选                              |
-| `isShowHomePageSelectedBottomListWidget` | `Boolean` | `true`              | 是否显示主界面的底部已选列表（仅对图片和视频有效）               |
-| `isShowSelectedListDeleteIcon`           | `Boolean` | `false`             | 是否展示选中列表中的删除按钮                          |
-| `selectedListDeleteIconResId`            | `Int`     | `0`                 | 选中列表删除按钮的图标资源ID                         |
-| `selectedListDeleteIconBackgroundColor`  | `Int`     | `Color.TRANSPARENT` | 选中列表中删除按钮的背景颜色                          |
-| `atLeastSelectOneToastContent`           | `String`  | `"至少选择一个"`          | 最少选择一个文件时的提示文本                          |
-| `selectMaxNumberOverToastContent`        | `String`  | `"已达到最大选择数量"`       | 达到最大选择数量限制时的提示文本                        |
+| 属性 | 类型 | 描述 | 默认值 |
+| --- | --- | --- | --- |
+| `isHideSelectTab` | `Boolean` | 是否隐藏顶部分类Tab | `false` |
+| `confirmBtnText` | `String` | 确定按钮的文本 | `"确定"` |
+| `isPreviewPageIndexMode` | `Boolean` | 预览页面是否显示页码 | `true` |
+| `allAlbumName` | `String` | “全部”文件夹的显示名称 | `"全部"` |
+| `previewText` | `String` | 预览页面的标题 | `"预览"` |
+| `isShowBottomPreviewText` | `Boolean` | 是否显示底部预览按钮 | `true` |
+| `previewSelectText` | `String` | 预览页面底部“选择”按钮文本 | `"选择"` |
+| `originalText` | `String` | “原图”选项的文本 | `"原图"` |
+| `isShowOriginal` | `Boolean` | 是否显示“原图”选项 | `true` |
+| `isOriginalChecked` | `Boolean` | “原图”选项是否默认选中 | `false` |
+| `isShowHomePageSelectedBottomListWidget` | `Boolean` | 是否显示主页底部已选列表 | `true` |
+| `isShowSelectedListDeleteIcon` | `Boolean` | 是否显示已选列表项的删除按钮 | `false` |
+| `selectedListDeleteIconResId` | `Int` | 已选列表项删除按钮的图标资源ID | `0` |
+| `selectedListDeleteIconBackgroundColor` | `Int` | 已选列表项删除按钮的背景色 | `Color.TRANSPARENT` |
+| `atLeastSelectOneToastContent` | `String` | 未选择任何文件时的提示 | `"至少选择一个"` |
+| `selectMaxNumberOverToastContent` | `String` | 超出最大选择数量时的提示 | `"已达到最大选择数量"` |
+| `folderNickNameMap` | `HashMap<String, String>` | 文件夹名称映射，用于自定义显示名称 | `emptyHashMap()` |
 
 ---
 

@@ -145,7 +145,8 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
                     isPreviewPageIndexMode = true,
                     isShowSelectedListDeleteIcon = true,
                     folderNickNameMap = hashMapOf(
-                        "DCIM" to "相册"
+                        "DCIM" to "相册",
+                        "Download" to "下载"
                     )
                 )
             ).start()
