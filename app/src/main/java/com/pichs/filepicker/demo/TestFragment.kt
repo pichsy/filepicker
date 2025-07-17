@@ -62,12 +62,7 @@ class TestFragment : BindingFragment<FragmentMainBinding>() {
 
 
     private fun initListener() {
-//        VideoPreviewActivity:
-        binding.previewVideo.fastClick {
-            val intent = Intent(requireContext(), VideoPreviewActivity::class.java)
-//            intent.putExtra("videoUrl", "https://jianliu.oss-cn-hangzhou.aliyuncs.com/jianliu/render_video/ed96ba31-6902-4acd-bae6-13a4a9d46fde.mp4")
-            startActivity(intent)
-        }
+
     }
 
     private fun initRecyclerView() {

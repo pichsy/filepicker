@@ -28,28 +28,6 @@
                 app:layout_constraintTop_toTopOf="parent" />
 
         </com.pichs.xwidget.view.XConstraintLayout>
-
-        <com.google.android.material.tabs.TabLayout
-            android:id="@+id/tab_layout"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:background="#121212"
-            app:tabGravity="fill"
-            app:tabIndicatorAnimationDuration="200"
-            app:tabIndicatorAnimationMode="elastic"
-            app:tabIndicatorColor="#fff"
-            app:tabIndicatorFullWidth="false"
-            app:tabIndicatorGravity="bottom"
-            app:tabIndicatorHeight="2dp"
-            app:tabInlineLabel="true"
-            app:tabMode="fixed"
-            app:tabRippleColor="#0000"
-            app:tabSelectedTextAppearance="@style/TabSelectedTextAppearance"
-            app:tabSelectedTextColor="#fff"
-            app:tabTextAppearance="@style/TabUnselectedTextAppearance"
-            app:tabUnboundedRipple="false" />
-
-
         <!-- 数量 maxSelectCount 输入框 -->
         <LinearLayout
             android:layout_width="match_parent"
@@ -174,38 +152,6 @@
             android:backgroundTint="#E60B4D"
             android:text="开始"
             android:textColor="#fff" />
-        <!-- 开始按钮 -->
-        <androidx.appcompat.widget.AppCompatButton
-            android:id="@+id/btn_start_paging"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_margin="16dp"
-            android:layout_marginStart="56dp"
-            android:layout_marginEnd="56dp"
-            android:backgroundTint="#E60B4D"
-            android:text="开始paging"
-            android:textAllCaps="false"
-            android:textColor="#fff" />
-
-        <!-- 开始按钮 -->
-        <androidx.appcompat.widget.AppCompatButton
-            android:id="@+id/btn_file_query"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_margin="16dp"
-            android:layout_marginStart="56dp"
-            android:layout_marginEnd="56dp"
-            android:backgroundTint="#E60B4D"
-            android:text="FileQuery"
-            android:textAllCaps="false"
-            android:textColor="#fff" />
-
-
-        <com.pichs.xwidget.view.XTextView
-            android:id="@+id/tv_result"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:textColor="#fff" />
 
         <!-- 开始按钮 -->
         <androidx.appcompat.widget.AppCompatButton
@@ -220,44 +166,6 @@
             android:textAllCaps="false"
             android:textColor="#fff" />
 
-        <!-- Paging3 Demo 按钮 -->
-        <androidx.appcompat.widget.AppCompatButton
-            android:id="@+id/btn_paging_demo"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_margin="16dp"
-            android:layout_marginStart="56dp"
-            android:layout_marginEnd="56dp"
-            android:backgroundTint="#4CAF50"
-            android:text="Paging3 分页加载演示"
-            android:textAllCaps="false"
-            android:textColor="#fff" />
-
-        <!-- 图片分页 Demo 按钮 -->
-        <androidx.appcompat.widget.AppCompatButton
-            android:id="@+id/btn_image_paging_demo"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_margin="16dp"
-            android:layout_marginStart="56dp"
-            android:layout_marginEnd="56dp"
-            android:backgroundTint="#FF9800"
-            android:text="图片分页加载演示(无上限)"
-            android:textAllCaps="false"
-            android:textColor="#fff" />
-
-        <!-- 本地图库 Paging3 Demo 按钮 -->
-        <androidx.appcompat.widget.AppCompatButton
-            android:id="@+id/btn_local_media_paging_demo"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_margin="16dp"
-            android:layout_marginStart="56dp"
-            android:layout_marginEnd="56dp"
-            android:backgroundTint="#9C27B0"
-            android:text="本地图库 Paging3 演示"
-            android:textAllCaps="false"
-            android:textColor="#fff" />
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recycler_view"

@@ -50,7 +50,7 @@ dependencies {
     implementation(libs.androidx.paging.runtime)
 
     // SwipeRefreshLayout
-    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
+    implementation(libs.androidx.swiperefreshlayout)
 
     //#好用必不可少的三方库
     implementation(libs.xwidget)
