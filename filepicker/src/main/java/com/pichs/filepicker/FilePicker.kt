@@ -4,10 +4,9 @@ import android.app.Activity.RESULT_OK
 import android.content.Intent
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
-import androidx.lifecycle.DefaultLifecycleObserver
-import androidx.lifecycle.LifecycleOwner
 import com.pichs.filepicker.empty.CallbackFragment
 import com.pichs.filepicker.entity.MediaEntity
+import kotlinx.coroutines.flow.update
 import kotlin.collections.toMutableList
 
 /**
@@ -17,7 +16,10 @@ import kotlin.collections.toMutableList
  * 使用时请先自行申请权限。方便个人定制，不会写到库里，定制起来太麻烦。
  */
 fun interface OnSelectCallback {
-    fun onCallback(isUseOriginal: Boolean, list: MutableList<MediaEntity>)
+    fun onSelectedCallback(isUseOriginal: Boolean, list: MutableList<MediaEntity>)
+    fun onCancel() {
+        // 取消选择时的回调
+    }
 }
 
 class FilePicker {
@@ -279,12 +281,6 @@ class FilePicker {
         builder?.let { bd ->
             if (bd.getFragment() != null) {
                 bd.getFragment()?.apply {
-                    lifecycle.addObserver(object : DefaultLifecycleObserver {
-                        override fun onDestroy(owner: LifecycleOwner) {
-
-
-                        }
-                    })
                     context?.let { ctx ->
                         val fm = childFragmentManager
                         val tag = "CallbackFragment"
@@ -295,11 +291,16 @@ class FilePicker {
                         existingFragment?.apply {
                             onResult = { resultCode: Int, data: Intent? ->
                                 if (resultCode == RESULT_OK) {
-                                    val resultData = data?.getParcelableArrayListExtra<MediaEntity>("selectedDataList")?.toMutableList()
+                                    val resultData = FilePickerViewModel.finalSelectedDataList.toMutableList()
+//                                    val resultData = data?.getParcelableArrayListExtra<MediaEntity>("selectedDataList")?.toMutableList()
+
                                     val isUseOriginal = data?.getBooleanExtra("isUseOriginal", false) == true
-                                    if (resultData != null) {
-                                        builder?.mOnSelectCallback?.onCallback(isUseOriginal, resultData)
-                                    }
+
+                                    builder?.mOnSelectCallback?.onSelectedCallback(isUseOriginal, resultData)
+                                    FilePickerViewModel.clearAll()
+                                } else {
+                                    builder?.mOnSelectCallback?.onCancel()
+                                    FilePickerViewModel.clearAll()
                                 }
                             }
                             fm.beginTransaction().add(this, tag).commitNowAllowingStateLoss()
@@ -311,7 +312,8 @@ class FilePicker {
                             intent.putExtra("uiConfig", bd.mUiConfig)
                             intent.putExtra("singleClickEnable", bd.mSingleClickEnable)
                             intent.putExtra("slideChooseEnable", bd.mSlideChooseEnable)
-                            intent.putParcelableArrayListExtra("selectedDataList", ArrayList(bd.mSelectedList))
+                            FilePickerViewModel.userUseSelectDataList.clear()
+                            FilePickerViewModel.userUseSelectDataList.addAll(bd.mSelectedList)
                             launch(intent)
                         }
                     }
@@ -319,12 +321,7 @@ class FilePicker {
 
             } else {
                 bd.getActivity()?.let { act ->
-                    act.lifecycle.addObserver(object : DefaultLifecycleObserver {
-                        override fun onDestroy(owner: LifecycleOwner) {
-                            // Clean up if needed
 
-                        }
-                    })
                     val fm = act.supportFragmentManager
                     val tag = "CallbackFragment"
                     existingFragment = fm.findFragmentByTag(tag) as? CallbackFragment
@@ -334,11 +331,14 @@ class FilePicker {
                     existingFragment?.apply {
                         onResult = { resultCode: Int, data: Intent? ->
                             if (resultCode == RESULT_OK) {
-                                val resultData = data?.getParcelableArrayListExtra<MediaEntity>("selectedDataList")?.toMutableList()
+                                val resultData = FilePickerViewModel.finalSelectedDataList.toMutableList()
+//                                val resultData = data?.getParcelableArrayListExtra<MediaEntity>("selectedDataList")?.toMutableList()
                                 val isUseOriginal = data?.getBooleanExtra("isUseOriginal", false) == true
-                                if (resultData != null) {
-                                    builder?.mOnSelectCallback?.onCallback(isUseOriginal, resultData)
-                                }
+                                builder?.mOnSelectCallback?.onSelectedCallback(isUseOriginal, resultData)
+                                FilePickerViewModel.clearAll()
+                            } else {
+                                builder?.mOnSelectCallback?.onCancel()
+                                FilePickerViewModel.clearAll()
                             }
                         }
                         fm.beginTransaction().add(this, tag).commitNowAllowingStateLoss()
@@ -350,7 +350,8 @@ class FilePicker {
                         intent.putExtra("uiConfig", bd.mUiConfig)
                         intent.putExtra("singleClickEnable", bd.mSingleClickEnable)
                         intent.putExtra("slideChooseEnable", bd.mSlideChooseEnable)
-                        intent.putParcelableArrayListExtra("selectedDataList", ArrayList(bd.mSelectedList))
+                        FilePickerViewModel.userUseSelectDataList.clear()
+                        FilePickerViewModel.userUseSelectDataList.addAll(bd.mSelectedList)
                         launch(intent)
                     }
                 }

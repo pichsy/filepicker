@@ -10,6 +10,7 @@ import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DividerItemDecoration
 import com.drake.brv.utils.linear
 import com.drake.brv.utils.setup
+import com.pichs.filepicker.FilePickerUIConfig
 import com.pichs.filepicker.R
 import com.pichs.filepicker.databinding.FilePickerFolderChooseDialogBinding
 import com.pichs.filepicker.databinding.FilePickerFolderChooseDialogItemBinding
@@ -17,12 +18,37 @@ import com.pichs.filepicker.entity.MediaFolder
 import com.pichs.filepicker.loader.MediaLoader
 import razerdp.basepopup.BasePopupWindow
 
-class FolderChooseDialog(mCtx: Context, val allAlbumName:String, val list: MutableList<MediaFolder>, val currentFolder: MediaFolder?, val onSelectCallback: (MediaFolder?) -> Unit) :
+class FolderChooseDialog(
+    val mCtx: Context,
+    val list: MutableList<MediaFolder>,
+    val currentFolder: MediaFolder?,
+    val uiConfig: FilePickerUIConfig? = null,
+    val onSelectCallback: (MediaFolder?) -> Unit
+) :
     BasePopupWindow(mCtx) {
 
     private lateinit var binding: FilePickerFolderChooseDialogBinding
 
+//    private val mFolderList = mutableListOf<MediaFolder>()
+
     init {
+//        mFolderList.clear()
+//        mFolderList.addAll(list)
+//        val nameCountMap = mutableMapOf<String, Int>()
+//
+//        for ((index, folder) in mFolderList.withIndex()) {
+//            val nickName = FilePickerFileUtils.getNickName(folder.name ?: "", uiConfig)
+//            val count = nameCountMap.getOrDefault(nickName, 0)
+//            if (count > 0) {
+//                // 添加后缀，从 1 开始
+//                folder.nickName = "$nickName $count"
+//            } else {
+//                folder.nickName = nickName
+//            }
+//            // 更新出现次数
+//            nameCountMap[nickName] = count + 1
+//        }
+
         setContentView(R.layout.file_picker_folder_choose_dialog)
     }
 
@@ -55,8 +81,9 @@ class FolderChooseDialog(mCtx: Context, val allAlbumName:String, val list: Mutab
                 val item = getModel<MediaFolder>()
                 val itemBinding = getBinding<FilePickerFolderChooseDialogItemBinding>()
 
-                itemBinding.tvAlbum.text = item.name ?: ""
-                if (item.name == allAlbumName) {
+                itemBinding.tvAlbum.text = item.nickName ?: ""
+
+                if (item.tag == "all") {
                     itemBinding.tvAlbumNumber.text = "(${list.sumOf { it.mediaEntityList.size }})"
                     if (currentFolder == null) {
                         itemBinding.ivSelect.isVisible = true
@@ -65,7 +92,7 @@ class FolderChooseDialog(mCtx: Context, val allAlbumName:String, val list: Mutab
                     }
                 } else {
                     itemBinding.tvAlbumNumber.text = "(${item.mediaEntityList.size})"
-                    itemBinding.ivSelect.isVisible = currentFolder?.name == item.name
+                    itemBinding.ivSelect.isVisible = currentFolder?.folderPath == item.folderPath
                 }
 
                 val firstEntity = item.mediaEntityList.firstOrNull()
@@ -77,7 +104,7 @@ class FolderChooseDialog(mCtx: Context, val allAlbumName:String, val list: Mutab
                 }
 
                 itemBinding.root.setOnClickListener {
-                    if (item.name == allAlbumName) {
+                    if (item.tag == "all") {
                         onSelectCallback(null)
                     } else {
                         onSelectCallback(item)
@@ -86,7 +113,7 @@ class FolderChooseDialog(mCtx: Context, val allAlbumName:String, val list: Mutab
                 }
             }
         }.models = list.toMutableList().apply {
-            add(0, MediaFolder(allAlbumName, null))
+            add(0, MediaFolder(name = uiConfig?.allAlbumName ?: "全部", nickName = uiConfig?.allAlbumName ?: "全部", tag = "all"))
         }
     }
 

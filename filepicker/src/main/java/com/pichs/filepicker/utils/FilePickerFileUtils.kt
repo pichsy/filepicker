@@ -1,5 +1,6 @@
 package com.pichs.filepicker.utils
 
+import com.pichs.filepicker.FilePickerUIConfig
 import java.io.File
 
 object FilePickerFileUtils {
@@ -50,10 +51,21 @@ object FilePickerFileUtils {
         }
     }
 
-
     fun isFileInHiddenDir(path: String): Boolean {
         // 判断路径中是否有某个路径以.开头的，如果有，那么就是隐藏目录
         return path.contains("/.")
     }
 
+    /**
+     * 获取文件的昵称
+     */
+    fun getNickName(name: String, uiConfig: FilePickerUIConfig?): String {
+        if (uiConfig == null || name.isEmpty()) return name
+        uiConfig.folderNickNameMap.forEach { it ->
+            if (it.key.equals(name, true)) {
+                return it.value
+            }
+        }
+        return name
+    }
 }

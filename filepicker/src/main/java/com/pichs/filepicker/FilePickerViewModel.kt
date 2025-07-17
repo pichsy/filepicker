@@ -9,6 +9,7 @@ import com.pichs.filepicker.entity.MediaEntity
 import com.pichs.filepicker.entity.MediaFolder
 import com.pichs.filepicker.query.FileQueryHelper
 import com.pichs.filepicker.query.QueryType
+import com.pichs.filepicker.utils.FilePickerFileUtils
 import com.pichs.filepicker.utils.FilePickerLog
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -18,8 +19,24 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.updateAndGet
 import kotlinx.coroutines.launch
 import java.util.concurrent.CopyOnWriteArrayList
+import kotlin.collections.mutableListOf
 
 class FilePickerViewModel : ViewModel() {
+
+    companion object {
+
+        fun clearAll() {
+            userUseSelectDataList.clear()
+            finalSelectedDataList.clear()
+        }
+
+        /**
+         * 用户使用的选择数据列表，临时一次性的。
+         */
+        val userUseSelectDataList = mutableListOf<MediaEntity>()
+
+        val finalSelectedDataList = mutableListOf<MediaEntity>()
+    }
 
     var uiConfig: FilePickerUIConfig = FilePickerUIConfig()
 
@@ -47,10 +64,8 @@ class FilePickerViewModel : ViewModel() {
         return uiConfig.isShowHomePageSelectedBottomListWidget && (selectType.value == FilePickerSelectType.IMAGE_VIDEO || selectType.value == FilePickerSelectType.IMAGE || selectType.value == FilePickerSelectType.VIDEO || selectType.value == FilePickerSelectType.IMAGE_VIDEO_GIF || selectType.value == FilePickerSelectType.GIF)
     }
 
-    /**
-     * 用户使用的选择数据列表，临时一次性的。
-     */
-    val userUseSelectDataList = MutableStateFlow<MutableList<MediaEntity>>(mutableListOf())
+
+    val isAllDataLoaded = MutableStateFlow(false)
 
     private val _allFolderDataList = MutableStateFlow<MutableList<MediaFolder>>(mutableListOf())
     val allFolderDataList = _allFolderDataList.asStateFlow()
@@ -157,17 +172,19 @@ class FilePickerViewModel : ViewModel() {
     }
 
     fun initUserSelectDataList(folders: List<MediaFolder>) {
-        if (userUseSelectDataList.value.isEmpty()) {
+        if (userUseSelectDataList.isEmpty()) {
             return
         }
         val allData = folders.flatMap { it.mediaEntityList }.toMutableList()
-        userUseSelectDataList.value.forEach { item ->
+        userUseSelectDataList.forEach { item ->
             val entity = allData.find { item.path == it.path }
-            if (entity != null) {
+            if (entity != null && !selectedData.contains(entity)) {
                 selectedData.add(entity)
             }
         }
-        userUseSelectDataList.value.clear()
+        if (isAllDataLoaded.value) {
+            userUseSelectDataList.clear()
+        }
     }
 
 
@@ -192,6 +209,7 @@ class FilePickerViewModel : ViewModel() {
         loadJob?.cancel()
         loadJob = null
         loadJob = viewModelScope.launch {
+            isAllDataLoaded.value = false
             val queryType = getQueryType(selectType.value)
             val startTime = System.currentTimeMillis()
             val result = FileQueryHelper.queryAlbums(
@@ -256,6 +274,21 @@ class FilePickerViewModel : ViewModel() {
                         ${fastList.sumOf { it.mediaEntityList.size }} 个文件
                         """.trimIndent()
                     )
+                    val nameCountMap = mutableMapOf<String, Int>()
+
+                    for (folder in fastList) {
+                        val nickName = FilePickerFileUtils.getNickName(folder.name ?: "", uiConfig)
+                        val count = nameCountMap.getOrDefault(nickName, 0)
+                        if (count > 0) {
+                            // 添加后缀，从 1 开始
+                            folder.nickName = "$nickName $count"
+                        } else {
+                            folder.nickName = nickName
+                        }
+                        // 更新出现次数
+                        nameCountMap[nickName] = count + 1
+                    }
+
                     updateAllDataList(fastList)
                 })
 
@@ -267,6 +300,22 @@ class FilePickerViewModel : ViewModel() {
                 ${result.mediaFolders.sumOf { it.mediaEntityList.size }} 个文件
             """.trimIndent()
             )
+            isAllDataLoaded.value = true
+
+            val nameCountMap = mutableMapOf<String, Int>()
+
+            for (folder in result.mediaFolders) {
+                val nickName = FilePickerFileUtils.getNickName(folder.name ?: "", uiConfig)
+                val count = nameCountMap.getOrDefault(nickName, 0)
+                if (count > 0) {
+                    // 添加后缀，从 1 开始
+                    folder.nickName = "$nickName $count"
+                } else {
+                    folder.nickName = nickName
+                }
+                // 更新出现次数
+                nameCountMap[nickName] = count + 1
+            }
 
             updateAllDataList(result.mediaFolders)
         }

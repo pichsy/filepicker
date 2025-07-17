@@ -86,21 +86,19 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
                     Permission.MANAGE_EXTERNAL_STORAGE,
                 ).request { permissions, all ->
                     if (all) {
-                        selectFilePaging(type, maxSelectCount, maxFileSize)
+                        selectFile(type, maxSelectCount, maxFileSize)
                     } else {
                         XXPermissions.startPermissionActivity(this, permissions)
                     }
                 }
             }
         }
-
         initRecyclerView()
     }
 
     private fun initRecyclerView() {
         binding.recyclerView.linear(RecyclerView.HORIZONTAL).setup {
             addType<MediaEntity>(R.layout.item_image)
-
             onBind {
                 val mediaEntity = getModel<MediaEntity>()
                 val itemBinding = getBinding<ItemImageBinding>()
@@ -111,13 +109,13 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
                     if (mediaEntity.isVideo()) {
                         VideoPreviewDialog(
                             context = this@MainActivity,
-                            title = "视频预览",
+                            title = mediaEntity.name,
                             videoUrl = mediaEntity.path,
                         ).showPopupWindow()
                     } else {
                         ImagePreviewDialog(
                             context = this@MainActivity,
-                            title = "图片预览",
+                            title = mediaEntity.name,
                             url = mediaEntity.path
                         ).showPopupWindow()
                     }
@@ -126,38 +124,31 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
         }
     }
 
+    private var selectedDataList = mutableListOf<MediaEntity>()
+
     fun selectFile(type: String, maxSelectCount: Int, maxFileSize: Int) {
-        FilePicker.with(this).setMaxSelectNumber(maxSelectCount).setMaxFileSize(maxFileSize.toLong()).setSelectType(type).setSingleClickEnable(true)
+        FilePicker.with(this).setMaxSelectNumber(maxSelectCount)
+            .setMaxFileSize(maxFileSize.toLong())
+            .setSelectType(type)
+            .setSingleClickEnable(true)
+            .setSelectedList(selectedDataList)
             .setOnSelectCallback { isUseOriginal, list ->
                 XLog.d("FilePicker", "Selected files: ${list.size}")
+                selectedDataList = list
                 binding.recyclerView.models = list
             }.setUiConfig(
                 FilePickerUIConfig(
                     isHideSelectTab = false,
                     allAlbumName = "全部",
-                    confirmBtnText = "下一步",
+                    confirmBtnText = "发送",
                     isShowOriginal = false,
                     isPreviewPageIndexMode = true,
                     isShowSelectedListDeleteIcon = true,
+                    folderNickNameMap = hashMapOf(
+                        "DCIM" to "相册"
+                    )
                 )
             ).start()
     }
 
-    fun selectFilePaging(type: String, maxSelectCount: Int, maxFileSize: Int) {
-        FilePicker.with(this).setMaxSelectNumber(maxSelectCount).setMaxFileSize(maxFileSize.toLong()).setSelectType(type).setSingleClickEnable(true)
-            .setOnSelectCallback { isUseOriginal, list ->
-                XLog.d("FilePicker", "Selected files: ${list.size}")
-
-                binding.recyclerView.models = list
-            }.setUiConfig(
-                FilePickerUIConfig(
-                    isHideSelectTab = false,
-                    allAlbumName = "全部",
-                    confirmBtnText = "下一步",
-                    isShowOriginal = false,
-                    isPreviewPageIndexMode = true,
-                    isShowSelectedListDeleteIcon = true,
-                )
-            ).start()
-    }
 }

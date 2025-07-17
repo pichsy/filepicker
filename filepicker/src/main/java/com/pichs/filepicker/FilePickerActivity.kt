@@ -55,7 +55,6 @@ class FilePickerActivity : AppCompatActivity() {
         var selectType = intent.getStringExtra("selectType") ?: FilePickerSelectType.IMAGE_VIDEO
         var singleClickEnable = intent.getBooleanExtra("singleClickEnable", false)
         var slideChooseEnable = intent.getBooleanExtra("slideChooseEnable", true)
-        var selectDataList = intent.getParcelableArrayListExtra<MediaEntity>("selectedDataList") ?: mutableListOf()
 
         val uiConfig = intent.getParcelableExtra<FilePickerUIConfig>("uiConfig")
 
@@ -73,13 +72,13 @@ class FilePickerActivity : AppCompatActivity() {
             minFileSize = 0L
         }
 
-        FilePickerLog.d (
+        FilePickerLog.d(
             """
             maxSelectNumber: $maxSelectNumber, 
             maxFileSize: $maxFileSize, 
             minFileSize: $minFileSize,
              selectType: $selectType, 
-             selectDataList: ${selectDataList.size}
+             selectDataList: ${FilePickerViewModel.userUseSelectDataList.size}
         """.trimIndent()
         )
 
@@ -99,13 +98,10 @@ class FilePickerActivity : AppCompatActivity() {
         viewModel.singleClickEnable.value = singleClickEnable
         viewModel.slideChooseEnable.value = slideChooseEnable
 
-        viewModel.userUseSelectDataList.value = selectDataList.toMutableList()
-
         // 如果有传入已选数据，则添加到已选列表中
-        if (selectDataList.isNotEmpty()) {
-            viewModel.selectedData.addAll(selectDataList)
-            viewModel.tempSelectData.addAll(selectDataList)
-        }
+//        if (FilePickerViewModel.userUseSelectDataList.value.isNotEmpty()) {
+//            viewModel.selectedData.addAll(FilePickerViewModel.userUseSelectDataList.value)
+//        }
 
         // 这里可以直接使用viewModel.updateCurrentFolderDataList()方法来更新当前文件夹数据列表
         // 例如：viewModel.updateCurrentFolderDataList(selectDataList)

@@ -93,4 +93,15 @@ public data class FilePickerUIConfig(
      * 已达到最大选择数量
      */
     var selectMaxNumberOverToastContent: String = "已达到最大选择数量",
+
+
+    //=====================文件夹别名，如果要翻译文件夹则可以使用这个。====================
+
+    /**
+     * 文件夹别名映射，只认名字。
+     * 例如："DCIM" to "相册", "Camera" to "相机"，"Download" to "下载" 等等。
+     * 如果不设置，则使用默认名字。
+     * 可随意扩展
+     */
+    var folderNickNameMap: HashMap<String, String> = hashMapOf<String, String>()
 ) : Parcelable

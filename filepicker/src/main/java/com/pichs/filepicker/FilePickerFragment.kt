@@ -1,6 +1,7 @@
 package com.pichs.filepicker
 
 import android.annotation.SuppressLint
+import android.app.Activity.RESULT_CANCELED
 import android.app.Activity.RESULT_OK
 import android.content.Intent
 import android.graphics.Color
@@ -119,11 +120,11 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
         if (viewModel.isCanSlideChoose()) {
             initRecyclerSlideChoose()
         }
-        initDataFlow()
-        loadData()
-        initListener()
 
         initSelectedRecyclerView()
+
+        initDataFlow()
+        initListener()
 
         if (viewModel.isCanShowBottomSelectRecyclerView()) {
             binding.rvSelected.isVisible = true
@@ -132,6 +133,8 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
         }
 
         updateBottomMenuSelectNumberUI()
+
+        loadData()
     }
 
 
@@ -145,24 +148,23 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
             }
 
             // todo 进入 展示界面弹窗，这里仅展示固定个数，不参与展示。
-            FilePickerFinalPreviewDialog(
-                requireContext(), viewModel, onDismissDataDelete = { deleteList ->
-                    viewModel.removeSelectedDataAll(deleteList)
+            FilePickerFinalPreviewDialog(requireContext(), viewModel, onDismissDataDelete = { deleteList ->
+                viewModel.removeSelectedDataAll(deleteList)
 //                Toast.makeText(requireContext(), "删除了 ${deleteList.size} 个文件", Toast.LENGTH_SHORT).show()
-                    updateSelectDataUI()
-                    updateBottomMenuSelectNumberUI()
-                }, onDragEnd = {
-                    updateSelectDataUI()
-                }, onConfirm = { resultList ->
+                updateSelectDataUI()
+                updateBottomMenuSelectNumberUI()
+            }, onDragEnd = {
+                updateSelectDataUI()
+            }, onConfirm = { resultList ->
 //                Toast.makeText(requireContext(), "确定了 ${resultList?.path}", Toast.LENGTH_SHORT).show()
-                    FilePickerLog.d("FilePickerFragment", "onConfirm: resultList size:${resultList.size}")
-                    if (resultList.isEmpty()) {
-                        FilePickerLog.d("FilePickerFragment", "item is null, return")
-                        Toast.makeText(requireContext(), "未选择文件", Toast.LENGTH_SHORT).show()
-                        return@FilePickerFinalPreviewDialog
-                    }
-                    callbackToChooser(resultList)
-                }).showPopupWindow()
+                FilePickerLog.d("FilePickerFragment", "onConfirm: resultList size:${resultList.size}")
+                if (resultList.isEmpty()) {
+                    FilePickerLog.d("FilePickerFragment", "item is null, return")
+                    Toast.makeText(requireContext(), "未选择文件", Toast.LENGTH_SHORT).show()
+                    return@FilePickerFinalPreviewDialog
+                }
+                callbackToChooser(resultList)
+            }).showPopupWindow()
         }
 
         FilePickerClickHelper.clicks(binding.llOriginal) {
@@ -196,7 +198,12 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
 
     private fun initTab() {
         binding.ivBack.setOnClickListener {
-            activity?.finish()
+            activity?.apply {
+                setResult(RESULT_CANCELED, Intent().apply {
+                    FilePickerViewModel.finalSelectedDataList.clear()
+                })
+                finish()
+            }
         }
 
         binding.tvAlbum.setOnClickListener(this)
@@ -297,6 +304,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                     // 这里处理数据
                     binding.recyclerView.models = list
                     binding.llEmpty.isVisible = list.isEmpty()
+                    updateBottomMenuSelectNumberUI()
                 }
             }
 
@@ -327,58 +335,52 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
 
                         viewModel.updateCurrentFolderDataList(
                             if (viewModel.currentFolder.value != null) {
-                                FilePickerLog.d("FilePickerFragment8848", "resetListDataWithSelectData: currentFolder=有了- ----")
-                                viewModel.currentFolder.value?.mediaEntityList?.sortedByDescending { it.addTime } ?: mutableListOf()
-                            } else {
-                                FilePickerLog.d("FilePickerFragment8848", "resetListDataWithSelectData: currentFolder=全部 ----")
-                                viewModel.getAllDataList().flatMap { it.mediaEntityList }.sortedByDescending { it.addTime }.toMutableList()
-                            }
+                            FilePickerLog.d("FilePickerFragment8848", "resetListDataWithSelectData: currentFolder=有了- ----")
+                            viewModel.currentFolder.value?.mediaEntityList?.sortedByDescending { it.addTime } ?: mutableListOf()
+                        } else {
+                            FilePickerLog.d("FilePickerFragment8848", "resetListDataWithSelectData: currentFolder=全部 ----")
+                            viewModel.getAllDataList().flatMap { it.mediaEntityList }.sortedByDescending { it.addTime }.toMutableList()
+                        }
                         )
                     }
 
                     FilePickerSelectType.IMAGE -> {
                         viewModel.updateCurrentFolderDataList(
                             if (viewModel.currentFolder.value != null) {
-                                viewModel.currentFolder.value?.mediaEntityList?.filter { it.isImage() }?.sortedByDescending { it.addTime }?.toMutableList()
-                                    ?: mutableListOf()
-                            } else {
-                                viewModel.getAllDataList().flatMap { it.mediaEntityList.filter { it.isImage() } }.sortedByDescending { it.addTime }
-                                    .toMutableList()
-                            }
-                        )
+                            viewModel.currentFolder.value?.mediaEntityList?.filter { it.isImage() }?.sortedByDescending { it.addTime }?.toMutableList()
+                                ?: mutableListOf()
+                        } else {
+                            viewModel.getAllDataList().flatMap { it.mediaEntityList.filter { it.isImage() } }.sortedByDescending { it.addTime }.toMutableList()
+                        })
                     }
 
                     FilePickerSelectType.VIDEO -> {
                         viewModel.updateCurrentFolderDataList(
                             if (viewModel.currentFolder.value != null) {
-                                viewModel.currentFolder.value?.mediaEntityList?.filter { it.isVideo() }?.sortedByDescending { it.addTime }?.toMutableList()
-                                    ?: mutableListOf()
-                            } else {
-                                viewModel.getAllDataList().flatMap { it.mediaEntityList.filter { it.isVideo() } }.sortedByDescending { it.addTime }
-                                    .toMutableList()
-                            }
-                        )
+                            viewModel.currentFolder.value?.mediaEntityList?.filter { it.isVideo() }?.sortedByDescending { it.addTime }?.toMutableList()
+                                ?: mutableListOf()
+                        } else {
+                            viewModel.getAllDataList().flatMap { it.mediaEntityList.filter { it.isVideo() } }.sortedByDescending { it.addTime }.toMutableList()
+                        })
                     }
 
                     FilePickerSelectType.GIF -> {
                         viewModel.updateCurrentFolderDataList(
                             if (viewModel.currentFolder.value != null) {
-                                viewModel.currentFolder.value?.mediaEntityList?.filter { it.isGif() }?.sortedByDescending { it.addTime }?.toMutableList()
-                                    ?: mutableListOf()
-                            } else {
-                                viewModel.getAllDataList().flatMap { it.mediaEntityList.filter { it.isGif() } }.sortedByDescending { it.addTime }
-                                    .toMutableList()
-                            }
-                        )
+                            viewModel.currentFolder.value?.mediaEntityList?.filter { it.isGif() }?.sortedByDescending { it.addTime }?.toMutableList()
+                                ?: mutableListOf()
+                        } else {
+                            viewModel.getAllDataList().flatMap { it.mediaEntityList.filter { it.isGif() } }.sortedByDescending { it.addTime }.toMutableList()
+                        })
                     }
                 }
             } else {
                 viewModel.updateCurrentFolderDataList(
                     if (viewModel.currentFolder.value != null) {
-                        viewModel.currentFolder.value?.mediaEntityList?.toMutableList()?.sortedByDescending { it.addTime } ?: mutableListOf()
-                    } else {
-                        viewModel.getAllDataList().flatMap { it.mediaEntityList }.sortedByDescending { it.addTime }.toMutableList()
-                    }
+                    viewModel.currentFolder.value?.mediaEntityList?.toMutableList()?.sortedByDescending { it.addTime } ?: mutableListOf()
+                } else {
+                    viewModel.getAllDataList().flatMap { it.mediaEntityList }.sortedByDescending { it.addTime }.toMutableList()
+                }
                 )
             }
         }
@@ -507,22 +509,22 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
 
                 if (indexOfSelect != -1) {
                     itemBinding.tvSelectIndex.text = "${indexOfSelect + 1}"
-                    itemBinding.tvSelectIndex.setNormalBackgroundColor(ContextCompat.getColor(context, R.color.file_picker_index_bg_color))
+                    itemBinding.tvSelectIndex.isChecked = true
+//                    itemBinding.tvSelectIndex.setNormalBackgroundColor(ContextCompat.getColor(context, R.color.file_picker_index_bg_color))
 //                    itemBinding.ivCoverImage.foreground = ContextCompat.getDrawable(context, R.drawable.item_filepicker_select_mask)
                     itemBinding.clRoot.isChecked = true
                     itemBinding.root.isSelected = true
                 } else {
                     itemBinding.tvSelectIndex.text = ""
-                    itemBinding.tvSelectIndex.setNormalBackgroundColor(Color.TRANSPARENT)
+                    itemBinding.tvSelectIndex.isChecked = false
+//                    itemBinding.tvSelectIndex.setNormalBackgroundColor(Color.TRANSPARENT)
 //                    itemBinding.ivCoverImage.foreground = null
                     itemBinding.clRoot.isChecked = false
                     itemBinding.root.isSelected = false
                 }
 
                 // 判断是否是最后一行
-                if (modelPosition == (itemCount - 1)
-                    && (viewModel.getSelectedCount() + viewModel.tempSelectData.size) > 0
-                ) {
+                if (modelPosition == (itemCount - 1) && (viewModel.getSelectedCount() + viewModel.tempSelectData.size) > 0) {
                     itemBinding.clRoot.updateLayoutParams<ViewGroup.MarginLayoutParams> {
                         bottomMargin = XDisplayHelper.dp2px(requireContext(), 80f)
                     }
@@ -627,12 +629,14 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                 FilePickerLog.d("FilePickerFragment", "item:${item.path}, selectedIndex:${indexOfSelect}, modelPosition:$modelPosition")
                 if (indexOfSelect != -1) {
                     itemBinding.tvSelectIndex.text = "${indexOfSelect + 1}"
-                    itemBinding.tvSelectIndex.setNormalBackgroundColor(ContextCompat.getColor(context, R.color.file_picker_index_bg_color))
+//                    itemBinding.tvSelectIndex.setNormalBackgroundColor(ContextCompat.getColor(context, R.color.file_picker_index_bg_color))
+                    itemBinding.tvSelectIndex.isChecked = true
                     itemBinding.ivCoverImage.foreground = ContextCompat.getDrawable(context, R.drawable.item_filepicker_select_mask)
                     itemBinding.root.isSelected = true
                 } else {
                     itemBinding.tvSelectIndex.text = ""
-                    itemBinding.tvSelectIndex.setNormalBackgroundColor(Color.TRANSPARENT)
+//                    itemBinding.tvSelectIndex.setNormalBackgroundColor(Color.TRANSPARENT)
+                    itemBinding.tvSelectIndex.isChecked = false
                     itemBinding.ivCoverImage.foreground = null
                     itemBinding.root.isSelected = false
                 }
@@ -824,6 +828,8 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
         }
         activity?.apply {
             setResult(RESULT_OK, Intent().apply {
+                FilePickerViewModel.finalSelectedDataList.clear()
+                FilePickerViewModel.finalSelectedDataList.addAll(selectList)
                 putParcelableArrayListExtra("selectedDataList", selectList)
                 putExtra("isUseOriginal", viewModel.originalCheckedFlow.value)
             })
@@ -903,7 +909,12 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
     override fun onClick(v: View?) {
         when (v?.id) {
             binding.tvAlbum.id, binding.ivArrowDown.id -> {
-                FolderChooseDialog(requireContext(), viewModel.uiConfig.allAlbumName, viewModel.getAllDataList(), viewModel.currentFolder.value) { folder ->
+                FolderChooseDialog(
+                    mCtx = requireContext(),
+                    list = viewModel.getAllDataList(),
+                    currentFolder = viewModel.currentFolder.value,
+                    uiConfig = viewModel.uiConfig
+                ) { folder ->
                     viewModel.updateCurrentFolder(folder)
                     binding.tvAlbum.text = folder?.name ?: viewModel.uiConfig.allAlbumName
                     resetListDataWithSelectData()
@@ -912,7 +923,6 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                         binding.ivArrowDown.animate().rotation(0f).setDuration(200).start()
                     }
                 }).showPopupWindow(binding.tvAlbum)
-
                 binding.ivArrowDown.animate().rotation(180f).setDuration(200).start()
             }
         }

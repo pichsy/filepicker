@@ -160,15 +160,15 @@ data class MediaEntity(
         return mimeType?.equals("application/vnd.android.package-archive", true) == true
     }
 
-//    override fun equals(other: Any?): Boolean {
-//        if (this === other) return true
-//        if (other !is MediaEntity) return false
-//        return path == other.path
-//    }
-//
-//    override fun hashCode(): Int {
-//        return super.hashCode()
-//    }
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is MediaEntity) return false
+        return path == other.path
+    }
+
+    override fun hashCode(): Int {
+        return super.hashCode()
+    }
 }
 
 

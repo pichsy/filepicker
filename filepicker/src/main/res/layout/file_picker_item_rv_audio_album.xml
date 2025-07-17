@@ -31,16 +31,23 @@
         android:layout_height="22dp"
         android:layout_marginTop="6dp"
         android:layout_marginEnd="16dp"
+        android:autoSizeMaxTextSize="13dp"
+        android:autoSizeMinTextSize="3dp"
+        android:autoSizeTextType="uniform"
+        android:background="#0000"
+        android:checked="false"
+        android:ellipsize="none"
         android:gravity="center"
+        android:maxLines="1"
+        android:padding="2dp"
         android:textColor="#fff"
-        android:textSize="12dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:xp_borderColor="#fff"
         app:xp_borderWidth="2dp"
+        app:xp_checkedBackground="@color/file_picker_index_bg_color"
         app:xp_radius="30dp" />
-
 
     <com.pichs.xwidget.view.XTextView
         android:id="@+id/tv_name"

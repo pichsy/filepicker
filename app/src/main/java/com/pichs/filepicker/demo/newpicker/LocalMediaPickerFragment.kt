@@ -315,10 +315,9 @@ class LocalMediaPickerFragment : Fragment() {
         val allAlbumName = "全部"
 
         FolderChooseDialog(
-            requireContext(),
-            allAlbumName,
-            folderList,
-            currentFolder
+            mCtx = requireContext(),
+            list = folderList,
+            currentFolder = currentFolder,
         ) { selectedFolder ->
             // 选择文件夹回调
             viewModel.selectFolder(selectedFolder)

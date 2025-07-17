@@ -36,7 +36,7 @@ data class MediaResult(
             folder.add(mediaEntity)
         } else {
             mediaFolder.add(mediaEntity)
-            mediaFolder.name = getFolderNickName(mediaFolder.name ?: "")
+            mediaFolder.name = mediaFolder.name
             mediaFolders.add(mediaFolder)
         }
     }
@@ -49,30 +49,9 @@ data class MediaResult(
         } else {
             val mediaFolder = MediaFolder()
             mediaFolder.folderPath = albumPath
-            mediaFolder.name = getFolderNickName(albumName)
+            mediaFolder.name = albumName
             mediaFolder.add(mediaEntity)
             mediaFolders.add(mediaFolder)
-        }
-    }
-
-    private fun getFolderNickName(name: String): String {
-        if (name.isEmpty()) return ""
-        return if (name.equals("DCIM", true) || name.equals("Camera", true)) {
-            "相机"
-        } else if (name.equals("Pictures", true)) {
-            "图片"
-        } else if (name.equals("Movies", true)) {
-            "视频"
-        } else if (name.equals("Audio", true)) {
-            "音频"
-        } else if (name.equals("Music", true)) {
-            "音乐"
-        } else if (name.equals("Screenshots", true)) {
-            "截图"
-        } else if (name.equals("Download", true)) {
-            "下载"
-        } else {
-            name
         }
     }
 
