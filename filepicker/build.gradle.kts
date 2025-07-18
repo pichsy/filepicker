@@ -62,8 +62,6 @@ dependencies {
     // 图片加载
     implementation(libs.glide)
 
-    // Paging3
-    implementation(libs.androidx.paging.runtime)
 
 }
 

@@ -67,4 +67,6 @@ dependencies {
     // 弹窗
     implementation(libs.basepopup)
 
+    // Paging3
+    implementation(libs.androidx.paging.runtime)
 }

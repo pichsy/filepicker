@@ -63,7 +63,49 @@ dependencies {
     implementation("androidx.media3:media3-exoplayer:1.7.1")
     implementation("androidx.media3:media3-ui:1.7.1")
 }
+
+
+使用libs.version.toml用户引入方式
+dependencies {
+    api(libs.filepicker)
+    api(libs.xwidget)
+    api(libs.glide)
+    api(libs.brv)
+    api(libs.basepopup)
+    api(libs.media3.exoplayer)
+    api(libs.media3.ui)
+}
+
+# libs.version.toml中写法
+[versions]
+xwidget = "5.6.3"
+filepicker = "5.9.0"
+brv = "1.6.1"
+basepopup = "3.2.1"
+glide = "4.16.0"
+activityKtx = "1.9.0"
+fragmentKtx = "1.6.2"
+recyclerview = "1.4.0"
+kotlinxCoroutinesAndroid = "1.7.3"
+kotlinxCoroutinesCore = "1.7.3"
+media3Exoplayer = "1.7.1"
+
+[libraries]
+androidx-media3-exoplayer = { module = "androidx.media3:media3-exoplayer", version.ref = "media3Exoplayer" }
+androidx-media3-ui = { module = "androidx.media3:media3-ui", version.ref = "media3Exoplayer" }
+androidx-activity-ktx = { group = "androidx.activity", name = "activity-ktx", version.ref = "activityKtx" }
+androidx-fragment-ktx = { group = "androidx.fragment", name = "fragment-ktx", version.ref = "fragmentKtx" }
+androidx-recyclerview = { group = "androidx.recyclerview", name = "recyclerview", version.ref = "recyclerview" }
+kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "kotlinxCoroutinesAndroid" }
+kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "kotlinxCoroutinesCore" }
+xwidget = { group = "com.gitee.pichs", name = "xwidget", version.ref = "xwidget" }
+filepicker = { group = "com.gitee.pichs", name = "filepicker", version.ref = "filepicker" }
+basepopup = { group = "io.github.razerdp", name = "BasePopup", version.ref = "basepopup" }
+brv = { group = "com.github.liangjingkanji", name = "BRV", version.ref = "brv" }
+glide = { group = "com.github.bumptech.glide", name = "glide", version.ref = "glide" }
+
 ```
+
 
 # 动图效果
 
