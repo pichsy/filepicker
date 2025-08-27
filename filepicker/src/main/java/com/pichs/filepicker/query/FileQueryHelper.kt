@@ -14,6 +14,7 @@ import com.pichs.filepicker.utils.FilePickerFileUtils
 import com.pichs.filepicker.utils.FilePickerLog
 import com.pichs.filepicker.utils.FilePickerTimeFormatUtils
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -32,7 +33,6 @@ object FileQueryHelper {
     private const val VOLUME_NAME = "external"
     private const val MIME_TYPE_GIF = "image/gif"
 
-
     @SuppressLint("Range")
     suspend fun queryAlbums(
         context: Context,
@@ -40,10 +40,12 @@ object FileQueryHelper {
         minSize: Long = 0L,
         maxSize: Long = 0L,
         queryBuilder: (QueryWhere.Builder) -> Unit = {},
-        fastNumber: Int = 300,
+        fastNumber: Int = 40,
         onFastCallBack: (list: (MutableList<MediaFolder>)) -> Unit
     ): MediaResult {
         return withContext(Dispatchers.IO) {
+            val startTimeWhile = System.currentTimeMillis()
+
             FilePickerLog.e("相册获取, 开始查询---queryAlbums:type:${queryTypes.joinToString { it.type }}")
             val mediaResult = MediaResult()
             if (queryTypes.isEmpty()) {
@@ -178,6 +180,7 @@ object FileQueryHelper {
             if (!isActive) {
                 return@withContext MediaResult()
             }
+
             val cursor = contentResolver.query(
                 contentUri, projection, qf.section, qf.sectionArgs, sortOrder
             )
@@ -192,7 +195,6 @@ object FileQueryHelper {
 
             var addCount = 0
 
-            val startTimeWhile = System.currentTimeMillis()
 
             while (cursor.moveToNext()) {
 
@@ -218,31 +220,18 @@ object FileQueryHelper {
                     0
                 }
 
-                // 获取缩略图位置
-//                FilePickerLog.e {
-//                    """
-//                        相册获取--->信息：
-//                        queryAlbums: id:$id
-//                        queryAlbums: data:$filePath
-//                        queryAlbums: fileName:$fileName
-//                        size:$size
-//                        mimeType:$mimeType
-//                        width:$width
-//                        height:$height
-//                        duration:$duration
-//                        dateModified:${dateAdd}
-//                        foldName:$foldName
-//                        folderPath:${FilePickerFileUtils.getFolderPath(filePath)}
-//                        bucketId:$bucketId
-//                        orientation:$orientation
-//                        addTime*1000=${dateAdd} ms,  formatTime=${FilePickerTimeFormatUtils.formatTime(dateAdd)}
-//                    """.trimIndent()
-//                }
+                var st = System.currentTimeMillis()
+
+                FilePickerLog.e("相册获取, ttttttt（单个）while---1111---耗时===start------>${st}")
 
                 if (size <= minSize) {
                     FilePickerLog.d("相册获取, queryAlbums: 文件大小小于最小值，忽略。。。。")
                     continue
                 }
+
+                FilePickerLog.e("相册获取, ttttttt（单个）while---size <= minSize---耗时：${System.currentTimeMillis() - st}==========")
+                st = System.currentTimeMillis()
+
 
                 if (!(maxSize <= 0 || maxSize == Long.MAX_VALUE)) {
                     if (size > maxSize) {
@@ -251,10 +240,18 @@ object FileQueryHelper {
                     }
                 }
 
+                FilePickerLog.e("相册获取, ttttttt（单个）while---!(maxSize <= 0 || maxSize == Long.MAX_VALUE)---耗时：${System.currentTimeMillis() - st}==========")
+                st = System.currentTimeMillis()
+
+
                 if (FilePickerFileUtils.isFileInHiddenDir(filePath)) {
                     FilePickerLog.d("相册获取, 文件判断: 在隐藏目录，不展示, 忽略======")
                     continue
                 }
+
+                FilePickerLog.e("相册获取, ttttttt（单个）while---FilePickerFileUtils.isFileInHiddenDir(filePath)---耗时：${System.currentTimeMillis() - st}==========")
+
+                st = System.currentTimeMillis()
 
                 val file = File(filePath)
                 // 文件有毛病,忽略。。。。
@@ -264,12 +261,17 @@ object FileQueryHelper {
                     continue
                 }
 
+                FilePickerLog.e("相册获取, ttttttt（单个）while---isFileExists---耗时：${System.currentTimeMillis() - st}==========")
+                st = System.currentTimeMillis()
+
                 val isFile = FilePickerFileUtils.isFile(file)
                 // 文件大小为0，忽略。。。
                 if (!isFile) {
                     FilePickerLog.e("相册获取, queryAlbums: 文件不是文件，忽略。。。。")
                     continue
                 }
+                FilePickerLog.e("相册获取, ttttttt（单个）while---isFile---耗时：${System.currentTimeMillis() - st}==========")
+                st = System.currentTimeMillis()
 
                 val uri = ContentUris.withAppendedId(
                     if (mimeType?.startsWith("video/", true) == true) {
@@ -283,14 +285,6 @@ object FileQueryHelper {
                     }, id
                 )
 
-//                if (width == 0 || height == 0) {
-//                    val options = BitmapFactory.Options()
-//                    options.inJustDecodeBounds = true
-//                    BitmapFactory.decodeFile(data, options)
-//                    width = options.outWidth
-//                    height = options.outHeight
-//                }
-
                 val mediaEntity = MediaEntity(
                     uri = uri,
                     name = fileName ?: FilePickerFileUtils.getFileName(filePath = filePath),
@@ -303,13 +297,17 @@ object FileQueryHelper {
                     orientation = orientation,
                     addTime = dateAdd,
                 )
-                addCount++
+
+                ++addCount
+
+                FilePickerLog.d("相册获取, queryAlbums: 媒体库获取到一个有效数据，添加到结果中。当前已添加数量：addCount=$addCount")
                 mediaResult.addMediaEntity(foldName ?: FilePickerFileUtils.getFolderName(filePath), FilePickerFileUtils.getFolderPath(filePath), mediaEntity)
 
 //                FilePickerLog.e { "相册获取, 结束循环（单次 到底共) while----endtimewhile:--耗时：${System.currentTimeMillis() - startTimeOneWhile}" }
                 if (addCount == fastNumber) {
                     if (isActive) {
                         FilePickerLog.e("相册获取, queryAlbums: 快速回调，已获取到${fastNumber}数据，返回结果。")
+                        FilePickerLog.d("相册获取, 首次回调耗时: 快速回调，已获取到${fastNumber}数据，返回结果---------folder:size：${mediaResult.mediaFolders.size}， 耗时：${System.currentTimeMillis() - startTimeWhile} ms")
                         onFastCallBack(mediaResult.mediaFolders.toMutableList())
                     }
                 }

@@ -263,7 +263,7 @@ class FilePickerViewModel : ViewModel() {
                         builder.rightBracket()
                     }
                 },
-                fastNumber = 100,
+                fastNumber = 40,
                 onFastCallBack = { fastList ->
                     val fastLoadTime = System.currentTimeMillis() - startTime
                     FilePickerLog.d(
