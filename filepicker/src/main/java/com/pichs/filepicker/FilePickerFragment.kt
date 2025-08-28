@@ -283,7 +283,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
 //                }
 //            }
             launch {
-                viewModel.allFolderDataList.debounce(100).collectLatest { folderList ->
+                viewModel.allFolderDataList.collectLatest { folderList ->
                     FilePickerLog.d("FilePickerFragment8848", "initDataFlow: allFolderDataList.collectLatest-folderList-${folderList.size}")
                     viewModel.updateAllDataList(folderList)
                     viewModel.initUserSelectDataList(folderList)
@@ -335,52 +335,58 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
 
                         viewModel.updateCurrentFolderDataList(
                             if (viewModel.currentFolder.value != null) {
-                            FilePickerLog.d("FilePickerFragment8848", "resetListDataWithSelectData: currentFolder=有了- ----")
-                            viewModel.currentFolder.value?.mediaEntityList?.sortedByDescending { it.addTime } ?: mutableListOf()
-                        } else {
-                            FilePickerLog.d("FilePickerFragment8848", "resetListDataWithSelectData: currentFolder=全部 ----")
-                            viewModel.getAllDataList().flatMap { it.mediaEntityList }.sortedByDescending { it.addTime }.toMutableList()
-                        }
+                                FilePickerLog.d("FilePickerFragment8848", "resetListDataWithSelectData: currentFolder=有了- ----")
+                                viewModel.currentFolder.value?.mediaEntityList?.sortedByDescending { it.addTime } ?: mutableListOf()
+                            } else {
+                                FilePickerLog.d("FilePickerFragment8848", "resetListDataWithSelectData: currentFolder=全部 ----")
+                                viewModel.getAllDataList().flatMap { it.mediaEntityList }.sortedByDescending { it.addTime }.toMutableList()
+                            }
                         )
                     }
 
                     FilePickerSelectType.IMAGE -> {
                         viewModel.updateCurrentFolderDataList(
                             if (viewModel.currentFolder.value != null) {
-                            viewModel.currentFolder.value?.mediaEntityList?.filter { it.isImage() }?.sortedByDescending { it.addTime }?.toMutableList()
-                                ?: mutableListOf()
-                        } else {
-                            viewModel.getAllDataList().flatMap { it.mediaEntityList.filter { it.isImage() } }.sortedByDescending { it.addTime }.toMutableList()
-                        })
+                                viewModel.currentFolder.value?.mediaEntityList?.filter { it.isImage() }?.sortedByDescending { it.addTime }?.toMutableList()
+                                    ?: mutableListOf()
+                            } else {
+                                viewModel.getAllDataList().flatMap { it.mediaEntityList.filter { it.isImage() } }.sortedByDescending { it.addTime }
+                                    .toMutableList()
+                            }
+                        )
                     }
 
                     FilePickerSelectType.VIDEO -> {
                         viewModel.updateCurrentFolderDataList(
                             if (viewModel.currentFolder.value != null) {
-                            viewModel.currentFolder.value?.mediaEntityList?.filter { it.isVideo() }?.sortedByDescending { it.addTime }?.toMutableList()
-                                ?: mutableListOf()
-                        } else {
-                            viewModel.getAllDataList().flatMap { it.mediaEntityList.filter { it.isVideo() } }.sortedByDescending { it.addTime }.toMutableList()
-                        })
+                                viewModel.currentFolder.value?.mediaEntityList?.filter { it.isVideo() }?.sortedByDescending { it.addTime }?.toMutableList()
+                                    ?: mutableListOf()
+                            } else {
+                                viewModel.getAllDataList().flatMap { it.mediaEntityList.filter { it.isVideo() } }.sortedByDescending { it.addTime }
+                                    .toMutableList()
+                            }
+                        )
                     }
 
                     FilePickerSelectType.GIF -> {
                         viewModel.updateCurrentFolderDataList(
                             if (viewModel.currentFolder.value != null) {
-                            viewModel.currentFolder.value?.mediaEntityList?.filter { it.isGif() }?.sortedByDescending { it.addTime }?.toMutableList()
-                                ?: mutableListOf()
-                        } else {
-                            viewModel.getAllDataList().flatMap { it.mediaEntityList.filter { it.isGif() } }.sortedByDescending { it.addTime }.toMutableList()
-                        })
+                                viewModel.currentFolder.value?.mediaEntityList?.filter { it.isGif() }?.sortedByDescending { it.addTime }?.toMutableList()
+                                    ?: mutableListOf()
+                            } else {
+                                viewModel.getAllDataList().flatMap { it.mediaEntityList.filter { it.isGif() } }.sortedByDescending { it.addTime }
+                                    .toMutableList()
+                            }
+                        )
                     }
                 }
             } else {
                 viewModel.updateCurrentFolderDataList(
                     if (viewModel.currentFolder.value != null) {
-                    viewModel.currentFolder.value?.mediaEntityList?.toMutableList()?.sortedByDescending { it.addTime } ?: mutableListOf()
-                } else {
-                    viewModel.getAllDataList().flatMap { it.mediaEntityList }.sortedByDescending { it.addTime }.toMutableList()
-                }
+                        viewModel.currentFolder.value?.mediaEntityList?.toMutableList()?.sortedByDescending { it.addTime } ?: mutableListOf()
+                    } else {
+                        viewModel.getAllDataList().flatMap { it.mediaEntityList }.sortedByDescending { it.addTime }.toMutableList()
+                    }
                 )
             }
         }

@@ -10,7 +10,7 @@ class App : Application() {
     override fun onCreate() {
         super.onCreate()
         XLog.init(this, "")
-        FilePickerLog.setDebugMode(false)
+//        FilePickerLog.setDebugMode(false)
         XLog.setGlobalTAG("FilePickerDemo")
         UiKit.init(this)
         BaseMMKVHelper.init(this, "FilePickerDemo")
