@@ -218,7 +218,7 @@ class FilePickerPreviewDialog(
 
                 itemBinding.clSelectDelete.setOnClickListener {
                     // 删除选中项
-                    viewModel.removeSelectedData(item)
+                    item.path?.let { viewModel.unselectPath(it) }
                     binding.tvSelectIndex.text = ""
                     binding.tvSelectIndex.isChecked = false
                     binding.ivSelectState.isChecked = false
@@ -250,7 +250,7 @@ class FilePickerPreviewDialog(
         }
 
         binding.rvSelected.post {
-            var indexOfSelected = viewModel.indexOfSelected(mCurrentItem)
+            var indexOfSelected = viewModel.getSelectedIndex(mCurrentItem?.path.orEmpty())
             if (indexOfSelected < 0) {
                 indexOfSelected = 0
             }
@@ -305,7 +305,7 @@ class FilePickerPreviewDialog(
             val item = viewModel.getCurrentFolderDataByPosition(mCurrentIndex)
             if (item == null) return@clicks
 
-            val indexOfSelect = viewModel.indexOfSelected(item)
+            val indexOfSelect = viewModel.getSelectedIndex(item.path.orEmpty())
 
             if (indexOfSelect == -1) {
                 // 未选中，添加到选中列表
@@ -316,15 +316,15 @@ class FilePickerPreviewDialog(
                     return@clicks
                 }
                 // 进行选中
-                viewModel.addSelectedData(item)
+                viewModel.selectPath(item.path.orEmpty()) { item }
                 binding.ivSelectState.isChecked = true
                 updateBottomMenuSelectNumberUI()
-                val indexNow = viewModel.indexOfSelected(item)
+                val indexNow = viewModel.getSelectedIndex(item.path.orEmpty())
                 binding.tvSelectIndex.text = "${indexNow + 1}"
                 binding.tvSelectIndex.isChecked = true
                 onSelect(item, true, mCurrentIndex)
             } else {
-                viewModel.removeSelectedData(item)
+                viewModel.unselectPath(item.path.orEmpty())
                 binding.tvSelectIndex.text = ""
                 binding.tvSelectIndex.isChecked = false
                 binding.ivSelectState.isChecked = false
@@ -399,7 +399,7 @@ class FilePickerPreviewDialog(
                 binding.rvSelected.post {
                     // refresh select rv
                     binding.rvSelected.adapter?.notifyItemRangeChanged(0, binding.rvSelected.adapter?.itemCount ?: 0)
-                    val indexOfSelect = viewModel.indexOfSelected(item)
+                    val indexOfSelect = viewModel.getSelectedIndex(item.path.orEmpty())
                     scrollItemToCenter(binding.rvSelected, indexOfSelect)
                     onSelectListScrollChanged(indexOfSelect, 1, 0)
                 }
@@ -423,7 +423,7 @@ class FilePickerPreviewDialog(
         }
         binding.tvIndex.text = "${itemIndexOfList(item) + 1}/${viewModel.getCurrentFolderDataList().size}"
         // 这里需要根据是否选中来右上角角标。
-        val indexOfSelect = viewModel.indexOfSelected(item)
+        val indexOfSelect = viewModel.getSelectedIndex(item.path.orEmpty())
         if (indexOfSelect == -1) {
             // 未选中
             binding.ivSelectState.isChecked = false
@@ -447,7 +447,7 @@ class FilePickerPreviewDialog(
             binding.btnConfirm.isEnabled = true
             binding.btnConfirm.text = "${viewModel.uiConfig.confirmBtnText}(${selectedMergeSize})"
             binding.rvSelected.models = viewModel.getSelectedDataList()
-            scrollItemToCenter(binding.rvSelected, viewModel.indexOfSelected(mCurrentItem))
+            scrollItemToCenter(binding.rvSelected, viewModel.getSelectedIndex(mCurrentItem?.path.orEmpty()))
         } else {
             binding.rvSelected.isVisible = false
             binding.rvSelected.models = viewModel.getSelectedDataList()

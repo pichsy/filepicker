@@ -36,6 +36,8 @@ class OnFilePickerDragItemTouchHelperCallback(
 
     override fun clearView(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder) {
         super.clearView(recyclerView, viewHolder)
+        // 重建角标索引并让外部同步 UI
+        viewModel.reorderSelectedByEntityListOrder()
         onDragEnd()
     }
 

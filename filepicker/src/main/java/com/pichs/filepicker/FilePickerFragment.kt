@@ -303,6 +303,8 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                     }
                     // 这里处理数据
                     binding.recyclerView.models = list
+                    // 重建 path -> position 映射（仅当前列表用于定向刷新）
+                    viewModel.rebuildPathPositionMap(list)
                     binding.llEmpty.isVisible = list.isEmpty()
                     updateBottomMenuSelectNumberUI()
                 }
@@ -459,11 +461,20 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
             override fun onTouchSelectEnd() {
                 isTouchSelectStart = false
                 if (viewModel.tempSelectData.isNotEmpty()) {
-                    // 如果临时选择数据不为空，那么就添加到已选择数据中。
-                    viewModel.addSelectedDataList(viewModel.tempSelectData)
+                    // 将临时选中合并为最终选中，并做最小范围刷新
+                    val adds = viewModel.tempSelectData.mapNotNull { it.path }
+                    val (addedPaths, affectedPaths) = viewModel.mergeSlideSelection(
+                        adds = adds,
+                        removes = emptyList()
+                    ) { p -> viewModel.getAllDataEntityList().firstOrNull { it.path == p } }
+
+                    // 对新增项做选中覆盖刷新
+                    addedPaths.forEach { p -> viewModel.getAdapterPositionByPath(p)?.let { binding.recyclerView.bindingAdapter.notifyItemChanged(it, "SELECTION_CHANGED") } }
+                    // 对受影响项做角标递减刷新
+                    affectedPaths.forEach { p -> viewModel.getAdapterPositionByPath(p)?.let { binding.recyclerView.bindingAdapter.notifyItemChanged(it, "INDEX_CHANGED") } }
+
                     viewModel.tempSelectData.clear()
-//                    updateSelectDataUI()
-//                    updateBottomMenuSelectNumberUI()
+                    updateBottomMenuSelectNumberUI()
                 }
             }
 
@@ -494,6 +505,25 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
 
             itemDifferCallback = BrvItemDifferCallback()
 
+            onPayload {
+                val item = getModel<MediaEntity>()
+                val itemBinding = getBinding<FilePickerItemRvAudioAlbumBinding>()
+                val path = item.path.orEmpty()
+                val indexNow = viewModel.getSelectedIndex(path)
+                val isChecked = indexNow >= 0
+                if (isChecked) {
+                    itemBinding.tvSelectIndex.text = "${indexNow + 1}"
+                    itemBinding.tvSelectIndex.isChecked = true
+                    itemBinding.clRoot.isChecked = true
+                    itemBinding.root.isSelected = true
+                } else {
+                    itemBinding.tvSelectIndex.text = ""
+                    itemBinding.tvSelectIndex.isChecked = false
+                    itemBinding.clRoot.isChecked = false
+                    itemBinding.root.isSelected = false
+                }
+            }
+
             onBind {
                 val item = getModel<MediaEntity>()
                 val itemBinding = getBinding<FilePickerItemRvAudioAlbumBinding>()
@@ -511,20 +541,17 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
 
                 itemBinding.tvSelectIndex.isVisible = !viewModel.isCanSingleClickSelect()
 
-                val indexOfSelect = viewModel.indexOfSelected(item)
-
-                if (indexOfSelect != -1) {
-                    itemBinding.tvSelectIndex.text = "${indexOfSelect + 1}"
+                val path = item.path.orEmpty()
+                val indexNow = viewModel.getSelectedIndex(path)
+                val isChecked = indexNow >= 0
+                if (isChecked) {
+                    itemBinding.tvSelectIndex.text = "${indexNow + 1}"
                     itemBinding.tvSelectIndex.isChecked = true
-//                    itemBinding.tvSelectIndex.setNormalBackgroundColor(ContextCompat.getColor(context, R.color.file_picker_index_bg_color))
-//                    itemBinding.ivCoverImage.foreground = ContextCompat.getDrawable(context, R.drawable.item_filepicker_select_mask)
                     itemBinding.clRoot.isChecked = true
                     itemBinding.root.isSelected = true
                 } else {
                     itemBinding.tvSelectIndex.text = ""
                     itemBinding.tvSelectIndex.isChecked = false
-//                    itemBinding.tvSelectIndex.setNormalBackgroundColor(Color.TRANSPARENT)
-//                    itemBinding.ivCoverImage.foreground = null
                     itemBinding.clRoot.isChecked = false
                     itemBinding.root.isSelected = false
                 }
@@ -542,28 +569,24 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
 
                 itemBinding.root.setOnClickListener {
                     if (viewModel.isCanSingleClickSelect()) {
-                        // 单击选择模式，直接回调选择器
                         callbackToChooser(arrayListOf(item))
                         return@setOnClickListener
                     }
 
                     FilePickerLog.d("FilePickerFragment", "item.path:${item.path},mimeType:${item.mimeType}")
-                    if (viewModel.containsSelectedData(item)) {
-                        viewModel.removeSelectedData(item)
-                        notifyItemChanged(modelPosition)
+                    val pathClick = item.path.orEmpty()
+                    if (viewModel.isSelected(pathClick)) {
+                        val (removedPath, affected) = viewModel.unselectPath(pathClick)
+                        viewModel.getAdapterPositionByPath(removedPath)?.let { notifyItemChanged(it, "SELECTION_CHANGED") }
+                        affected.forEach { p -> viewModel.getAdapterPositionByPath(p)?.let { notifyItemChanged(it, "INDEX_CHANGED") } }
                         updateBottomMenuSelectNumberUI()
-                        // 更新角标
-                        updateSelectDataUI()
                     } else {
                         if (isOverMaxSelectNumber(viewModel.getSelectedDataList().size + viewModel.tempSelectData.size)) {
                             Toast.makeText(requireContext(), viewModel.uiConfig.selectMaxNumberOverToastContent, Toast.LENGTH_SHORT).show()
                             return@setOnClickListener
                         }
-                        viewModel.addSelectedData(item)
-                        notifyItemChanged(modelPosition)
-                        if (modelPosition != itemCount - 1) {
-                            notifyItemChanged(itemCount - 1) // 刷新最后一行
-                        }
+                        val added = viewModel.selectPath(pathClick) { item }
+                        added.forEach { p -> viewModel.getAdapterPositionByPath(p)?.let { notifyItemChanged(it, "SELECTION_CHANGED") } }
                         updateBottomMenuSelectNumberUI()
                     }
                 }
@@ -602,7 +625,24 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
             itemDifferCallback = BrvItemDifferCallback()
 
             onPayload {
-                FilePickerLog.d("FilePickerFragment5656", "onPayload: modelPosition:$modelPosition, payloads:${it.joinToString(",")}")
+                val item = getModel<MediaEntity>()
+                val itemBinding = getBinding<FilePickerItemRvAlbumBinding>()
+                val path = item.path.orEmpty()
+                val indexNow = viewModel.getSelectedIndex(path)
+                val isChecked = indexNow >= 0
+
+                // 仅根据 payload 更新必要的 UI（此处更新角标与遮罩，避免重绑图片）
+                if (isChecked) {
+                    itemBinding.tvSelectIndex.text = "${indexNow + 1}"
+                    itemBinding.tvSelectIndex.isChecked = true
+                    itemBinding.ivCoverImage.foreground = ContextCompat.getDrawable(context, R.drawable.item_filepicker_select_mask)
+                    itemBinding.root.isSelected = true
+                } else {
+                    itemBinding.tvSelectIndex.text = ""
+                    itemBinding.tvSelectIndex.isChecked = false
+                    itemBinding.ivCoverImage.foreground = null
+                    itemBinding.root.isSelected = false
+                }
             }
 
             onBind {
@@ -631,17 +671,17 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                     itemBinding.tvDuration.text = ""
                 }
 
-                val indexOfSelect = viewModel.indexOfSelected(item)
-                FilePickerLog.d("FilePickerFragment", "item:${item.path}, selectedIndex:${indexOfSelect}, modelPosition:$modelPosition")
-                if (indexOfSelect != -1) {
-                    itemBinding.tvSelectIndex.text = "${indexOfSelect + 1}"
-//                    itemBinding.tvSelectIndex.setNormalBackgroundColor(ContextCompat.getColor(context, R.color.file_picker_index_bg_color))
+                val path = item.path.orEmpty()
+                val indexNow = viewModel.getSelectedIndex(path)
+                val isChecked = indexNow >= 0
+                FilePickerLog.d("FilePickerFragment", "item:${item.path}, selectedIndex:${indexNow}, modelPosition:$modelPosition")
+                if (isChecked) {
+                    itemBinding.tvSelectIndex.text = "${indexNow + 1}"
                     itemBinding.tvSelectIndex.isChecked = true
                     itemBinding.ivCoverImage.foreground = ContextCompat.getDrawable(context, R.drawable.item_filepicker_select_mask)
                     itemBinding.root.isSelected = true
                 } else {
                     itemBinding.tvSelectIndex.text = ""
-//                    itemBinding.tvSelectIndex.setNormalBackgroundColor(Color.TRANSPARENT)
                     itemBinding.tvSelectIndex.isChecked = false
                     itemBinding.ivCoverImage.foreground = null
                     itemBinding.root.isSelected = false
@@ -668,24 +708,20 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                         return@setOnClickListener
                     }
                     FilePickerLog.d("FilePickerFragment", "item.path:${item.path},mimeType:${item.mimeType}")
-                    if (viewModel.containsSelectedData(item)) {
-                        viewModel.removeSelectedData(item)
-                        itemBinding.root.isSelected = false
-                        notifyItemChanged(modelPosition)
+                    val pathClick = item.path.orEmpty()
+                    if (viewModel.isSelected(pathClick)) {
+                        val (removedPath, affected) = viewModel.unselectPath(pathClick)
+                        viewModel.getAdapterPositionByPath(removedPath)?.let { notifyItemChanged(it, "SELECTION_CHANGED") }
+                        affected.forEach { p -> viewModel.getAdapterPositionByPath(p)?.let { notifyItemChanged(it, "INDEX_CHANGED") } }
                         updateBottomMenuSelectNumberUI()
-                        // 更新角标
-                        updateSelectDataUI()
                     } else {
                         if (isOverMaxSelectNumber(viewModel.getSelectedDataList().size + viewModel.tempSelectData.size)) {
                             Toast.makeText(requireContext(), viewModel.uiConfig.selectMaxNumberOverToastContent, Toast.LENGTH_SHORT).show()
                             return@setOnClickListener
                         }
-                        viewModel.addSelectedData(item)
-                        itemBinding.root.isSelected = true
-                        notifyItemChanged(modelPosition)
+                        val added = viewModel.selectPath(pathClick) { item }
+                        added.forEach { p -> viewModel.getAdapterPositionByPath(p)?.let { notifyItemChanged(it, "SELECTION_CHANGED") } }
                         updateBottomMenuSelectNumberUI()
-                        notifyItemRangeChanged(lastRowStart, itemCount - lastRowStart) // 刷新最后一行
-//                        updateSelectDataUI()
                     }
                 }
 
@@ -735,8 +771,11 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
 
                 itemBinding.clSelectDelete.setOnClickListener {
                     // 删除选中项
+                    val removedPath = item.path.orEmpty()
                     viewModel.removeSelectedData(item)
-                    // 更新角标
+                    // 刷新被取消项覆盖与角标
+                    viewModel.getAdapterPositionByPath(removedPath)?.let { binding.recyclerView.bindingAdapter.notifyItemChanged(it, "SELECTION_CHANGED") }
+                    // 更新剩余选中项角标
                     updateSelectDataUI()
                     updateBottomMenuSelectNumberUI()
                 }
@@ -775,9 +814,11 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
 //                if (isOverMaxSelectNumber(viewModel.getSelectedDataList().size + viewModel.tempSelectData.size)) {
 //                    return@FilePickerPreviewDialog
 //                }
-                binding.recyclerView.bindingAdapter.notifyItemChanged(position)
+                binding.recyclerView.bindingAdapter.notifyItemChanged(position, "SELECTION_CHANGED")
             } else {
                 // 更新角标
+                val removedPath = item.path.orEmpty()
+                viewModel.getAdapterPositionByPath(removedPath)?.let { binding.recyclerView.bindingAdapter.notifyItemChanged(it, "SELECTION_CHANGED") }
                 updateSelectDataUI()
             }
             updateBottomMenuSelectNumberUI()
@@ -802,7 +843,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
             callbackToChooser(finalList)
         }).showPopupWindow()
 
-        var indexOfSelected = viewModel.indexOfSelected(item)
+        var indexOfSelected = viewModel.getSelectedIndex(item.path.orEmpty())
         if (indexOfSelected < 0) {
             indexOfSelected = 0
         }
@@ -885,9 +926,10 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
      * 移除的那些需要刷新，新增的也需要刷新。
      */
     private fun updateSelectDataUI() {
-//        viewModel.updateCurrentSelectIndex()
+        // 局部刷新：仅对当前可见并存在于 positionMap 的选中项与临时选中项更新角标
         binding.recyclerView.post {
-            binding.recyclerView.bindingAdapter.notifyItemRangeChanged(0, viewModel.currentFolderDataList.value.size)
+            val paths = (viewModel.getSelectedDataList().mapNotNull { it.path } + viewModel.tempSelectData.mapNotNull { it.path }).distinct()
+            paths.forEach { p -> viewModel.getAdapterPositionByPath(p)?.let { binding.recyclerView.bindingAdapter.notifyItemChanged(it, "INDEX_CHANGED") } }
         }
     }
 
@@ -900,7 +942,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
             return
         }
         FilePickerLog.d("FilePickerFragment", "onResume: isFirstResume:$isFirstResume")
-        loadData()
+        // 移除重复加载，避免角标被整表覆盖
     }
 
     override fun onPause() {

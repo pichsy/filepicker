@@ -126,29 +126,57 @@ class FilePickerViewModel : ViewModel() {
     var selectedData = CopyOnWriteArrayList<MediaEntity>()
     var tempSelectData = CopyOnWriteArrayList<MediaEntity>()
 
+    // ===== 新增：全局选择态与角标索引（角标真源）=====
+    // 使用 path 作为选择唯一键，避免与分页位置耦合
+    private val selectedPathSet = mutableSetOf<String>()
+    private val selectedList = mutableListOf<String>() // path 按选择顺序
+    private val pathToIndexMap = mutableMapOf<String, Int>() // path -> 角标序号（从0开始）
+    private val pathToPositionMap = mutableMapOf<String, Int>() // path -> adapter position（仅当前列表可用）
+
     fun indexOfSelected(item: MediaEntity?): Int {
         if (item == null) return -1
+        val path = item.path ?: return -1
+        // 优先从新索引中读取
+        val idx = pathToIndexMap[path]
+        if (idx != null && idx >= 0) return idx
+        // 兼容旧逻辑：fallback 检索 selectedData
         return (selectedData + tempSelectData).indexOfFirst { it.path == item.path }
     }
 
     fun addSelectedData(mediaEntity: MediaEntity) {
-        if (selectedData.contains(mediaEntity)) {
-            return
-        }
+        // 旧API：保持行为，同时更新新索引结构
+        val path = mediaEntity.path ?: return
+        if (selectedPathSet.contains(path)) return
         selectedData.add(mediaEntity)
+        selectedPathSet.add(path)
+        selectedList.add(path)
+        pathToIndexMap[path] = selectedList.lastIndex
     }
 
     fun addSelectedDataList(list: MutableList<MediaEntity>) {
-        selectedData.addAll(list)
+        // 兼容：批量添加（用于滑动选择合并）
+        for (e in list) {
+            val path = e.path ?: continue
+            if (selectedPathSet.contains(path)) continue
+            selectedData.add(e)
+            selectedPathSet.add(path)
+            selectedList.add(path)
+            pathToIndexMap[path] = selectedList.lastIndex
+        }
     }
 
     fun removeSelectedData(mediaEntity: MediaEntity) {
+        // 旧API：保持行为，同时更新新索引结构
         selectedData.remove(mediaEntity)
+        val path = mediaEntity.path ?: return
+        unselectPathInternal(path)
     }
 
     fun removeSelectedDataAll(list: List<MediaEntity>?) {
         if (list.isNullOrEmpty()) return
         selectedData.removeAll { it in list }
+        // 同步新索引：逐个执行，保证后续角标递减
+        list.forEach { e -> e.path?.let { unselectPathInternal(it) } }
     }
 
     fun getSelectedDataList(): MutableList<MediaEntity> {
@@ -156,7 +184,8 @@ class FilePickerViewModel : ViewModel() {
     }
 
     fun containsSelectedData(mediaEntity: MediaEntity): Boolean {
-        return selectedData.contains(mediaEntity)
+        val path = mediaEntity.path ?: return false
+        return selectedPathSet.contains(path)
     }
 
     fun getSelectedDataByPosition(position: Int): MediaEntity? {
@@ -164,11 +193,12 @@ class FilePickerViewModel : ViewModel() {
     }
 
     fun isSelected(mediaEntity: MediaEntity): Boolean {
-        return selectedData.contains(mediaEntity)
+        val path = mediaEntity.path ?: return false
+        return selectedPathSet.contains(path)
     }
 
     fun getSelectedCount(): Int {
-        return selectedData.size
+        return selectedList.size
     }
 
     fun initUserSelectDataList(folders: List<MediaFolder>) {
@@ -179,7 +209,8 @@ class FilePickerViewModel : ViewModel() {
         userUseSelectDataList.forEach { item ->
             val entity = allData.find { item.path == it.path }
             if (entity != null && !selectedData.contains(entity)) {
-                selectedData.add(entity)
+                // 使用统一入口，保证角标索引同步
+                addSelectedData(entity)
             }
         }
         if (isAllDataLoaded.value) {
@@ -377,5 +408,100 @@ class FilePickerViewModel : ViewModel() {
 //        updateAllDataList(allDataList)
 //            refreshIndexChannel.send(combineDataList.size)
         }
+    }
+
+    // ================== 新增：供 Fragment 使用的选择与刷新辅助 ==================
+
+    fun isSelected(path: String): Boolean = selectedPathSet.contains(path)
+    fun getSelectedIndex(path: String): Int = pathToIndexMap[path] ?: -1
+
+    fun rebuildPathPositionMap(dataList: List<MediaEntity>) {
+        pathToPositionMap.clear()
+        dataList.forEachIndexed { index, entity ->
+            entity.path?.let { pathToPositionMap[it] = index }
+        }
+    }
+
+    fun getAdapterPositionByPath(path: String): Int? = pathToPositionMap[path]
+
+    /**
+     * 新API：选中一个条目，返回受影响的路径集合（仅自身）。
+     */
+    fun selectPath(path: String, entityProvider: () -> MediaEntity?): List<String> {
+        if (selectedPathSet.contains(path)) return emptyList()
+        selectedPathSet.add(path)
+        selectedList.add(path)
+        pathToIndexMap[path] = selectedList.lastIndex
+        // 同步 selectedData 供底部列表使用
+        entityProvider.invoke()?.let { selectedData.addIfAbsent(it) }
+        return listOf(path)
+    }
+
+    /**
+     * 新API：取消选中一个条目，返回 Pair(被移除路径, 需要角标递减的后续路径集合)
+     */
+    fun unselectPath(path: String): Pair<String, List<String>> {
+        if (!selectedPathSet.contains(path)) return Pair(path, emptyList())
+        return unselectPathInternal(path)
+    }
+
+    private fun unselectPathInternal(path: String): Pair<String, List<String>> {
+        val k = pathToIndexMap[path] ?: return Pair(path, emptyList())
+        selectedPathSet.remove(path)
+        pathToIndexMap.remove(path)
+        // 从 selectedList 中移除，并对后续项序号-1
+        if (k in selectedList.indices && selectedList[k] == path) {
+            selectedList.removeAt(k)
+            val affected = mutableListOf<String>()
+            for (i in k until selectedList.size) {
+                val p = selectedList[i]
+                pathToIndexMap[p] = i
+                affected.add(p)
+            }
+            return Pair(path, affected)
+        } else {
+            // fallback：如果不在预期位置，做一次重建
+            selectedList.remove(path)
+            pathToIndexMap.clear()
+            selectedList.forEachIndexed { idx, p -> pathToIndexMap[p] = idx }
+            return Pair(path, selectedList.toList())
+        }
+    }
+
+    /**
+     * 新API：批量合并滑动选择
+     */
+    fun mergeSlideSelection(adds: List<String>, removes: List<String>, entityProvider: (String) -> MediaEntity?): Pair<List<String>, List<String>> {
+        val added = mutableListOf<String>()
+        val affected = mutableListOf<String>()
+        // 先添加（通常滑选为添加为主）
+        for (path in adds) {
+            if (!selectedPathSet.contains(path)) {
+                selectedPathSet.add(path)
+                selectedList.add(path)
+                pathToIndexMap[path] = selectedList.lastIndex
+                entityProvider.invoke(path)?.let { selectedData.addIfAbsent(it) }
+                added.add(path)
+            }
+        }
+        // 再删除（若存在取消区间）
+        for (path in removes) {
+            val (_, aft) = unselectPathInternal(path)
+            affected.addAll(aft)
+        }
+        return Pair(added, affected.distinct())
+    }
+
+    /**
+     * 拖拽排序结束：根据 selectedData 的顺序重建角标索引。
+     * 返回受影响的全部路径集合（按新顺序）。
+     */
+    fun reorderSelectedByEntityListOrder(): List<String> {
+        val paths = selectedData.mapNotNull { it.path }
+        selectedList.clear()
+        selectedList.addAll(paths)
+        pathToIndexMap.clear()
+        selectedList.forEachIndexed { idx, p -> pathToIndexMap[p] = idx }
+        return selectedList.toList()
     }
 }

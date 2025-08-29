@@ -1,6 +1,7 @@
 package com.pichs.filepicker.entity
 
 import android.net.Uri
+import android.content.ContentUris
 import android.os.Parcelable
 import kotlinx.parcelize.Parcelize
 import java.io.Serializable
@@ -158,6 +159,21 @@ data class MediaEntity(
      */
     fun isApk(): Boolean {
         return mimeType?.equals("application/vnd.android.package-archive", true) == true
+    }
+
+    /**
+     * 提供稳定ID（优先 MediaStore _ID，否则基于 path|size|addTime 的哈希）。
+     */
+    fun stableId(): Long {
+        try {
+            uri?.let { u ->
+                val id = ContentUris.parseId(u)
+                if (id != -1L) return id
+            }
+        } catch (_: Exception) {
+        }
+        val key = "${path?.lowercase() ?: ""}|${size}|${addTime ?: 0}"
+        return key.hashCode().toLong()
     }
 
     override fun equals(other: Any?): Boolean {

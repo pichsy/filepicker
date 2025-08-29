@@ -61,6 +61,8 @@ dependencies {
     implementation(libs.basepopup)
     // 图片加载
     implementation(libs.glide)
+    // paging3
+    implementation(libs.androidx.paging.runtime)
 
 
 }
