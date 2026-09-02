@@ -193,6 +193,20 @@ object FileQueryHelper {
                 return@withContext mediaResult
             }
 
+            // 列索引只解析一次，避免在循环内逐行重复查找
+            val idIndex = cursor.getColumnIndex(MediaStore.Files.FileColumns._ID)
+            val dataPathIndex = cursor.getColumnIndex(MediaStore.Files.FileColumns.DATA)
+            val displayNameIndex = cursor.getColumnIndex(MediaStore.Files.FileColumns.DISPLAY_NAME)
+            val sizeIndex = cursor.getColumnIndex(MediaStore.Files.FileColumns.SIZE)
+            val mimeTypeIndex = cursor.getColumnIndex(MediaStore.Files.FileColumns.MIME_TYPE)
+            val widthIndex = cursor.getColumnIndex(MediaStore.Files.FileColumns.WIDTH)
+            val heightIndex = cursor.getColumnIndex(MediaStore.Files.FileColumns.HEIGHT)
+            val durationIndex = cursor.getColumnIndex(MediaStore.Files.FileColumns.DURATION)
+            val dateAddedIndex = cursor.getColumnIndex(MediaStore.Files.FileColumns.DATE_ADDED)
+            val bucketIdIndex = cursor.getColumnIndex(MediaStore.Files.FileColumns.BUCKET_ID)
+            val bucketNameIndex = cursor.getColumnIndex(MediaStore.Files.FileColumns.BUCKET_DISPLAY_NAME)
+            val orientationIndex = cursor.getColumnIndex(MediaStore.Files.FileColumns.ORIENTATION)
+
             var addCount = 0
 
 
@@ -203,75 +217,46 @@ object FileQueryHelper {
                     return@withContext MediaResult()
                 }
 
-                val id = cursor.getLong(cursor.getColumnIndex(MediaStore.Files.FileColumns._ID))
-                val filePath = cursor.getString(cursor.getColumnIndex(MediaStore.Files.FileColumns.DATA))
-                val fileName = cursor.getString(cursor.getColumnIndex(MediaStore.Files.FileColumns.DISPLAY_NAME))
-                val size = cursor.getLong(cursor.getColumnIndex(MediaStore.Files.FileColumns.SIZE))
-                val mimeType = cursor.getString(cursor.getColumnIndex(MediaStore.Files.FileColumns.MIME_TYPE))
-                var width = cursor.getInt(cursor.getColumnIndex(MediaStore.Files.FileColumns.WIDTH))
-                var height = cursor.getInt(cursor.getColumnIndex(MediaStore.Files.FileColumns.HEIGHT))
-                val duration = cursor.getLong(cursor.getColumnIndex(MediaStore.Files.FileColumns.DURATION))
-                val dateAdd = max(0, cursor.getLong(cursor.getColumnIndex(MediaStore.Files.FileColumns.DATE_ADDED)) * 1000)// 注意：dateAdd是秒级别的时间戳
-                val bucketId = cursor.getString(cursor.getColumnIndex(MediaStore.Files.FileColumns.BUCKET_ID))
-                val foldName = cursor.getString(cursor.getColumnIndex(MediaStore.Files.FileColumns.BUCKET_DISPLAY_NAME))
+                val id = cursor.getLong(idIndex)
+                val filePath = cursor.getString(dataPathIndex)
+                val fileName = cursor.getString(displayNameIndex)
+                val size = cursor.getLong(sizeIndex)
+                val mimeType = cursor.getString(mimeTypeIndex)
+                var width = cursor.getInt(widthIndex)
+                var height = cursor.getInt(heightIndex)
+                val duration = cursor.getLong(durationIndex)
+                val dateAdd = max(0, cursor.getLong(dateAddedIndex) * 1000)// 注意：dateAdd是秒级别的时间戳
+                val bucketId = cursor.getString(bucketIdIndex)
+                val foldName = cursor.getString(bucketNameIndex)
                 val orientation = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    cursor.getInt(cursor.getColumnIndex(MediaStore.Files.FileColumns.ORIENTATION))
+                    cursor.getInt(orientationIndex)
                 } else {
                     0
                 }
 
-                var st = System.currentTimeMillis()
-
-                FilePickerLog.e("相册获取, ttttttt（单个）while---1111---耗时===start------>${st}")
-
                 if (size <= minSize) {
-                    FilePickerLog.d("相册获取, queryAlbums: 文件大小小于最小值，忽略。。。。")
                     continue
                 }
 
-                FilePickerLog.e("相册获取, ttttttt（单个）while---size <= minSize---耗时：${System.currentTimeMillis() - st}==========")
-                st = System.currentTimeMillis()
-
-
                 if (!(maxSize <= 0 || maxSize == Long.MAX_VALUE)) {
                     if (size > maxSize) {
-                        FilePickerLog.d("相册获取, queryAlbums: 文件大小大于最大值，忽略。。。。")
                         continue
                     }
                 }
 
-                FilePickerLog.e("相册获取, ttttttt（单个）while---!(maxSize <= 0 || maxSize == Long.MAX_VALUE)---耗时：${System.currentTimeMillis() - st}==========")
-                st = System.currentTimeMillis()
-
-
                 if (FilePickerFileUtils.isFileInHiddenDir(filePath)) {
-                    FilePickerLog.d("相册获取, 文件判断: 在隐藏目录，不展示, 忽略======")
                     continue
                 }
 
-                FilePickerLog.e("相册获取, ttttttt（单个）while---FilePickerFileUtils.isFileInHiddenDir(filePath)---耗时：${System.currentTimeMillis() - st}==========")
-
-                st = System.currentTimeMillis()
-
-                val file = File(filePath)
-                // 文件有毛病,忽略。。。。
-                val isExists = FilePickerFileUtils.isFileExists(file)
-                if (!isExists) {
-                    FilePickerLog.d("相册获取, queryAlbums: 文件不存在，忽略。。。。")
-                    continue
+                // 文件有毛病（不存在或不是文件）,忽略。。。。单次 stat 替代原先 exists + isFile 两次
+                val isFile = try {
+                    File(filePath).isFile
+                } catch (e: Exception) {
+                    false
                 }
-
-                FilePickerLog.e("相册获取, ttttttt（单个）while---isFileExists---耗时：${System.currentTimeMillis() - st}==========")
-                st = System.currentTimeMillis()
-
-                val isFile = FilePickerFileUtils.isFile(file)
-                // 文件大小为0，忽略。。。
                 if (!isFile) {
-                    FilePickerLog.e("相册获取, queryAlbums: 文件不是文件，忽略。。。。")
                     continue
                 }
-                FilePickerLog.e("相册获取, ttttttt（单个）while---isFile---耗时：${System.currentTimeMillis() - st}==========")
-                st = System.currentTimeMillis()
 
                 val uri = ContentUris.withAppendedId(
                     if (mimeType?.startsWith("video/", true) == true) {
@@ -300,7 +285,6 @@ object FileQueryHelper {
 
                 ++addCount
 
-                FilePickerLog.d("相册获取, queryAlbums: 媒体库获取到一个有效数据，添加到结果中。当前已添加数量：addCount=$addCount")
                 mediaResult.addMediaEntity(foldName ?: FilePickerFileUtils.getFolderName(filePath), FilePickerFileUtils.getFolderPath(filePath), mediaEntity)
 
 //                FilePickerLog.e { "相册获取, 结束循环（单次 到底共) while----endtimewhile:--耗时：${System.currentTimeMillis() - startTimeOneWhile}" }
@@ -308,7 +292,20 @@ object FileQueryHelper {
                     if (isActive) {
                         FilePickerLog.e("相册获取, queryAlbums: 快速回调，已获取到${fastNumber}数据，返回结果。")
                         FilePickerLog.d("相册获取, 首次回调耗时: 快速回调，已获取到${fastNumber}数据，返回结果---------folder:size：${mediaResult.mediaFolders.size}， 耗时：${System.currentTimeMillis() - startTimeWhile} ms")
-                        onFastCallBack(mediaResult.mediaFolders.toMutableList())
+                        // 快照发布：外层 toMutableList 只是浅拷贝，MediaFolder 实例仍会被下方
+                        // 扫描循环继续 addMediaEntity。下游（主线程/Default 线程）遍历这些活引用
+                        // 会与 IO 追加并发，触发 ConcurrentModificationException，必须深拷贝隔离
+                        onFastCallBack(
+                            mediaResult.mediaFolders.map { folder ->
+                                MediaFolder(
+                                    name = folder.name,
+                                    folderPath = folder.folderPath,
+                                    mediaEntityList = folder.mediaEntityList.toMutableList(),
+                                    tag = folder.tag,
+                                    nickName = folder.nickName,
+                                )
+                            }.toMutableList()
+                        )
                     }
                 }
             }

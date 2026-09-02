@@ -40,6 +40,8 @@ object MediaLoader {
             .load(uri)
             .placeholder(R.drawable.filepicker_placeholder_image)
             .error(R.drawable.filepicker_placeholder_image)
+            // GIF 保持 RESOURCE：asGif 的编码器是 SOURCE，AUTOMATIC 会把本地 GIF 的
+            // 磁盘缓存丢掉，内存缓存被逐出后每次重绑都要重新读文件+解码
             .diskCacheStrategy(DiskCacheStrategy.RESOURCE)
             .into(view)
     }
@@ -52,7 +54,7 @@ object MediaLoader {
             .dontAnimate()
             .placeholder(R.drawable.filepicker_placeholder_image)
             .error(R.drawable.filepicker_placeholder_image)
-            .diskCacheStrategy(DiskCacheStrategy.RESOURCE)
+            .diskCacheStrategy(resolveDiskCacheStrategy(uri))
             .into(view)
     }
 
@@ -64,7 +66,7 @@ object MediaLoader {
             .error(R.drawable.filepicker_placeholder_image)
             .placeholder(R.drawable.filepicker_placeholder_image)
             .override(200, 200)
-            .diskCacheStrategy(DiskCacheStrategy.RESOURCE)
+            .diskCacheStrategy(resolveDiskCacheStrategy(uri))
             .into(view)
     }
 
@@ -76,7 +78,7 @@ object MediaLoader {
             .error(R.drawable.filepicker_placeholder_image)
             .placeholder(R.drawable.filepicker_placeholder_image)
             .override(200, -1)
-            .diskCacheStrategy(DiskCacheStrategy.RESOURCE)
+            .diskCacheStrategy(resolveDiskCacheStrategy(path))
             .into(view)
     }
 
@@ -87,7 +89,7 @@ object MediaLoader {
             .error(R.drawable.filepicker_placeholder_image)
             .placeholder(R.drawable.filepicker_placeholder_image)
             .override(280, -1)
-            .diskCacheStrategy(DiskCacheStrategy.RESOURCE)
+            .diskCacheStrategy(resolveDiskCacheStrategy(uri))
             .into(view)
     }
 
@@ -98,7 +100,7 @@ object MediaLoader {
             .dontAnimate()
             .placeholder(R.drawable.filepicker_placeholder_image)
             .error(R.drawable.filepicker_placeholder_image)
-            .diskCacheStrategy(DiskCacheStrategy.RESOURCE)
+            .diskCacheStrategy(resolveDiskCacheStrategy(uri))
             .into(view)
     }
 
@@ -127,6 +129,26 @@ object MediaLoader {
             }
         }
     }
+
+    /**
+     * 本地数据（content://、file://、文件路径）用 AUTOMATIC：对本地 Bitmap（图片/视频封面）
+     * 的磁盘 resource cache 写入/读取与 RESOURCE 完全一致（BitmapEncoder 为 TRANSFORMED，
+     * AUTOMATIC 的 LOCAL+TRANSFORMED 分支允许写 resource cache），仅省去冗余配置差异。
+     * GIF 例外：GifDrawableEncoder 为 SOURCE，AUTOMATIC 不写 resource cache，
+     * 会丢掉 GIF 的磁盘缓存，故 loadGif 单独维持 RESOURCE。
+     * 远程 URL 维持 RESOURCE，行为不变。
+     * 注意不要改成 NONE：内存缓排放不下整个相册时，靠这份磁盘 resource cache 才能在回滚列表时快速复显。
+     */
+    private fun resolveDiskCacheStrategy(uri: Uri?): DiskCacheStrategy {
+        if (uri == null) return DiskCacheStrategy.RESOURCE
+        return when (uri.scheme?.lowercase()) {
+            null, "content", "file" -> DiskCacheStrategy.AUTOMATIC
+            else -> DiskCacheStrategy.RESOURCE
+        }
+    }
+
+    private fun resolveDiskCacheStrategy(path: String?): DiskCacheStrategy =
+        resolveDiskCacheStrategy(path?.let { Uri.parse(it) })
 
 
 }

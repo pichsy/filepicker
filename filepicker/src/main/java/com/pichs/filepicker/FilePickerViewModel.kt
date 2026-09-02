@@ -126,9 +126,34 @@ class FilePickerViewModel : ViewModel() {
     var selectedData = CopyOnWriteArrayList<MediaEntity>()
     var tempSelectData = CopyOnWriteArrayList<MediaEntity>()
 
+    /**
+     * path -> 在 selectedData 中的下标。与 selectedData 同生命周期，任何改动选中集合/顺序的地方都必须同步。
+     * 只在主线程读写（与 selectedData 一致），用于把 indexOfSelected 从每次 onBind O(n) 降到 O(1)。
+     */
+    private val selectedIndexMap = HashMap<String, Int>()
+
+    /**
+     * path -> 在 tempSelectData 中的下标。综合角标 = selectedData.size + 该下标。
+     * 单独维护是为了滑动连选时只需重建很小的 temp 部分，而不动已选部分。
+     */
+    private val tempIndexMap = HashMap<String, Int>()
+
+    private var snapshotSelectedMap: HashMap<String, Int>? = null
+    private var snapshotTempMap: HashMap<String, Int>? = null
+    private var snapshotSelectedSize: Int = 0
+
     fun indexOfSelected(item: MediaEntity?): Int {
         if (item == null) return -1
-        return (selectedData + tempSelectData).indexOfFirst { it.path == item.path }
+        if (selectedData.isEmpty() && tempSelectData.isEmpty()) return -1
+        val path = item.path
+        if (path == null) {
+            // 与原实现保持一致：path 为 null 时按 null 匹配，退回线性扫描
+            return (selectedData + tempSelectData).indexOfFirst { it.path == null }
+        }
+        // selectedData 在前，与 (selectedData + tempSelectData).indexOfFirst 的“取最先出现”语义一致
+        selectedIndexMap[path]?.let { return it }
+        tempIndexMap[path]?.let { return selectedData.size + it }
+        return -1
     }
 
     fun addSelectedData(mediaEntity: MediaEntity) {
@@ -136,19 +161,30 @@ class FilePickerViewModel : ViewModel() {
             return
         }
         selectedData.add(mediaEntity)
+        mediaEntity.path?.let { path ->
+            if (!selectedIndexMap.containsKey(path)) {
+                selectedIndexMap[path] = selectedData.size - 1
+            }
+        }
     }
 
     fun addSelectedDataList(list: MutableList<MediaEntity>) {
+        if (list.isEmpty()) return
         selectedData.addAll(list)
+        rebuildSelectedIndexMap()
     }
 
     fun removeSelectedData(mediaEntity: MediaEntity) {
-        selectedData.remove(mediaEntity)
+        if (selectedData.remove(mediaEntity)) {
+            rebuildSelectedIndexMap()
+        }
     }
 
     fun removeSelectedDataAll(list: List<MediaEntity>?) {
         if (list.isNullOrEmpty()) return
-        selectedData.removeAll { it in list }
+        if (selectedData.removeAll { it in list }) {
+            rebuildSelectedIndexMap()
+        }
     }
 
     fun getSelectedDataList(): MutableList<MediaEntity> {
@@ -171,6 +207,128 @@ class FilePickerViewModel : ViewModel() {
         return selectedData.size
     }
 
+    // ---------------- path -> 角标 索引维护 ----------------
+
+    private fun rebuildSelectedIndexMap() {
+        selectedIndexMap.clear()
+        for (i in selectedData.indices) {
+            val path = selectedData[i].path ?: continue
+            if (!selectedIndexMap.containsKey(path)) {
+                // 与 indexOfFirst 语义一致：重复 path 保留最先出现的下标
+                selectedIndexMap[path] = i
+            }
+        }
+    }
+
+    private fun rebuildTempIndexMap() {
+        tempIndexMap.clear()
+        for (i in tempSelectData.indices) {
+            val path = tempSelectData[i].path ?: continue
+            if (!tempIndexMap.containsKey(path)) {
+                tempIndexMap[path] = i
+            }
+        }
+    }
+
+    /**
+     * 拖拽排序后同步索引：from/to 两个位置的角标互换。
+     */
+    fun onSelectedDataSwapped(from: Int, to: Int) {
+        if (from == to) return
+        if (from !in selectedData.indices || to !in selectedData.indices) return
+        val fromPath = selectedData[from].path
+        val toPath = selectedData[to].path
+        if (fromPath == null || toPath == null) {
+            // 有 null path 的实体无法进入以 path 为键的索引：全量重建兜底，
+            // 保证非 null 参与方的角标与 swap 后的真实位置一致；
+            // null path 项自身由 indexOfSelected 的线性退化路径保证正确
+            rebuildSelectedIndexMap()
+            return
+        }
+        val fromIndex = selectedIndexMap[fromPath]
+        val toIndex = selectedIndexMap[toPath]
+        if (fromIndex == null || toIndex == null) {
+            rebuildSelectedIndexMap()
+            return
+        }
+        selectedIndexMap[fromPath] = toIndex
+        selectedIndexMap[toPath] = fromIndex
+    }
+
+    fun clearTempSelectData() {
+        tempSelectData.clear()
+        tempIndexMap.clear()
+    }
+
+    fun addAllTempSelectData(list: Collection<MediaEntity>) {
+        if (list.isEmpty()) return
+        tempSelectData.addAll(list)
+        rebuildTempIndexMap()
+    }
+
+    fun removeAllTempSelectData(list: List<MediaEntity>) {
+        if (list.isEmpty()) return
+        if (tempSelectData.removeAll { it in list }) {
+            rebuildTempIndexMap()
+        }
+    }
+
+    /**
+     * 把滑动选择的临时数据合并进已选列表。
+     * 合并前后 combined(selectedData + tempSelectData) 的下标不变，所以角标显示不需要刷新。
+     */
+    fun mergeTempSelectDataIntoSelected() {
+        if (tempSelectData.isEmpty()) return
+        selectedData.addAll(tempSelectData)
+        clearTempSelectData()
+        rebuildSelectedIndexMap()
+    }
+
+    /**
+     * 记录当前角标索引快照，配合 [getSelectionChangedPaths] 计算角标发生变化的条目，用于局部刷新。
+     */
+    fun takeSelectionSnapshot() {
+        snapshotSelectedMap = HashMap(selectedIndexMap)
+        snapshotTempMap = HashMap(tempIndexMap)
+        snapshotSelectedSize = selectedData.size
+    }
+
+    /**
+     * 与最近一次快照对比，返回角标（选中序号）发生变化的 path 集合。
+     */
+    fun getSelectionChangedPaths(): Set<String> {
+        val oldSelected = snapshotSelectedMap ?: return emptySet()
+        val oldTemp = snapshotTempMap ?: return emptySet()
+        if (oldSelected.isEmpty() && oldTemp.isEmpty() && selectedIndexMap.isEmpty() && tempIndexMap.isEmpty()) {
+            return emptySet()
+        }
+        val changed = HashSet<String>()
+        val paths = HashSet<String>()
+        paths.addAll(oldSelected.keys)
+        paths.addAll(oldTemp.keys)
+        paths.addAll(selectedIndexMap.keys)
+        paths.addAll(tempIndexMap.keys)
+        for (path in paths) {
+            val oldIndex = oldSelected[path] ?: (oldTemp[path]?.let { snapshotSelectedSize + it } ?: -1)
+            val newIndex = selectedIndexMap[path] ?: (tempIndexMap[path]?.let { selectedData.size + it } ?: -1)
+            if (oldIndex != newIndex) {
+                changed.add(path)
+            }
+        }
+        return changed
+    }
+
+    /**
+     * 当前所有带角标（已选中或临时选中）的 path 集合。
+     */
+    fun getBadgedPathSet(): Set<String> {
+        if (selectedIndexMap.isEmpty() && tempIndexMap.isEmpty()) return emptySet()
+        val paths = HashSet<String>(selectedIndexMap.size + tempIndexMap.size)
+        paths.addAll(selectedIndexMap.keys)
+        paths.addAll(tempIndexMap.keys)
+        return paths
+    }
+
     fun initUserSelectDataList(folders: List<MediaFolder>) {
         if (userUseSelectDataList.isEmpty()) {
             return
@@ -178,8 +336,9 @@ class FilePickerViewModel : ViewModel() {
         val allData = folders.flatMap { it.mediaEntityList }.toMutableList()
         userUseSelectDataList.forEach { item ->
             val entity = allData.find { item.path == it.path }
-            if (entity != null && !selectedData.contains(entity)) {
-                selectedData.add(entity)
+            if (entity != null) {
+                // addSelectedData 内部有 contains 去重，并同步 selectedIndexMap
+                addSelectedData(entity)
             }
         }
         if (isAllDataLoaded.value) {

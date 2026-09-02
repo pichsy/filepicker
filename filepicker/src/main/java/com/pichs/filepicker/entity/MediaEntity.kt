@@ -167,7 +167,7 @@ data class MediaEntity(
     }
 
     override fun hashCode(): Int {
-        return super.hashCode()
+        return path?.hashCode() ?: 0
     }
 }
 

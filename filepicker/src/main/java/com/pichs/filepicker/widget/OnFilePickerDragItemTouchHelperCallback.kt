@@ -27,6 +27,8 @@ class OnFilePickerDragItemTouchHelperCallback(
         val to = target.absoluteAdapterPosition
         val list = viewModel.getSelectedDataList()
         Collections.swap(list, from, to)
+        // 同步 path -> 角标 索引，保持 indexOfSelected 的 O(1) 查询正确
+        viewModel.onSelectedDataSwapped(from, to)
         adapter.notifyItemMoved(from, to)
         return true
     }

@@ -45,11 +45,13 @@ import com.pichs.filepicker.utils.FilePickerTimeFormatUtils
 import com.pichs.filepicker.widget.OnFilePickerDragItemTouchHelperCallback
 import com.pichs.filepicker.widget.OnFilePickerItemSelectionChangedListener
 import com.pichs.xwidget.utils.XDisplayHelper
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import razerdp.basepopup.BasePopupWindow
 
 class FilePickerFragment : Fragment(), View.OnClickListener {
@@ -61,6 +63,9 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
     private var currentTabType = FilePickerSelectType.IMAGE_VIDEO
 
     private var isTouchSelectStart = false
+
+    // 主列表是否为网格布局（网格的最后一行 margin 刷新范围与线性不同）
+    private var isGridMode = false
 
     companion object {
         /**
@@ -149,9 +154,13 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
 
             // todo 进入 展示界面弹窗，这里仅展示固定个数，不参与展示。
             FilePickerFinalPreviewDialog(requireContext(), viewModel, onDismissDataDelete = { deleteList ->
+                viewModel.takeSelectionSnapshot()
                 viewModel.removeSelectedDataAll(deleteList)
 //                Toast.makeText(requireContext(), "删除了 ${deleteList.size} 个文件", Toast.LENGTH_SHORT).show()
-                updateSelectDataUI()
+                updateSelectDataUI(
+                    viewModel.getSelectionChangedPaths(),
+                    viewModel.getSelectedCount() + viewModel.tempSelectData.size == 0
+                )
                 updateBottomMenuSelectNumberUI()
             }, onDragEnd = {
                 updateSelectDataUI()
@@ -294,8 +303,21 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
             launch {
                 viewModel.currentFolderDataList.collectLatest { list ->
                     FilePickerLog.d("FilePickerFragment8848", "initDataFlow currentFolderDataList: size:${list.size}, currentTabType:$currentTabType")
+                    // 性能优化：原来是循环内每个选中项都 getAllDataEntityList().contains() 一次
+                    // （每次都 flatMap 全库并新建列表，O(选中数×全库)），改为每次发射只建一次
+                    // 全库 path 集合再 O(1) 查询，集合在 Default 线程构建。
+                    // contains 语义与 MediaEntity.equals（仅比 path，含 null）完全一致
+                    val allPathSet: Set<String?> = withContext(Dispatchers.Default) {
+                        val set = HashSet<String?>()
+                        for (folder in viewModel.getAllDataList()) {
+                            for (entity in folder.mediaEntityList) {
+                                set.add(entity.path)
+                            }
+                        }
+                        set
+                    }
                     for (item in viewModel.selectedData) {
-                        val isContains = viewModel.getAllDataEntityList().contains(item)
+                        val isContains = allPathSet.contains(item.path)
                         if (!isContains) {
                             FilePickerLog.d("FilePickerFragment8848", "initDataFlow: item:${item.path}, isContains:$isContains")
                             viewModel.removeSelectedData(item)
@@ -323,71 +345,77 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
     }
 
     // todo
-    private fun resetListDataWithSelectData() {
-        lifecycleScope.launch {
-            if (isSelectTypeEqualsAll(viewModel.selectType.value)) {
-                when (currentTabType) {
-                    FilePickerSelectType.IMAGE_VIDEO, FilePickerSelectType.IMAGE_VIDEO_GIF -> {
-                        FilePickerLog.d(
-                            "FilePickerFragment8848",
-                            "resetListDataWithSelectData: allFolderDataList collectLatest-viewModel.selectType.value=${viewModel.selectType.value}"
-                        )
+    // 过期结果守卫：多次 reset 并发时保证"后调用者必胜"，
+    // 与原实现（主线程串行执行，最后一次计算的结果生效）的最终状态一致
+    private var resetListSeq = 0L
 
-                        viewModel.updateCurrentFolderDataList(
-                            if (viewModel.currentFolder.value != null) {
+    private fun resetListDataWithSelectData() {
+        val seq = ++resetListSeq
+        lifecycleScope.launch {
+            // 性能优化：flatMap/filter/sortedByDescending 是 O(n log n) 的重计算，
+            // 万级图库在主线程执行会卡帧，统一下沉到 Default 线程计算，主线程只负责应用结果
+            val currentFolder = viewModel.currentFolder.value
+            val resultList: List<MediaEntity>? = withContext(Dispatchers.Default) {
+                if (isSelectTypeEqualsAll(viewModel.selectType.value)) {
+                    when (currentTabType) {
+                        FilePickerSelectType.IMAGE_VIDEO, FilePickerSelectType.IMAGE_VIDEO_GIF -> {
+                            FilePickerLog.d(
+                                "FilePickerFragment8848",
+                                "resetListDataWithSelectData: allFolderDataList collectLatest-viewModel.selectType.value=${viewModel.selectType.value}"
+                            )
+
+                            if (currentFolder != null) {
                                 FilePickerLog.d("FilePickerFragment8848", "resetListDataWithSelectData: currentFolder=有了- ----")
-                                viewModel.currentFolder.value?.mediaEntityList?.sortedByDescending { it.addTime } ?: mutableListOf()
+                                currentFolder.mediaEntityList?.sortedByDescending { it.addTime } ?: mutableListOf()
                             } else {
                                 FilePickerLog.d("FilePickerFragment8848", "resetListDataWithSelectData: currentFolder=全部 ----")
                                 viewModel.getAllDataList().flatMap { it.mediaEntityList }.sortedByDescending { it.addTime }.toMutableList()
                             }
-                        )
-                    }
+                        }
 
-                    FilePickerSelectType.IMAGE -> {
-                        viewModel.updateCurrentFolderDataList(
-                            if (viewModel.currentFolder.value != null) {
-                                viewModel.currentFolder.value?.mediaEntityList?.filter { it.isImage() }?.sortedByDescending { it.addTime }?.toMutableList()
+                        FilePickerSelectType.IMAGE -> {
+                            if (currentFolder != null) {
+                                currentFolder.mediaEntityList?.filter { it.isImage() }?.sortedByDescending { it.addTime }?.toMutableList()
                                     ?: mutableListOf()
                             } else {
                                 viewModel.getAllDataList().flatMap { it.mediaEntityList.filter { it.isImage() } }.sortedByDescending { it.addTime }
                                     .toMutableList()
                             }
-                        )
-                    }
+                        }
 
-                    FilePickerSelectType.VIDEO -> {
-                        viewModel.updateCurrentFolderDataList(
-                            if (viewModel.currentFolder.value != null) {
-                                viewModel.currentFolder.value?.mediaEntityList?.filter { it.isVideo() }?.sortedByDescending { it.addTime }?.toMutableList()
+                        FilePickerSelectType.VIDEO -> {
+                            if (currentFolder != null) {
+                                currentFolder.mediaEntityList?.filter { it.isVideo() }?.sortedByDescending { it.addTime }?.toMutableList()
                                     ?: mutableListOf()
                             } else {
                                 viewModel.getAllDataList().flatMap { it.mediaEntityList.filter { it.isVideo() } }.sortedByDescending { it.addTime }
                                     .toMutableList()
                             }
-                        )
-                    }
+                        }
 
-                    FilePickerSelectType.GIF -> {
-                        viewModel.updateCurrentFolderDataList(
-                            if (viewModel.currentFolder.value != null) {
-                                viewModel.currentFolder.value?.mediaEntityList?.filter { it.isGif() }?.sortedByDescending { it.addTime }?.toMutableList()
+                        FilePickerSelectType.GIF -> {
+                            if (currentFolder != null) {
+                                currentFolder.mediaEntityList?.filter { it.isGif() }?.sortedByDescending { it.addTime }?.toMutableList()
                                     ?: mutableListOf()
                             } else {
                                 viewModel.getAllDataList().flatMap { it.mediaEntityList.filter { it.isGif() } }.sortedByDescending { it.addTime }
                                     .toMutableList()
                             }
-                        )
+                        }
+
+                        // 与原实现一致：未列出的 tab 类型不做任何更新
+                        else -> null
                     }
-                }
-            } else {
-                viewModel.updateCurrentFolderDataList(
-                    if (viewModel.currentFolder.value != null) {
-                        viewModel.currentFolder.value?.mediaEntityList?.toMutableList()?.sortedByDescending { it.addTime } ?: mutableListOf()
+                } else {
+                    if (currentFolder != null) {
+                        currentFolder.mediaEntityList?.toMutableList()?.sortedByDescending { it.addTime } ?: mutableListOf()
                     } else {
                         viewModel.getAllDataList().flatMap { it.mediaEntityList }.sortedByDescending { it.addTime }.toMutableList()
                     }
-                )
+                }
+            }
+            if (resultList != null && seq == resetListSeq) {
+                viewModel.updateCurrentFolderDataList(resultList)
             }
         }
     }
@@ -417,15 +445,17 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                     rvData.subList(currentPosition, startPosition + 1).reversed()
                 }
                 FilePickerLog.d("FilePickerFragment6665", "from:$from, to:$to, tempList.size:${tempList.size}, isSelected:$isSelected")
+                viewModel.takeSelectionSnapshot()
+                val oldMergeCount = viewModel.getSelectedCount() + viewModel.tempSelectData.size
                 if (isSelected) {
                     // 这里需要区分 viewModel.maxSelectNumber.value==0 的情况。
                     // 如果是选中模式，那么 经过的都要选中。
-                    viewModel.tempSelectData.clear()
+                    viewModel.clearTempSelectData()
                     val list = tempList.filter { it !in viewModel.getSelectedDataList() }
 
                     if (viewModel.maxSelectNumber.value == 0 || viewModel.maxSelectNumber.value == Int.MAX_VALUE) {
                         // 如果没有限制选择数量，那么直接添加到临时选择数据中。
-                        viewModel.tempSelectData.addAll(list)
+                        viewModel.addAllTempSelectData(list)
                     } else {
                         val dx = list.size + viewModel.getSelectedCount() - viewModel.maxSelectNumber.value
 
@@ -435,20 +465,24 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                         )
 
                         if (dx > 0) {
-                            viewModel.tempSelectData.addAll(list.subList(0, list.size - dx))
+                            viewModel.addAllTempSelectData(list.subList(0, list.size - dx))
                         } else {
-                            viewModel.tempSelectData.addAll(list)
+                            viewModel.addAllTempSelectData(list)
                         }
                     }
                 } else {
                     // 如果是取消选中模式，那么经过的都要取消选中。
-                    viewModel.tempSelectData.removeAll { it in tempList }
+                    viewModel.removeAllTempSelectData(tempList)
                     viewModel.removeSelectedDataAll(tempList)
                     // 这里需要刷新移除的 条目
                     // updateUnselectDataUI(tempList)
                 }
 
-                updateSelectDataUI()
+                // 只刷新角标发生变化的格子；已选数量跨过 0 时同步最后一行的 margin
+                updateSelectDataUI(
+                    viewModel.getSelectionChangedPaths(),
+                    (oldMergeCount == 0) != ((viewModel.getSelectedCount() + viewModel.tempSelectData.size) == 0)
+                )
                 updateBottomMenuSelectNumberUI()
             }
 
@@ -460,8 +494,8 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                 isTouchSelectStart = false
                 if (viewModel.tempSelectData.isNotEmpty()) {
                     // 如果临时选择数据不为空，那么就添加到已选择数据中。
-                    viewModel.addSelectedDataList(viewModel.tempSelectData)
-                    viewModel.tempSelectData.clear()
+                    // 合并前后综合下标不变，角标无需刷新。
+                    viewModel.mergeTempSelectDataIntoSelected()
 //                    updateSelectDataUI()
 //                    updateBottomMenuSelectNumberUI()
                 }
@@ -476,6 +510,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
 
     @SuppressLint("SetTextI18n")
     private fun initLinearRecycler() {
+        isGridMode = false
         // 其他文件选择时使用样式和组件。
         binding.recyclerView.itemAnimator = null
         context?.let { ctx ->
@@ -549,11 +584,15 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
 
                     FilePickerLog.d("FilePickerFragment", "item.path:${item.path},mimeType:${item.mimeType}")
                     if (viewModel.containsSelectedData(item)) {
+                        viewModel.takeSelectionSnapshot()
                         viewModel.removeSelectedData(item)
                         notifyItemChanged(modelPosition)
                         updateBottomMenuSelectNumberUI()
-                        // 更新角标
-                        updateSelectDataUI()
+                        // 更新角标（只刷新角标变化的格子）
+                        updateSelectDataUI(
+                            viewModel.getSelectionChangedPaths(),
+                            viewModel.getSelectedCount() + viewModel.tempSelectData.size == 0
+                        )
                     } else {
                         if (isOverMaxSelectNumber(viewModel.getSelectedDataList().size + viewModel.tempSelectData.size)) {
                             Toast.makeText(requireContext(), viewModel.uiConfig.selectMaxNumberOverToastContent, Toast.LENGTH_SHORT).show()
@@ -593,6 +632,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
      */
     @SuppressLint("SetTextI18n")
     private fun initGridRecycler() {
+        isGridMode = true
 //        binding.tvMaxSelectNumber.text = "${viewModel.maxSelectNumber.value}"
         binding.recyclerView.itemAnimator = null
 
@@ -669,12 +709,16 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                     }
                     FilePickerLog.d("FilePickerFragment", "item.path:${item.path},mimeType:${item.mimeType}")
                     if (viewModel.containsSelectedData(item)) {
+                        viewModel.takeSelectionSnapshot()
                         viewModel.removeSelectedData(item)
                         itemBinding.root.isSelected = false
                         notifyItemChanged(modelPosition)
                         updateBottomMenuSelectNumberUI()
-                        // 更新角标
-                        updateSelectDataUI()
+                        // 更新角标（只刷新角标变化的格子）
+                        updateSelectDataUI(
+                            viewModel.getSelectionChangedPaths(),
+                            viewModel.getSelectedCount() + viewModel.tempSelectData.size == 0
+                        )
                     } else {
                         if (isOverMaxSelectNumber(viewModel.getSelectedDataList().size + viewModel.tempSelectData.size)) {
                             Toast.makeText(requireContext(), viewModel.uiConfig.selectMaxNumberOverToastContent, Toast.LENGTH_SHORT).show()
@@ -735,9 +779,13 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
 
                 itemBinding.clSelectDelete.setOnClickListener {
                     // 删除选中项
+                    viewModel.takeSelectionSnapshot()
                     viewModel.removeSelectedData(item)
-                    // 更新角标
-                    updateSelectDataUI()
+                    // 更新角标（只刷新角标变化的格子）
+                    updateSelectDataUI(
+                        viewModel.getSelectionChangedPaths(),
+                        viewModel.getSelectedCount() + viewModel.tempSelectData.size == 0
+                    )
                     updateBottomMenuSelectNumberUI()
                 }
             }
@@ -777,8 +825,11 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
 //                }
                 binding.recyclerView.bindingAdapter.notifyItemChanged(position)
             } else {
-                // 更新角标
-                updateSelectDataUI()
+                // 更新角标（变更发生在弹窗内部，这里兜底刷新所有带角标的格子 + 被取消的这一格）
+                updateSelectDataUI(
+                    viewModel.getBadgedPathSet() + setOfNotNull(item.path),
+                    viewModel.getSelectedCount() + viewModel.tempSelectData.size == 0
+                )
             }
             updateBottomMenuSelectNumberUI()
         }, onDragEnd = {
@@ -881,13 +932,47 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
 
     /**
      * 更新选择数据的UI。 主要是角标。
-     * 有优化点，就是 针对性刷新，
-     * 移除的那些需要刷新，新增的也需要刷新。
+     * 只刷新受影响的格子：affectedPaths 为角标发生变化的 path 集合；为 null 时兜底刷新所有带角标的格子。
+     * marginChanged 表示已选数量是否跨过 0（最后一行/最后一项的 bottomMargin 依赖 已选数量 > 0）。
+     * 刷新时机不变：依然是 post 到下一帧，跨过/点到的格子立即更新角标。
      */
-    private fun updateSelectDataUI() {
-//        viewModel.updateCurrentSelectIndex()
+    private fun updateSelectDataUI(affectedPaths: Set<String>? = null, marginChanged: Boolean = false) {
         binding.recyclerView.post {
-            binding.recyclerView.bindingAdapter.notifyItemRangeChanged(0, viewModel.currentFolderDataList.value.size)
+            val adapter = binding.recyclerView.bindingAdapter
+            val entityList = binding.recyclerView.models as? List<MediaEntity>
+            if (entityList == null) {
+                // 拿不到当前列表时，保持原有全量刷新行为
+                adapter.notifyItemRangeChanged(0, viewModel.currentFolderDataList.value.size)
+                return@post
+            }
+            if (entityList.isEmpty()) {
+                return@post
+            }
+            val targets = affectedPaths ?: viewModel.getBadgedPathSet()
+            // 最后一行（网格）/最后一项（线性）的 bottomMargin 依赖 已选数量 > 0，数量跨过 0 时需要同步
+            var marginStart = entityList.size
+            if (marginChanged) {
+                marginStart = if (isGridMode) {
+                    val remainder = entityList.size % 4
+                    entityList.size - if (remainder == 0) 4 else remainder
+                } else {
+                    entityList.size - 1
+                }
+            }
+            if (targets.isEmpty() && marginStart >= entityList.size) {
+                return@post
+            }
+            if (targets.isNotEmpty()) {
+                for (position in entityList.indices) {
+                    val path = entityList[position].path
+                    if (path != null && path in targets) {
+                        adapter.notifyItemChanged(position)
+                    }
+                }
+            }
+            if (marginStart < entityList.size) {
+                adapter.notifyItemRangeChanged(marginStart, entityList.size - marginStart)
+            }
         }
     }
 
@@ -897,6 +982,12 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
         super.onResume()
         if (isFirstResume) {
             isFirstResume = false
+            return
+        }
+        // 性能优化：媒体库已完整加载过时不再全量重扫，
+        // 避免从预览/视频页/后台返回时重复查询 MediaStore 引发卡顿重刷
+        if (viewModel.isAllDataLoaded.value) {
+            FilePickerLog.d("FilePickerFragment", "onResume: isAllDataLoaded=true, skip rescan")
             return
         }
         FilePickerLog.d("FilePickerFragment", "onResume: isFirstResume:$isFirstResume")

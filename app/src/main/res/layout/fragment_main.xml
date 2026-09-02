@@ -50,6 +50,7 @@
             android:layout_weight="1"
             android:hint="请输入数量"
             android:inputType="number"
+            android:text="9"
             android:textColor="#fff"
             android:textColorHint="#888" />
     </LinearLayout>
@@ -78,6 +79,7 @@
                 android:id="@+id/rb_all"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:checked="true"
                 android:text="全部"
                 android:textColor="#fff" />
 

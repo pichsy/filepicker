@@ -1,6 +1,7 @@
 package com.pichs.filepicker
 
 import android.graphics.Color
+import android.os.Bundle
 import android.os.Parcelable
 import kotlinx.parcelize.Parcelize
 
@@ -104,4 +105,72 @@ public data class FilePickerUIConfig(
      * 可随意扩展
      */
     var folderNickNameMap: HashMap<String, String> = hashMapOf<String, String>()
-) : Parcelable
+) : Parcelable {
+
+    /**
+     * 拍平为纯基本类型 Bundle，用于 Intent 传输。
+     * 背景：把 app 内的自定义 Parcelable 直接放进 Intent extra 后，system_server 在启动
+     * Activity 时会用自己进程的 classloader 反序列化 Bundle（窗口管理、ActivityRecord 等
+     * 逻辑会读取/写入 extras），找不到 app 类会抛 ClassNotFoundException 并干扰启动流程
+     * （华为系 ROM 上实测必现）。全部改用 framework 自带类型（Bundle/Boolean/Int/String），
+     * 系统进程可安全解析，读取端见 [fromTransportBundle]。
+     */
+    public fun toTransportBundle(): Bundle = Bundle().apply {
+        putBoolean("isHideSelectTab", isHideSelectTab)
+        putString("confirmBtnText", confirmBtnText)
+        putBoolean("isPreviewPageIndexMode", isPreviewPageIndexMode)
+        putString("allAlbumName", allAlbumName)
+        putString("previewText", previewText)
+        putBoolean("isShowBottomPreviewText", isShowBottomPreviewText)
+        putString("previewSelectText", previewSelectText)
+        putString("originalText", originalText)
+        putBoolean("isShowOriginal", isShowOriginal)
+        putBoolean("isOriginalChecked", isOriginalChecked)
+        putBoolean("isShowHomePageSelectedBottomListWidget", isShowHomePageSelectedBottomListWidget)
+        putBoolean("isShowSelectedListDeleteIcon", isShowSelectedListDeleteIcon)
+        putInt("selectedListDeleteIconResId", selectedListDeleteIconResId)
+        putInt("selectedListDeleteIconBackgroundColor", selectedListDeleteIconBackgroundColor)
+        putString("atLeastSelectOneToastContent", atLeastSelectOneToastContent)
+        putString("selectMaxNumberOverToastContent", selectMaxNumberOverToastContent)
+        putBundle("folderNickNameMap", Bundle().apply {
+            folderNickNameMap.forEach { (key, value) -> putString(key, value) }
+        })
+    }
+
+    public companion object {
+
+        /**
+         * 从 [toTransportBundle] 的产物重建；字段缺失时沿用 data class 默认值，
+         * 语义与 Parcelable 反序列化一致。传 null（未携带该 extra）时返回 null。
+         */
+        public fun fromTransportBundle(bundle: Bundle?): FilePickerUIConfig? {
+            if (bundle == null) return null
+            val folderNickNameMap = hashMapOf<String, String>()
+            bundle.getBundle("folderNickNameMap")?.let { nickNameBundle ->
+                for (key in nickNameBundle.keySet()) {
+                    val value = nickNameBundle.getString(key) ?: continue
+                    folderNickNameMap[key] = value
+                }
+            }
+            return FilePickerUIConfig(
+                isHideSelectTab = bundle.getBoolean("isHideSelectTab", false),
+                confirmBtnText = bundle.getString("confirmBtnText", "确定"),
+                isPreviewPageIndexMode = bundle.getBoolean("isPreviewPageIndexMode", true),
+                allAlbumName = bundle.getString("allAlbumName", "全部"),
+                previewText = bundle.getString("previewText", "预览"),
+                isShowBottomPreviewText = bundle.getBoolean("isShowBottomPreviewText", true),
+                previewSelectText = bundle.getString("previewSelectText", "选择"),
+                originalText = bundle.getString("originalText", "原图"),
+                isShowOriginal = bundle.getBoolean("isShowOriginal", true),
+                isOriginalChecked = bundle.getBoolean("isOriginalChecked", false),
+                isShowHomePageSelectedBottomListWidget = bundle.getBoolean("isShowHomePageSelectedBottomListWidget", true),
+                isShowSelectedListDeleteIcon = bundle.getBoolean("isShowSelectedListDeleteIcon", false),
+                selectedListDeleteIconResId = bundle.getInt("selectedListDeleteIconResId", 0),
+                selectedListDeleteIconBackgroundColor = bundle.getInt("selectedListDeleteIconBackgroundColor", Color.TRANSPARENT),
+                atLeastSelectOneToastContent = bundle.getString("atLeastSelectOneToastContent", "至少选择一个"),
+                selectMaxNumberOverToastContent = bundle.getString("selectMaxNumberOverToastContent", "已达到最大选择数量"),
+                folderNickNameMap = folderNickNameMap,
+            )
+        }
+    }
+}

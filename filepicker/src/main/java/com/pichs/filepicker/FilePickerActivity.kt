@@ -56,7 +56,11 @@ class FilePickerActivity : AppCompatActivity() {
         var singleClickEnable = intent.getBooleanExtra("singleClickEnable", false)
         var slideChooseEnable = intent.getBooleanExtra("slideChooseEnable", true)
 
-        val uiConfig = intent.getParcelableExtra<FilePickerUIConfig>("uiConfig")
+        // uiConfigData 是拍平的纯基本类型 Bundle（避免自定义 Parcelable 过 system_server
+        // 反序列化报 ClassNotFoundException）；旧 key 保留兼容直接以 Parcelable extra
+        // 启动本 Activity 的外部调用方
+        val uiConfig = FilePickerUIConfig.fromTransportBundle(intent.getBundleExtra("uiConfigData"))
+            ?: intent.getParcelableExtra<FilePickerUIConfig>("uiConfig")
 
         if (uiConfig != null) {
             viewModel.uiConfig = uiConfig

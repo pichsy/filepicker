@@ -36,7 +36,7 @@
 ```kotlin
 dependencies {
     // 基础组件库 （必须）
-    implementation("com.gitee.pichs:filepicker:5.9.0")
+    implementation("com.gitee.pichs:filepicker:6.0.0")
 
     // 基础组件库 （必须）
     implementation("com.gitee.pichs:xwidget:5.6.3")
@@ -79,7 +79,7 @@ dependencies {
 # libs.version.toml中写法
 [versions]
 xwidget = "5.6.3"
-filepicker = "5.9.0"
+filepicker = "6.0.0"
 brv = "1.6.1"
 basepopup = "3.2.1"
 glide = "4.16.0"
@@ -304,6 +304,18 @@ val uiConfig = FilePickerUIConfig().apply {
 感谢你们的无私奉献，让开发变得更加高效和有趣！
 
 ## 升级日志
+
+### 6.0.0
+
+- **性能大幅优化**：图片数量很多的场景下，打开选择器的加载速度显著提升。
+    - 媒体库扫描去掉逐行 `File.stat()` 与逐行日志，列索引一次性提取。
+    - 选择状态由「遍历查找」改为「路径 → 下标」哈希表，拖拽/滑动多选在千张级别也保持 O(1)。
+    - 首屏聚合、已选列表比对等重计算移出主线程，避免掉帧。
+    - 再次进入选择器时，数据已加载则不再全量重扫。
+- **修复**：设置最大选择数量后点击开始选择时偶发崩溃（`ConcurrentModificationException`）。
+- **修复**：在部分华为等机型上启动报 `ClassNotFoundException: FilePickerUIConfig` 的问题（UI 配置改为纯基础类型 Bundle 传递，旧方式保持兼容）。
+- **修复**：本地 GIF 不再写入磁盘缓存的问题，滑动加载更省流量/解码开销。
+- 拖拽排序、滑动多选、单选/取消、预览等交互行为与 5.x 完全一致。
 
 ### 5.9.0
 
