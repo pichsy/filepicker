@@ -54,6 +54,11 @@
             android:launchMode="singleTop" />
 
         <activity
+            android:name=".DataFactoryActivity"
+            android:exported="true"
+            android:launchMode="singleTop" />
+
+        <activity
             android:name=".paging.PagingDemoActivity"
             android:exported="true"
             android:launchMode="singleTop" />

@@ -49,6 +49,11 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
             startActivity(Intent(this, TestActivity::class.java))
         }
 
+        // 数据制造入口：批量生成测试文件
+        binding.btnDataFactory.fastClick {
+            startActivity(Intent(this, DataFactoryActivity::class.java))
+        }
+
         // 开始按钮点击事件
         binding.btnStart.fastClick {
             // 获取最大选择数量
@@ -64,6 +69,7 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
                 binding.rbAudio.id -> FilePicker.ofAudio()
                 binding.rbDocument.id -> FilePicker.ofDocument()
                 binding.rbAip.id -> FilePicker.ofZipAll()
+                binding.rbApk.id -> FilePicker.ofApk()
                 else -> FilePicker.ofAll()
             }
 

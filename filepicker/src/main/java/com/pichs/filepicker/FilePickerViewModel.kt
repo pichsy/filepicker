@@ -406,6 +406,7 @@ class FilePickerViewModel : ViewModel() {
                             builder.mimeTypeEquals(FilePickerMimeType.ZIP)
                         } else if (selectType.value == FilePickerSelectType.RAR) {
                             builder.mimeTypeEquals(FilePickerMimeType.RAR)
+                                .or().mimeTypeEquals(FilePickerMimeType.RAR_VND)
                         } else if (selectType.value == FilePickerSelectType.SEVEN_Z) {
                             builder.mimeTypeEquals(FilePickerMimeType.SEVEN_Z)
                         } else if (selectType.value == FilePickerSelectType.TAR) {

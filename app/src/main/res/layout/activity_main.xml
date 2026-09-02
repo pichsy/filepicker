@@ -140,6 +140,13 @@
                     android:layout_height="wrap_content"
                     android:text="zip_all"
                     android:textColor="#fff" />
+
+                <RadioButton
+                    android:id="@+id/rb_apk"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="APK"
+                    android:textColor="#fff" />
             </RadioGroup>
         </LinearLayout>
 
@@ -165,6 +172,19 @@
             android:layout_marginEnd="56dp"
             android:backgroundTint="#E60B4D"
             android:text="Fragment中调用"
+            android:textAllCaps="false"
+            android:textColor="#fff" />
+
+        <!-- 数据制造入口 -->
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btn_data_factory"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="16dp"
+            android:layout_marginStart="56dp"
+            android:layout_marginEnd="56dp"
+            android:backgroundTint="#2E7D32"
+            android:text="数据制造（生成测试文件）"
             android:textAllCaps="false"
             android:textColor="#fff" />
 

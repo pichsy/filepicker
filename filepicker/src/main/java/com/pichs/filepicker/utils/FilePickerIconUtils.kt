@@ -41,8 +41,33 @@ object FilePickerIconUtils {
                 R.drawable.filepicker_ic_file_txt
             }
 
-            mediaEntity.isArchive() -> {
+            mediaEntity.isZip() -> {
                 R.drawable.filepicker_ic_file_zip
+            }
+
+            mediaEntity.isRar() -> {
+                R.drawable.filepicker_ic_file_rar
+            }
+
+            mediaEntity.is7z() -> {
+                R.drawable.filepicker_ic_file_7z
+            }
+
+            mediaEntity.isTar() -> {
+                R.drawable.filepicker_ic_file_tar
+            }
+
+            mediaEntity.isGz() -> {
+                R.drawable.filepicker_ic_file_gz
+            }
+
+            mediaEntity.isIso() -> {
+                R.drawable.filepicker_ic_file_iso
+            }
+
+            // 其余压缩包（bz2 等）用压缩包通用图标
+            mediaEntity.isArchive() -> {
+                R.drawable.filepicker_ic_file_zip_all
             }
 
             mediaEntity.isApk() -> {

@@ -114,10 +114,18 @@ object FilePickerMimeType {
     const val EXCELX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     const val TXT = "text/plain"
 
+    const val IMAGE_JPEG = "image/jpeg"
+    const val IMAGE_PNG = "image/png"
+    const val IMAGE_WEBP = "image/webp"
+    const val VIDEO_MP4 = "video/mp4"
+
     const val APK = "application/vnd.android.package-archive"
 
     const val ZIP = "application/zip"
     const val RAR = "application/x-rar-compressed"
+
+    /** rar 的 IANA 标准类型，部分设备/来源会报这个，需与 RAR 同时兼容 */
+    const val RAR_VND = "application/vnd.rar"
     const val SEVEN_Z = "application/x-7z-compressed"
     const val TAR = "application/x-tar"
     const val GZ = "application/gzip"

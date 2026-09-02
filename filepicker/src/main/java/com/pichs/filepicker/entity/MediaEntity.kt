@@ -2,6 +2,7 @@ package com.pichs.filepicker.entity
 
 import android.net.Uri
 import android.os.Parcelable
+import com.pichs.filepicker.FilePickerMimeType
 import kotlinx.parcelize.Parcelize
 import java.io.Serializable
 
@@ -25,27 +26,27 @@ data class MediaEntity(
         fun fromPath(path: String): MediaEntity {
             return MediaEntity(path = path).apply {
                 mimeType = when {
-                    path.endsWith(".jpg", true) || path.endsWith(".jpeg", true) -> "image/jpeg"
-                    path.endsWith(".png", true) -> "image/png"
-                    path.endsWith(".gif", true) -> "image/gif"
-                    path.endsWith(".mp4", true) -> "video/mp4"
-                    path.endsWith(".mp3", true) -> "audio/mpeg"
-                    path.endsWith(".wav", true) -> "audio/wav"
-                    path.endsWith(".flac", true) -> "audio/flac"
-                    path.endsWith(".m4a", true) -> "audio/mp4"
-                    path.endsWith(".amr", true) -> "audio/amr"
-                    path.endsWith(".txt", true) -> "text/plain"
-                    path.endsWith(".pdf", true) -> "application/pdf"
-                    path.endsWith(".doc", true) || path.endsWith(".docx", true) -> "application/msword"
-                    path.endsWith(".ppt", true) || path.endsWith(".pptx", true) -> "application/vnd.ms-powerpoint"
-                    path.endsWith(".xls", true) || path.endsWith(".xlsx", true) -> "application/vnd.ms-excel"
-                    path.endsWith(".zip", true) -> "application/zip"
-                    path.endsWith(".rar", true) -> "application/x-rar-compressed"
-                    path.endsWith(".tar", true) -> "application/x-tar"
-                    path.endsWith(".gz", true) -> "application/gzip"
-                    path.endsWith(".iso", true) -> "application/x-iso9660-image"
-                    path.endsWith(".7z", true) -> "application/x-7z-compressed"
-                    path.endsWith(".apk", true) -> "application/vnd.android.package-archive"
+                    path.endsWith(".jpg", true) || path.endsWith(".jpeg", true) -> FilePickerMimeType.IMAGE_JPEG
+                    path.endsWith(".png", true) -> FilePickerMimeType.IMAGE_PNG
+                    path.endsWith(".gif", true) -> FilePickerMimeType.GIF
+                    path.endsWith(".mp4", true) -> FilePickerMimeType.VIDEO_MP4
+                    path.endsWith(".mp3", true) -> FilePickerMimeType.AUDIO_MP3
+                    path.endsWith(".wav", true) -> FilePickerMimeType.AUDIO_WAV
+                    path.endsWith(".flac", true) -> FilePickerMimeType.AUDIO_FLAC
+                    path.endsWith(".m4a", true) -> FilePickerMimeType.AUDIO_M4A
+                    path.endsWith(".amr", true) -> FilePickerMimeType.AUDIO_AMR
+                    path.endsWith(".txt", true) -> FilePickerMimeType.TXT
+                    path.endsWith(".pdf", true) -> FilePickerMimeType.PDF
+                    path.endsWith(".doc", true) || path.endsWith(".docx", true) -> FilePickerMimeType.DOC
+                    path.endsWith(".ppt", true) || path.endsWith(".pptx", true) -> FilePickerMimeType.PPT
+                    path.endsWith(".xls", true) || path.endsWith(".xlsx", true) -> FilePickerMimeType.EXCEL
+                    path.endsWith(".zip", true) -> FilePickerMimeType.ZIP
+                    path.endsWith(".rar", true) -> FilePickerMimeType.RAR
+                    path.endsWith(".tar", true) -> FilePickerMimeType.TAR
+                    path.endsWith(".gz", true) -> FilePickerMimeType.GZ
+                    path.endsWith(".iso", true) -> FilePickerMimeType.ISO
+                    path.endsWith(".7z", true) -> FilePickerMimeType.SEVEN_Z
+                    path.endsWith(".apk", true) -> FilePickerMimeType.APK
                     else -> null
                 }
             }
@@ -65,59 +66,62 @@ data class MediaEntity(
     }
 
     fun isMp3(): Boolean {
-        return mimeType?.equals("audio/mpeg", true) == true
+        return mimeType?.equals(FilePickerMimeType.AUDIO_MP3, true) == true
     }
 
     fun isWav(): Boolean {
-        return mimeType?.equals("audio/wav", true) == true
+        return mimeType?.equals(FilePickerMimeType.AUDIO_WAV, true) == true
     }
 
     fun isFlac(): Boolean {
-        return mimeType?.equals("audio/flac", true) == true
+        return mimeType?.equals(FilePickerMimeType.AUDIO_FLAC, true) == true
     }
 
     fun isM4a(): Boolean {
-        return mimeType?.equals("audio/mp4", true) == true
+        return mimeType?.equals(FilePickerMimeType.AUDIO_M4A, true) == true
     }
 
     fun isAmr(): Boolean {
-        return mimeType?.equals("audio/amr", true) == true
+        return mimeType?.equals(FilePickerMimeType.AUDIO_AMR, true) == true
     }
 
     fun isGif(): Boolean {
-        return mimeType?.equals("image/gif", true) == true
+        return mimeType?.equals(FilePickerMimeType.GIF, true) == true
     }
 
     fun isJpeg(): Boolean {
-        return mimeType?.equals("image/jpeg", true) == true
+        return mimeType?.equals(FilePickerMimeType.IMAGE_JPEG, true) == true
     }
 
     fun isPng(): Boolean {
-        return mimeType?.equals("image/png", true) == true
+        return mimeType?.equals(FilePickerMimeType.IMAGE_PNG, true) == true
     }
 
     fun isWebp(): Boolean {
-        return mimeType?.equals("image/webp", true) == true
+        return mimeType?.equals(FilePickerMimeType.IMAGE_WEBP, true) == true
     }
 
     fun isTxt(): Boolean {
-        return mimeType?.equals("text/plain", true) == true
+        return mimeType?.equals(FilePickerMimeType.TXT, true) == true
     }
 
     fun isPdf(): Boolean {
-        return mimeType?.equals("application/pdf", true) == true
+        return mimeType?.equals(FilePickerMimeType.PDF, true) == true
     }
 
     fun isWordDoc(): Boolean {
-        return mimeType?.equals("application/msword", true) == true
+        return mimeType?.equals(FilePickerMimeType.DOC, true) == true
+                || mimeType?.equals(FilePickerMimeType.DOCX, true) == true
     }
 
     fun isPPT(): Boolean {
-        return mimeType?.equals("application/vnd.ms-powerpoint", true) == true
+        return mimeType?.equals(FilePickerMimeType.PPT, true) == true
+                || mimeType?.equals(FilePickerMimeType.PPTX, true) == true
     }
 
     fun isExcel(): Boolean {
-        return mimeType?.equals("application/vnd.ms-excel", true) == true
+        return mimeType?.equals(FilePickerMimeType.EXCEL, true) == true
+                || mimeType?.equals(FilePickerMimeType.EXCELX, true) == true
     }
 
     /**
@@ -129,27 +133,28 @@ data class MediaEntity(
     }
 
     fun isZip(): Boolean {
-        return mimeType?.equals("application/zip", true) == true
+        return mimeType?.equals(FilePickerMimeType.ZIP, true) == true
     }
 
     fun isRar(): Boolean {
-        return mimeType?.equals("application/x-rar-compressed", true) == true
+        return mimeType?.equals(FilePickerMimeType.RAR, true) == true
+                || mimeType?.equals(FilePickerMimeType.RAR_VND, true) == true
     }
 
     fun isTar(): Boolean {
-        return mimeType?.equals("application/x-tar", true) == true
+        return mimeType?.equals(FilePickerMimeType.TAR, true) == true
     }
 
     fun isGz(): Boolean {
-        return mimeType?.equals("application/gzip", true) == true
+        return mimeType?.equals(FilePickerMimeType.GZ, true) == true
     }
 
     fun isIso(): Boolean {
-        return mimeType?.equals("application/x-iso9660-image", true) == true
+        return mimeType?.equals(FilePickerMimeType.ISO, true) == true
     }
 
     fun is7z(): Boolean {
-        return mimeType?.equals("application/x-7z-compressed", true) == true
+        return mimeType?.equals(FilePickerMimeType.SEVEN_Z, true) == true
     }
 
     /**
@@ -157,7 +162,7 @@ data class MediaEntity(
      * @return true if the mimeType is "application/vnd.android.package-archive", false otherwise.
      */
     fun isApk(): Boolean {
-        return mimeType?.equals("application/vnd.android.package-archive", true) == true
+        return mimeType?.equals(FilePickerMimeType.APK, true) == true
     }
 
     override fun equals(other: Any?): Boolean {
