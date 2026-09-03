@@ -237,7 +237,36 @@ FilePicker.with(this)
 
 > 7.0.0 起类型入口方法统一收敛到 `FilePickerSelectType`（语义更贴合）。
 > `FilePicker.ofImage()` 等老方法已标注 `@Deprecated`，**仍可正常使用**（内部转发），
-> IDE 会提示迁移，建议尽快替换为 `FilePickerSelectType.ofXxx()`。
+> IDE 会提示迁移，建议尽快替换为 `FilePickerSelectType.ofXxx()`。完整对照见
+> [已废弃 API](#已废弃-api-deprecated)。
+
+### 已废弃 API（@Deprecated）
+
+以下方法自 7.0.0 起标注 `@Deprecated`（源码级兼容，**调用不报错、行为不变**，内部直接转发到新入口）。
+新代码请一律使用右列写法：
+
+| 废弃（不要再用）                  | 最新写法                                  |
+|-----------------------------|---------------------------------------|
+| ~~`FilePicker.ofAll()`~~       | `FilePickerSelectType.ofAll()`        |
+| ~~`FilePicker.ofAllWithGif()`~~ | `FilePickerSelectType.ofAllWithGif()` |
+| ~~`FilePicker.ofImage()`~~     | `FilePickerSelectType.ofImage()`      |
+| ~~`FilePicker.ofVideo()`~~     | `FilePickerSelectType.ofVideo()`      |
+| ~~`FilePicker.ofGif()`~~       | `FilePickerSelectType.ofGif()`        |
+| ~~`FilePicker.ofAudio()`~~     | `FilePickerSelectType.ofAudio()`      |
+| ~~`FilePicker.ofDocument()`~~  | `FilePickerSelectType.ofDocument()`   |
+| ~~`FilePicker.ofPdf()`~~       | `FilePickerSelectType.ofPdf()`        |
+| ~~`FilePicker.ofDoc()`~~       | `FilePickerSelectType.ofDoc()`        |
+| ~~`FilePicker.ofPpt()`~~       | `FilePickerSelectType.ofPpt()`        |
+| ~~`FilePicker.ofExcel()`~~     | `FilePickerSelectType.ofExcel()`      |
+| ~~`FilePicker.ofTxt()`~~       | `FilePickerSelectType.ofTxt()`        |
+| ~~`FilePicker.ofApk()`~~       | `FilePickerSelectType.ofApk()`        |
+| ~~`FilePicker.ofZipAll()`~~    | `FilePickerSelectType.ofZipAll()`     |
+| ~~`FilePicker.ofZip()`~~       | `FilePickerSelectType.ofZip()`        |
+| ~~`FilePicker.ofRar()`~~       | `FilePickerSelectType.ofRar()`        |
+| ~~`FilePicker.of7Z()`~~        | `FilePickerSelectType.of7Z()`         |
+
+> 6.x 已删除的 `ofTar()` / `ofGz()` / `ofBz2()` / `ofIso()` / `ofBr()` / `ofLz4()` / `ofZstd()` / `ofXz()`
+> 不在废弃之列（已移除），替代写法见下方 [7.0.0 旧 API 迁移对照表](#700-旧-api-迁移对照表)。
 
 ### FilePickerSelectType 类型入口
 
