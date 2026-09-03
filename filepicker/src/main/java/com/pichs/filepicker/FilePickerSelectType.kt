@@ -46,7 +46,6 @@ object FilePickerSelectType {
     const val APK = "apk"
 
     // 压缩包类型
-    const val ZIP_ALL = "zip,rar,7z,tar,gz,bz2,iso,br,lz4,zstd,xz"
     const val ZIP = "zip"
     const val RAR = "rar"
     const val SEVEN_Z = "7z"
@@ -58,6 +57,44 @@ object FilePickerSelectType {
     const val LZ4 = "lz4"
     const val ZSTD = "zstd"
     const val XZ = "xz"
+
+    /**
+     * 压缩包类型 -> 文件后缀 的唯一登记处。
+     * 新增压缩格式只改这里：ZIP_ALL、查询条件、类型识别全部由此派生，避免多处手抄漂移。
+     */
+    private val ARCHIVE_EXTS: Map<String, List<String>> = linkedMapOf(
+        ZIP to listOf("zip"),
+        RAR to listOf("rar"),
+        SEVEN_Z to listOf("7z"),
+        TAR to listOf("tar"),
+        GZ to listOf("gz", "tgz"),
+        BZ2 to listOf("bz2"),
+        ISO to listOf("iso"),
+        BR to listOf("br"),
+        LZ4 to listOf("lz4"),
+        ZSTD to listOf("zst", "zstd"),
+        XZ to listOf("xz"),
+    )
+
+    /** 所有压缩包类型串（由 [ARCHIVE_EXTS] 派生，不再单独维护） */
+    val ZIP_ALL: String = ARCHIVE_EXTS.keys.joinToString(",")
+
+    /** 压缩包类型集合 */
+    fun archiveTypes(): Set<String> = ARCHIVE_EXTS.keys
+
+    /**
+     * 类型对应的后缀列表：
+     * ZIP_ALL -> 全部压缩格式后缀；单个压缩包类型 -> 其后缀（含别名如 gz/tgz、zst/zstd）；
+     * "ext:" 开头的自定义类型 -> 其后缀；未知类型返回空表。
+     */
+    fun extsOf(type: String): List<String> {
+        return when {
+            type == ZIP_ALL -> ARCHIVE_EXTS.values.flatten()
+            ARCHIVE_EXTS.containsKey(type) -> ARCHIVE_EXTS.getValue(type)
+            isCustomExtType(type) -> parseCustomExts(type)
+            else -> emptyList()
+        }
+    }
 
     // ---------------------------------------------------------------- 类型入口 API
     // 7.0.0 起统一在 FilePickerSelectType 上提供（替代原 FilePicker.ofXxx 系列，语义更贴合）
@@ -218,6 +255,32 @@ object FilePickerMimeType {
     const val ZSTD = "application/x-zstd"
     const val XZ = "application/x-xz"
     const val gzip = "application/x-gzip"
+
+    /**
+     * 压缩包类型 -> mime 列表 的唯一登记处（key 与 FilePickerSelectType.ARCHIVE_EXTS 一致）。
+     * 同一格式在不同设备/来源可能有多种 mime（如 rar 有三种），全部登记在这里。
+     */
+    private val ARCHIVE_MIMES: Map<String, List<String>> = linkedMapOf(
+        FilePickerSelectType.ZIP to listOf(ZIP),
+        FilePickerSelectType.RAR to listOf(RAR, RAR_VND, RAR_PLAIN),
+        FilePickerSelectType.SEVEN_Z to listOf(SEVEN_Z),
+        FilePickerSelectType.TAR to listOf(TAR),
+        FilePickerSelectType.GZ to listOf(GZ, gzip),
+        FilePickerSelectType.BZ2 to listOf(BZ2),
+        FilePickerSelectType.ISO to listOf(ISO),
+        FilePickerSelectType.BR to listOf(BR),
+        FilePickerSelectType.LZ4 to listOf(LZ4),
+        FilePickerSelectType.ZSTD to listOf(ZSTD),
+        FilePickerSelectType.XZ to listOf(XZ),
+    )
+
+    /** 类型对应的 mime 列表（ZIP_ALL 为全部压缩格式 mime；未知类型返回空表） */
+    fun mimesOf(type: String): List<String> {
+        return when {
+            type == FilePickerSelectType.ZIP_ALL -> ARCHIVE_MIMES.values.flatten()
+            else -> ARCHIVE_MIMES[type] ?: emptyList()
+        }
+    }
 
 }
 

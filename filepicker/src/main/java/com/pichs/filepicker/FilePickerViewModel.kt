@@ -387,11 +387,23 @@ class FilePickerViewModel : ViewModel() {
                         if (selectType.value == FilePickerSelectType.DOCUMENT) {
                             builder.fileNameEndWith(".doc").or().fileNameEndWith(".docx").or().fileNameEndWith(".pdf").or().fileNameEndWith(".ppt").or()
                                 .fileNameEndWith(".pptx").or().fileNameEndWith(".xls").or().fileNameEndWith(".xlsx").or().fileNameEndWith(".txt")
-                        } else if (selectType.value == FilePickerSelectType.ZIP_ALL) {
-                            builder.fileNameEndWith(".zip").or().fileNameEndWith(".rar").or().fileNameEndWith(".7z").or().fileNameEndWith(".tar").or()
-                                .fileNameEndWith(".gz").or().fileNameEndWith(".bz2").or().fileNameEndWith(".iso").or()
-                                .fileNameEndWith(".br").or().fileNameEndWith(".lz4").or().fileNameEndWith(".zst").or()
-                                .fileNameEndWith(".zstd").or().fileNameEndWith(".xz")
+                        } else if (FilePickerSelectType.extsOf(selectType.value).isNotEmpty()) {
+                            // 压缩包类型（单个/ZIP_ALL）与自定义后缀类型（ext:）统一走登记处：
+                            // mime 轨 + 文件名后缀轨兜底（MediaStore 认不出的后缀多为 octet-stream，mime 轨会漏）
+                            val mimes = FilePickerMimeType.mimesOf(selectType.value)
+                            val exts = FilePickerSelectType.extsOf(selectType.value)
+                            var first = true
+                            mimes.forEach { mime ->
+                                if (!first) builder.or()
+                                builder.mimeTypeEquals(mime)
+                                first = false
+                            }
+                            exts.forEach { ext ->
+                                if (!first) builder.or()
+                                builder.fileNameEndWith(".$ext")
+                                first = false
+                            }
+                            if (first) builder.oneEqualsOne()
                         } else if (selectType.value == FilePickerSelectType.APK) {
                             builder.mimeTypeEquals(FilePickerMimeType.APK)
                         } else if (selectType.value == FilePickerSelectType.PDF) {
@@ -404,55 +416,6 @@ class FilePickerViewModel : ViewModel() {
                             builder.fileNameEndWith(".xls").or().fileNameEndWith(".xlsx")
                         } else if (selectType.value == FilePickerSelectType.PPT) {
                             builder.fileNameEndWith(".ppt").or().fileNameEndWith(".pptx")
-                        } else if (selectType.value == FilePickerSelectType.ZIP) {
-                            builder.mimeTypeEquals(FilePickerMimeType.ZIP)
-                                .or().fileNameEndWith(".zip")
-                        } else if (selectType.value == FilePickerSelectType.RAR) {
-                            // .rar 在不同系统上可能是三种 mime 之一，再以后缀兜底
-                            builder.mimeTypeEquals(FilePickerMimeType.RAR)
-                                .or().mimeTypeEquals(FilePickerMimeType.RAR_VND)
-                                .or().mimeTypeEquals(FilePickerMimeType.RAR_PLAIN)
-                                .or().fileNameEndWith(".rar")
-                        } else if (selectType.value == FilePickerSelectType.SEVEN_Z) {
-                            builder.mimeTypeEquals(FilePickerMimeType.SEVEN_Z)
-                                .or().fileNameEndWith(".7z")
-                        } else if (selectType.value == FilePickerSelectType.TAR) {
-                            builder.mimeTypeEquals(FilePickerMimeType.TAR)
-                                .or().fileNameEndWith(".tar")
-                        } else if (selectType.value == FilePickerSelectType.GZ) {
-                            builder.mimeTypeEquals(FilePickerMimeType.GZ)
-                                .or().mimeTypeEquals(FilePickerMimeType.gzip)
-                                .or().fileNameEndWith(".gz").or().fileNameEndWith(".tgz")
-                        } else if (selectType.value == FilePickerSelectType.BZ2) {
-                            builder.mimeTypeEquals(FilePickerMimeType.BZ2)
-                                .or().fileNameEndWith(".bz2")
-                        } else if (selectType.value == FilePickerSelectType.ISO) {
-                            builder.mimeTypeEquals(FilePickerMimeType.ISO)
-                                .or().fileNameEndWith(".iso")
-                        } else if (selectType.value == FilePickerSelectType.BR) {
-                            builder.mimeTypeEquals(FilePickerMimeType.BR)
-                                .or().fileNameEndWith(".br")
-                        } else if (selectType.value == FilePickerSelectType.LZ4) {
-                            builder.mimeTypeEquals(FilePickerMimeType.LZ4)
-                                .or().fileNameEndWith(".lz4")
-                        } else if (selectType.value == FilePickerSelectType.ZSTD) {
-                            builder.mimeTypeEquals(FilePickerMimeType.ZSTD)
-                                .or().fileNameEndWith(".zst").or().fileNameEndWith(".zstd")
-                        } else if (selectType.value == FilePickerSelectType.XZ) {
-                            builder.mimeTypeEquals(FilePickerMimeType.XZ)
-                                .or().fileNameEndWith(".xz")
-                        } else if (FilePickerSelectType.isCustomExtType(selectType.value)) {
-                            // 自定义后缀类型（FilePickerSelectType.ofExtensions 生成）：
-                            // 只按文件名后缀过滤（mime 轨不可用，认不出的后缀在 MediaStore 里多为 octet-stream）
-                            val exts = FilePickerSelectType.parseCustomExts(selectType.value)
-                            if (exts.isEmpty()) {
-                                builder.oneEqualsOne()
-                            } else {
-                                exts.forEachIndexed { index, ext ->
-                                    if (index > 0) builder.or()
-                                    builder.fileNameEndWith(".$ext")
-                                }
-                            }
                         } else {
                             builder.oneEqualsOne()
                         }

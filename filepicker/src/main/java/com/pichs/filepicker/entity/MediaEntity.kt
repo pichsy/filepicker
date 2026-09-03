@@ -3,6 +3,7 @@ package com.pichs.filepicker.entity
 import android.net.Uri
 import android.os.Parcelable
 import com.pichs.filepicker.FilePickerMimeType
+import com.pichs.filepicker.FilePickerSelectType
 import kotlinx.parcelize.Parcelize
 import java.io.Serializable
 
@@ -133,57 +134,39 @@ data class MediaEntity(
     }
 
     /**
-     * 是否是压缩包。
-     * Check if the media entity is an archive file (zip, rar, tar, gz, iso, 7z, br, lz4, zstd, xz).
+     * 是否是压缩包（zip/rar/7z/tar/gz/bz2/iso/br/lz4/zstd/xz）。
+     * 类型与后缀全部来自 FilePickerSelectType 登记处，不再单独手抄。
      */
     fun isArchive(): Boolean {
-        return isZip() || is7z() || isRar() || isTar() || isGz() || isIso() || isBz2()
-                || isBr() || isLz4() || isZstd() || isXz()
+        return FilePickerSelectType.archiveTypes().any { matchArchiveType(it) }
     }
 
-    fun isZip(): Boolean {
-        return matchType(listOf(FilePickerMimeType.ZIP), listOf("zip"))
+    /** 按登记处的 mime + 后缀识别单个压缩包类型 */
+    private fun matchArchiveType(type: String): Boolean {
+        return matchType(FilePickerMimeType.mimesOf(type), FilePickerSelectType.extsOf(type))
     }
 
-    fun isRar(): Boolean {
-        return matchType(listOf(FilePickerMimeType.RAR, FilePickerMimeType.RAR_VND, FilePickerMimeType.RAR_PLAIN), listOf("rar"))
-    }
+    fun isZip(): Boolean = matchArchiveType(FilePickerSelectType.ZIP)
 
-    fun isTar(): Boolean {
-        return matchType(listOf(FilePickerMimeType.TAR), listOf("tar"))
-    }
+    fun isRar(): Boolean = matchArchiveType(FilePickerSelectType.RAR)
 
-    fun isGz(): Boolean {
-        return matchType(listOf(FilePickerMimeType.GZ, FilePickerMimeType.gzip), listOf("gz", "tgz"))
-    }
+    fun isTar(): Boolean = matchArchiveType(FilePickerSelectType.TAR)
 
-    fun isIso(): Boolean {
-        return matchType(listOf(FilePickerMimeType.ISO), listOf("iso"))
-    }
+    fun isGz(): Boolean = matchArchiveType(FilePickerSelectType.GZ)
 
-    fun isBz2(): Boolean {
-        return matchType(listOf(FilePickerMimeType.BZ2), listOf("bz2"))
-    }
+    fun isIso(): Boolean = matchArchiveType(FilePickerSelectType.ISO)
 
-    fun is7z(): Boolean {
-        return matchType(listOf(FilePickerMimeType.SEVEN_Z), listOf("7z"))
-    }
+    fun isBz2(): Boolean = matchArchiveType(FilePickerSelectType.BZ2)
 
-    fun isBr(): Boolean {
-        return matchType(listOf(FilePickerMimeType.BR), listOf("br"))
-    }
+    fun is7z(): Boolean = matchArchiveType(FilePickerSelectType.SEVEN_Z)
 
-    fun isLz4(): Boolean {
-        return matchType(listOf(FilePickerMimeType.LZ4), listOf("lz4"))
-    }
+    fun isBr(): Boolean = matchArchiveType(FilePickerSelectType.BR)
 
-    fun isZstd(): Boolean {
-        return matchType(listOf(FilePickerMimeType.ZSTD), listOf("zst", "zstd"))
-    }
+    fun isLz4(): Boolean = matchArchiveType(FilePickerSelectType.LZ4)
 
-    fun isXz(): Boolean {
-        return matchType(listOf(FilePickerMimeType.XZ), listOf("xz"))
-    }
+    fun isZstd(): Boolean = matchArchiveType(FilePickerSelectType.ZSTD)
+
+    fun isXz(): Boolean = matchArchiveType(FilePickerSelectType.XZ)
 
     /**
      * Check if the media entity is an APK file.
