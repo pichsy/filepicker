@@ -217,6 +217,9 @@ FilePicker.with(this)
     .start()
 ```
 
+> 有专属类型入口的后缀（图片、音频、文档、核心压缩包等）优先用 `ofXxx()`，
+> 两者在 UI 模式与预览上的差异见下方 [类型入口怎么选](#类型入口怎么选)。
+
 详见下方 [自定义后缀过滤](#自定义后缀过滤)。
 
 ---
@@ -259,6 +262,25 @@ FilePicker.with(this)
 | `of7Z()`           | 只选择7Z                     |
 | `ofExtensions(...)` | 按任意后缀组合自定义过滤（见下节）         |
 
+### 类型入口怎么选
+
+**有专属类型入口的后缀，优先用类型入口；没有的才用 `ofExtensions()`。**
+两者能力上都能查到文件，但语义与体验有差别：
+
+| 场景 | 推荐入口 | 原因 |
+|------|---------|------|
+| 选图片/视频 | `ofImage()` / `ofVideo()` / `ofAll()` | 相册网格模式、大图预览、原图选项齐全 |
+| 选音频/文档/APK | `ofAudio()` / `ofDocument()` / `ofApk()` | 专属查询条件与图标 |
+| 选压缩包 | `ofZipAll()` / `ofZip()` / `ofRar()` / `of7Z()` | mime + 后缀双轨查询，图标专属 |
+| 选其他任意后缀 | `ofExtensions("xz", "bak", ...)` | 无对应类型时的通用方案 |
+
+`ofExtensions()` 与类型入口的差异（按后缀捞文件的语义带来的）：
+
+- UI 呈现为文件列表模式（按时间排序 + 文件夹分组），不是相册网格模式
+- 无大图预览手势（`isCanPreview()` 不放行 `ext:` 类型）
+- 查询按文件名后缀匹配，**会包含隐藏目录（`.` 开头路径）下的文件**——若需排除，
+  设置 `setMaxFileSize()`（走 `filePathNotContains("/.")` 过滤）或自行过滤结果
+
 ### 自定义后缀过滤
 
 tar/gz/bz2/iso/br/lz4/zstd/xz 等其他压缩格式不再单独提供 API，统一用
@@ -272,10 +294,12 @@ FilePicker.with(this)
 ```
 
 - 后缀自动去掉前导点、转小写、去重，并过滤 SQL 通配符（`%` `_`）
-- 过滤只按文件名后缀匹配（不区分大小写）；认不出的后缀在 MediaStore 里多为
-  `application/octet-stream`，mime 轨不可用
+- 任意后缀都能查（真机已验证：编造后缀 `.qqqxx7`、大写 `.ABCxyz`、双重点 `.tar.gz` 均命中），
+  前提是文件位于 MediaStore 索引的公共存储；应用私有目录、`.nomedia` 目录内的文件查不到
 - 图标识别不受影响：内置的 tar/gz/bz2/iso/br/lz4/zstd/xz 类型常量与图标映射仍然生效，
   老代码直接传 `FilePickerSelectType.TAR` 等字符串常量依旧可用
+- 查询、识别由内部「压缩包登记处」统一驱动：`ZIP_ALL` 由登记处派生，
+  单个类型（如 `ZIP`）只取登记处中自己那一行，互不影响
 
 **7.0.0 旧 API 迁移对照表：**
 
@@ -390,6 +414,12 @@ val uiConfig = FilePickerUIConfig().apply {
   - `SelectTypeUtil.isValidType()` 已放行 `ext:` 前缀的自定义类型，UI 自动按"文件列表"模式呈现
 - **兼容性说明**：`FilePickerSelectType.TAR` / `GZ` / `BZ2` / `ISO` / `BR` / `LZ4` / `ZSTD` / `XZ` 等类型常量
   全部保留，老代码直接传字符串常量依旧可用，行为不变；图标识别逻辑不受本次精简影响。
+- **压缩包逻辑收敛到唯一登记处**：类型 → 后缀（`ARCHIVE_EXTS`）与类型 → mime（`ARCHIVE_MIMES`）
+  两张登记表是唯一数据源，`ZIP_ALL`、MediaStore 查询条件、`MediaEntity` 类型识别（`isArchive()`/`isZip()` 等）
+  全部由其派生。新增压缩格式只需在两张表里各加一行，查询/识别/图标自动跟上，
+  不会再出现某处手抄漏掉新格式的问题。
+- **新增接入建议**：有专属类型入口的后缀（图片/音频/文档/APK/核心压缩包）优先用 `ofXxx()` 入口，
+  `ofExtensions()` 用于无对应类型的任意后缀。两者差异见「类型入口怎么选」一节。
 - **修复：RAR 文件识别不到图标/查询不到**。
   不同设备的 MimeTypeMap 会把 `.rar` 映射成三种 mime 之一（`application/x-rar-compressed`、
   `application/vnd.rar`、`application/rar`），现在三种全部兼容；查询与图标识别同时增加文件名后缀兜底。
