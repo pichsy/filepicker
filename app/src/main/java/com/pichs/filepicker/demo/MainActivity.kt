@@ -151,6 +151,7 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
             // 自定义后缀过滤示例：任意后缀组合，不再需要为每种后缀加 API
             PickerType("自定义(xz,br)", FilePickerSelectType.ofExtensions("xz", "br")),
             PickerType("自定义(GZ,TGZ)", FilePickerSelectType.ofExtensions("gz,tgz")),
+            PickerType("自定义(jpg,jpeg)", FilePickerSelectType.ofExtensions("jpg,jpeg")),
         )
         binding.rvType.layoutManager = GridLayoutManager(this, 2, GridLayoutManager.HORIZONTAL, false)
         binding.rvType.divider {
