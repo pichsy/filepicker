@@ -36,7 +36,7 @@
 ```kotlin
 dependencies {
     // 基础组件库 （必须）
-    implementation("com.gitee.pichs:filepicker:6.0.0")
+    implementation("com.gitee.pichs:filepicker:7.0.0")
 
     // 基础组件库 （必须）
     implementation("com.gitee.pichs:xwidget:5.6.3")
@@ -79,7 +79,7 @@ dependencies {
 # libs.version.toml中写法
 [versions]
 xwidget = "5.6.3"
-filepicker = "6.0.0"
+filepicker = "7.0.0"
 brv = "1.6.1"
 basepopup = "3.2.1"
 glide = "4.16.0"
@@ -221,16 +221,26 @@ FilePicker.with(this) // this: Fragment
 | `ofZip()`                   | 只选择ZIP                    |
 | `ofRar()`                   | 只选择RAR                    |
 | `of7Z()`                    | 只选择7Z                     |
-| `ofTar()`                   | 只选择TAR                    |
-| `ofGz()`                    | 只选择GZ                     |
-| `ofBz2()`                   | 只选择BZ2                    |
-| `ofIso()`                   | 只选择ISO                    |
-| `ofBr()`                    | 只选择BR                     |
-| `ofLz4()`                   | 只选择LZ4                    |
-| `ofZstd()`                  | 只选择ZSTD（zst/zstd后缀）    |
-| `ofXz()`                    | 只选择XZ                     |
 | `convertToPathList(list)`   | 将 `MediaEntity` 列表转换为路径列表 |
 | `convertToEntityList(list)` | 将路径列表转换为 `MediaEntity` 列表 |
+
+### 自定义后缀过滤
+
+tar/gz/bz2/iso/br/lz4/zstd/xz 等其他压缩格式不再单独提供 API，统一用
+`FilePickerSelectType.ofExtensions()` 按任意后缀组合：
+
+```kotlin
+// 按任意后缀过滤，直接作为 selectType 传入
+FilePicker.with(this)
+    .setSelectType(FilePickerSelectType.ofExtensions("xz", "tar", "bak"))
+    .start()
+```
+
+- 后缀自动去掉前导点、转小写、去重，并过滤 SQL 通配符（`%` `_`）
+- 过滤只按文件名后缀匹配（不区分大小写）；认不出的后缀在 MediaStore 里多为
+  `application/octet-stream`，mime 轨不可用
+- 图标识别不受影响：内置的 tar/gz/bz2/iso/br/lz4/zstd/xz 类型常量与图标映射仍然生效，
+  老代码直接传 `FilePickerSelectType.TAR` 等字符串常量依旧可用
 
 ### Builder
 
@@ -308,6 +318,33 @@ val uiConfig = FilePickerUIConfig().apply {
 感谢你们的无私奉献，让开发变得更加高效和有趣！
 
 ## 升级日志
+
+### 7.0.0
+
+- **API 精简（破坏性变更）**：压缩包相关入口只保留核心四个 `ofZipAll()` / `ofZip()` / `ofRar()` / `of7Z()`，
+  删除 `ofTar()` / `ofGz()` / `ofBz2()` / `ofIso()` / `ofBr()` / `ofLz4()` / `ofZstd()` / `ofXz()`。
+- **新增自定义后缀过滤**：任意后缀组合不再需要为每种类型加 API，一行搞定：
+
+  ```kotlin
+  FilePicker.with(this)
+      .setSelectType(FilePickerSelectType.ofExtensions("xz", "tar", "bak"))
+      .start()
+  ```
+
+  - 后缀自动归一化：去前导点、转小写、去重、过滤 SQL 通配符（`%` `_`）
+  - 过滤按文件名后缀匹配（不区分大小写），mime 轨不参与（认不出的后缀在 MediaStore 里多为 `application/octet-stream`）
+  - `SelectTypeUtil.isValidType()` 已放行 `ext:` 前缀的自定义类型，UI 自动按"文件列表"模式呈现
+- **兼容性说明**：`FilePickerSelectType.TAR` / `GZ` / `BZ2` / `ISO` / `BR` / `LZ4` / `ZSTD` / `XZ` 等类型常量
+  全部保留，老代码直接传字符串常量依旧可用，行为不变；图标识别逻辑不受本次精简影响。
+- **修复：RAR 文件识别不到图标/查询不到**。
+  不同设备的 MimeTypeMap 会把 `.rar` 映射成三种 mime 之一（`application/x-rar-compressed`、
+  `application/vnd.rar`、`application/rar`），现在三种全部兼容；查询与图标识别同时增加文件名后缀兜底。
+- **修复：MediaStore 通用类型（`application/octet-stream`）文件识别不到**。
+  mime 为空或为 octet-stream 时，按文件名后缀兜底识别（rar/7z/tar/gz/bz2/iso/br/lz4/zstd/xz、
+  图片/视频/音频/文档等全部受益），正确标注了 mime 的文件行为不变。
+- **修复：`pptx` / `xlsx` / `docx` 图标映射错误**（原来落到错误图标），`rar` 使用专属图标，
+  新增 zip/tar/gz/iso/rar/7z 等压缩格式独立图标；`isArchive()` 补齐 `bz2` 覆盖。
+- **去除硬编码**：媒体类型判断中的 MIME 字符串全部收敛到 `FilePickerMimeType` 常量。
 
 ### 6.0.0
 

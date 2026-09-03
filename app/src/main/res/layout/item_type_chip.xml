@@ -1,11 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+<com.pichs.xwidget.roundview.XRoundButton xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/tv_type_name"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    android:paddingStart="14dp"
-    android:paddingTop="8dp"
-    android:paddingEnd="14dp"
-    android:paddingBottom="8dp"
+    android:background="#333333"
+    android:paddingHorizontal="15dp"
+    android:paddingVertical="8dp"
+    android:gravity="center"
+    app:xp_radius="20dp"
+    app:xp_checkedBackground="#06D79B"
     android:textColor="#fff"
-    android:textSize="14sp" />
+    android:textSize="15sp" />

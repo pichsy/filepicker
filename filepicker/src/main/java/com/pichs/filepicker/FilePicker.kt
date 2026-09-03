@@ -121,37 +121,8 @@ class FilePicker {
             return FilePickerSelectType.SEVEN_Z
         }
 
-        fun ofTar(): String {
-            return FilePickerSelectType.TAR
-        }
-
-        fun ofGz(): String {
-            return FilePickerSelectType.GZ
-        }
-
-        fun ofBz2(): String {
-            return FilePickerSelectType.BZ2
-        }
-
-        fun ofIso(): String {
-            return FilePickerSelectType.ISO
-        }
-
-        fun ofBr(): String {
-            return FilePickerSelectType.BR
-        }
-
-        fun ofLz4(): String {
-            return FilePickerSelectType.LZ4
-        }
-
-        fun ofZstd(): String {
-            return FilePickerSelectType.ZSTD
-        }
-
-        fun ofXz(): String {
-            return FilePickerSelectType.XZ
-        }
+        // 其他压缩格式（tar/gz/bz2/iso/br/lz4/zstd/xz 等）不再单独提供 API，
+        // 统一用 FilePickerSelectType.ofExtensions("tar", "gz", ...) 自定义后缀过滤。
 
         /**
          * 将 MediaEntity 列表转换为路径列表

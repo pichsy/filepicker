@@ -151,14 +151,8 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
             PickerType("zip", FilePicker.ofZip()),
             PickerType("rar", FilePicker.ofRar()),
             PickerType("7z", FilePicker.of7Z()),
-            PickerType("tar", FilePicker.ofTar()),
-            PickerType("gz", FilePicker.ofGz()),
-            PickerType("bz2", FilePicker.ofBz2()),
-            PickerType("iso", FilePicker.ofIso()),
-            PickerType("br", FilePicker.ofBr()),
-            PickerType("lz4", FilePicker.ofLz4()),
-            PickerType("zstd", FilePicker.ofZstd()),
-            PickerType("xz", FilePicker.ofXz()),
+            // 自定义后缀过滤示例：任意后缀组合，不再需要为每种后缀加 API
+            PickerType("自定义(xz,br)", FilePickerSelectType.ofExtensions("xz", "br")),
         )
         binding.rvType.layoutManager = GridLayoutManager(this, 2, GridLayoutManager.HORIZONTAL, false)
         binding.rvType.setup {
@@ -168,6 +162,7 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
                 val itemBinding = getBinding<ItemTypeChipBinding>()
                 itemBinding.tvTypeName.text = item.label
                 val selected = item.type == selectedType
+                itemBinding.tvTypeName.isChecked = selected
                 itemBinding.tvTypeName.setBackgroundColor(Color.TRANSPARENT)
                 itemBinding.tvTypeName.setTextColor(if (selected) 0xFF2196F3.toInt() else 0xFFCCCCCC.toInt())
                 itemBinding.tvTypeName.paint.isFakeBoldText = selected

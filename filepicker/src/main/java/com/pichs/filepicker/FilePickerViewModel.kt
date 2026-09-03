@@ -441,6 +441,18 @@ class FilePickerViewModel : ViewModel() {
                         } else if (selectType.value == FilePickerSelectType.XZ) {
                             builder.mimeTypeEquals(FilePickerMimeType.XZ)
                                 .or().fileNameEndWith(".xz")
+                        } else if (FilePickerSelectType.isCustomExtType(selectType.value)) {
+                            // 自定义后缀类型（FilePickerSelectType.ofExtensions 生成）：
+                            // 只按文件名后缀过滤（mime 轨不可用，认不出的后缀在 MediaStore 里多为 octet-stream）
+                            val exts = FilePickerSelectType.parseCustomExts(selectType.value)
+                            if (exts.isEmpty()) {
+                                builder.oneEqualsOne()
+                            } else {
+                                exts.forEachIndexed { index, ext ->
+                                    if (index > 0) builder.or()
+                                    builder.fileNameEndWith(".$ext")
+                                }
+                            }
                         } else {
                             builder.oneEqualsOne()
                         }

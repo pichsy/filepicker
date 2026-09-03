@@ -59,6 +59,36 @@ object FilePickerSelectType {
     const val ZSTD = "zstd"
     const val XZ = "xz"
 
+    /** 自定义后缀类型的前缀，由 [ofExtensions] 生成，如 "ext:xz,tar,bak" */
+    const val CUSTOM_EXT_PREFIX = "ext:"
+
+    /**
+     * 按任意文件后缀组合自定义过滤类型，如 ofExtensions("xz", "tar", "bak") -> "ext:xz,tar,bak"。
+     * 结果直接传给 FilePicker.setSelectType() 即可。
+     * 后缀会自动去掉前导点、转小写、去重，并过滤空串和 SQL 通配符（% _），防止 LIKE 误匹配。
+     */
+    fun ofExtensions(vararg extensions: String): String {
+        val exts = extensions.map { it.trim().removePrefix(".").lowercase() }
+            .filter { it.isNotEmpty() && it.none { c -> c == '%' || c == '_' } }
+            .distinct()
+        require(exts.isNotEmpty()) {
+            "ofExtensions 至少需要一个合法后缀，如 ofExtensions(\"xz\", \"tar\")"
+        }
+        return CUSTOM_EXT_PREFIX + exts.joinToString(",")
+    }
+
+    /** 是否是自定义后缀类型（[ofExtensions] 生成的） */
+    fun isCustomExtType(type: String): Boolean = type.startsWith(CUSTOM_EXT_PREFIX)
+
+    /** 解析自定义后缀类型里的后缀列表，非自定义类型返回空列表 */
+    fun parseCustomExts(type: String): List<String> {
+        return if (isCustomExtType(type)) {
+            type.removePrefix(CUSTOM_EXT_PREFIX).split(',').map { it.trim() }.filter { it.isNotEmpty() }
+        } else {
+            emptyList()
+        }
+    }
+
 }
 
 object FilePickerMimeType {
@@ -159,6 +189,9 @@ object SelectTypeUtil {
     }
 
     fun isValidType(type: String): Boolean {
+        if (FilePickerSelectType.isCustomExtType(type)) {
+            return FilePickerSelectType.parseCustomExts(type).isNotEmpty()
+        }
         return getAllTypes().contains(type)
     }
 
