@@ -109,7 +109,7 @@ glide = { group = "com.github.bumptech.glide", name = "glide", version.ref = "gl
 
 # 动图效果
 
-![img2.gif](pics/img2.gif)
+<img src="pics/img2.gif" width="320" alt="filepicker 效果演示" />
 
 # FilePicker 文件选择器 - 使用文档
 
