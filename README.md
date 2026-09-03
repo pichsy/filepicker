@@ -2,7 +2,7 @@
 
 ### 最新版本 ![](https://img.shields.io/maven-metadata/v.svg?label=maven-central&metadataUrl=https%3A%2F%2Frepo1.maven.org%2Fmaven2%2Fcom%2Fgitee%2Fpichs%2Ffilepicker%2Fmaven-metadata.xml)
 
-- 使用最新版的 filepicker 库，必须使用最新版的xwidget库。都是 5.6.3 以上确保。
+- 使用最新版的 filepicker 库，必须使用最新版的xwidget库。都是 5.8.1 以上确保。
 - 用了很多，都没有丝滑的选择效果的开源库，滑动选择丝滑。闲来没事，随手写一个吧。
 - 图库选择，文件选择
 - 仿华为相册滑动选择手势逻辑，
@@ -29,7 +29,7 @@
    **  ![](https://camo.githubusercontent.com/a94b501a064dd623ccd416f3c8262e8309b5a5ac74373d41980797e9ba286522/68747470733a2f2f6a69747061636b2e696f2f762f6c69616e676a696e676b616e6a692f4252562e737667)
 4. **BasePopup
    ** ![](https://camo.githubusercontent.com/a3d2af2f4eff2d27ff650b3ae97271ec783ebc4e12db2fd6213402d57929ed9b/68747470733a2f2f696d672e736869656c64732e696f2f6d6176656e2d63656e7472616c2f762f696f2e6769746875622e72617a657264702f42617365506f707570)
-5. **androidx.media3** 这里建议使用***1.7.1***
+5. **androidx.media3** 这里建议使用***1.11.0***
    稳定版 ![](https://img.shields.io/maven-metadata/v.svg?label=google-maven&metadataUrl=https%3A%2F%2Fdl.google.com%2Fandroid%2Fmaven2%2Fandroidx%2Fmedia3%2Fmedia3-exoplayer%2Fmaven-metadata.xml)
 6. **glide** ![](https://img.shields.io/badge/glide-4.16.0-brightgreen.svg)
 
@@ -39,7 +39,7 @@ dependencies {
     implementation("com.gitee.pichs:filepicker:7.0.0")
 
     // 基础组件库 （必须）
-    implementation("com.gitee.pichs:xwidget:5.6.3")
+    implementation("com.gitee.pichs:xwidget:5.8.1")
 
     // glide 图片加载 （必须）
     implementation("com.github.bumptech.glide:glide:4.16.0")
@@ -60,8 +60,8 @@ dependencies {
     // 弹窗 （必须）
     implementation("io.github.razerdp:BasePopup:3.2.1")
     // 视频播放库 （必须）采用exoplayer
-    implementation("androidx.media3:media3-exoplayer:1.7.1")
-    implementation("androidx.media3:media3-ui:1.7.1")
+    implementation("androidx.media3:media3-exoplayer:1.11.0")
+    implementation("androidx.media3:media3-ui:1.11.0")
 }
 
 
@@ -78,7 +78,7 @@ dependencies {
 
 # libs.version.toml中写法
 [versions]
-xwidget = "5.6.3"
+xwidget = "5.8.1"
 filepicker = "7.0.0"
 brv = "1.6.1"
 basepopup = "3.2.1"
@@ -88,7 +88,7 @@ fragmentKtx = "1.6.2"
 recyclerview = "1.4.0"
 kotlinxCoroutinesAndroid = "1.7.3"
 kotlinxCoroutinesCore = "1.7.3"
-media3Exoplayer = "1.7.1"
+media3Exoplayer = "1.11.0"
 
 [libraries]
 androidx-media3-exoplayer = { module = "androidx.media3:media3-exoplayer", version.ref = "media3Exoplayer" }
