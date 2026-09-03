@@ -137,6 +137,22 @@ class FilePicker {
             return FilePickerSelectType.ISO
         }
 
+        fun ofBr(): String {
+            return FilePickerSelectType.BR
+        }
+
+        fun ofLz4(): String {
+            return FilePickerSelectType.LZ4
+        }
+
+        fun ofZstd(): String {
+            return FilePickerSelectType.ZSTD
+        }
+
+        fun ofXz(): String {
+            return FilePickerSelectType.XZ
+        }
+
         /**
          * 将 MediaEntity 列表转换为路径列表
          */

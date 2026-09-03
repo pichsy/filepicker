@@ -225,6 +225,10 @@ FilePicker.with(this) // this: Fragment
 | `ofGz()`                    | 只选择GZ                     |
 | `ofBz2()`                   | 只选择BZ2                    |
 | `ofIso()`                   | 只选择ISO                    |
+| `ofBr()`                    | 只选择BR                     |
+| `ofLz4()`                   | 只选择LZ4                    |
+| `ofZstd()`                  | 只选择ZSTD（zst/zstd后缀）    |
+| `ofXz()`                    | 只选择XZ                     |
 | `convertToPathList(list)`   | 将 `MediaEntity` 列表转换为路径列表 |
 | `convertToEntityList(list)` | 将路径列表转换为 `MediaEntity` 列表 |
 

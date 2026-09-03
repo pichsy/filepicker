@@ -19,6 +19,7 @@ import android.webkit.MimeTypeMap
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.lifecycleScope
+import com.pichs.filepicker.FilePickerMimeType
 import com.pichs.filepicker.demo.databinding.ActivityDataFactoryBinding
 import com.hjq.permissions.Permission
 import com.hjq.permissions.XXPermissions
@@ -128,6 +129,9 @@ class DataFactoryActivity : BindingActivity<ActivityDataFactoryBinding>() {
         if (binding.cbImage.isChecked) {
             tasks += GenTask("图片", "DCIM", "image/jpeg") { i -> generateImageBytes(i) }
         }
+        if (binding.cbGif.isChecked) {
+            tasks += GenTask("gif", "DCIM", "image/gif") { buildGifBytes() }
+        }
         if (binding.cbTxt.isChecked) {
             tasks += GenTask("txt", "Documents", "text/plain") { buildTxtBytes() }
         }
@@ -149,17 +153,42 @@ class DataFactoryActivity : BindingActivity<ActivityDataFactoryBinding>() {
         if (binding.cbMp3.isChecked) {
             tasks += GenTask("mp3", "Music", "audio/mpeg") { buildMp3Bytes() }
         }
+        if (binding.cbWav.isChecked) {
+            tasks += GenTask("wav", "Music", "audio/wav") { buildWavBytes() }
+        }
         if (binding.cbZip.isChecked) {
             tasks += GenTask("zip", "Download", "application/zip") { buildZipBytes() }
         }
         if (binding.cbTar.isChecked) {
             tasks += GenTask("tar", "Download", "application/x-tar") { buildTarBytes() }
-            tasks += GenTask("gz", "Download", "application/gzip") { buildGzBytes() }
         }
-        if (binding.cbOther.isChecked) {
-            tasks += GenTask("rar", "Download", "application/vnd.rar") { buildRarBytes() }
-            tasks += GenTask("7z", "Download", "application/x-7z-compressed") { buildSevenZipBytes() }
-            tasks += GenTask("iso", "Download", "application/x-iso9660-image") { buildIsoBytes() }
+        if (binding.cbGz.isChecked) {
+            tasks += GenTask("gz", "Download", "application/gzip") { buildGzBytes() }
+            tasks += GenTask("tgz", "Download", "application/gzip") { buildTgzBytes() }
+        }
+        if (binding.cbRar.isChecked) {
+            tasks += GenTask("rar", "Download", FilePickerMimeType.RAR_VND) { buildRarBytes() }
+        }
+        if (binding.cb7z.isChecked) {
+            tasks += GenTask("7z", "Download", FilePickerMimeType.SEVEN_Z) { buildSevenZipBytes() }
+        }
+        if (binding.cbIso.isChecked) {
+            tasks += GenTask("iso", "Download", FilePickerMimeType.ISO) { buildIsoBytes() }
+        }
+        if (binding.cbBz2.isChecked) {
+            tasks += GenTask("bz2", "Download", FilePickerMimeType.BZ2) { buildBz2Bytes() }
+        }
+        if (binding.cbBr.isChecked) {
+            tasks += GenTask("br", "Download", FilePickerMimeType.BR) { buildBrBytes() }
+        }
+        if (binding.cbLz4.isChecked) {
+            tasks += GenTask("lz4", "Download", FilePickerMimeType.LZ4) { buildLz4Bytes() }
+        }
+        if (binding.cbZstd.isChecked) {
+            tasks += GenTask("zstd", "Download", FilePickerMimeType.ZSTD) { buildZstdBytes() }
+        }
+        if (binding.cbXz.isChecked) {
+            tasks += GenTask("xz", "Download", FilePickerMimeType.XZ) { buildXzBytes() }
         }
         if (binding.cbApk.isChecked) {
             tasks += GenTask("apk", "Download", "application/vnd.android.package-archive") { buildApkBytes() }
@@ -460,18 +489,125 @@ class DataFactoryActivity : BindingActivity<ActivityDataFactoryBinding>() {
         return bos.toByteArray()
     }
 
+    /** 真实 tgz：tar 打包后再 gzip 一层 */
+    private fun buildTgzBytes(): ByteArray {
+        val bos = ByteArrayOutputStream()
+        GZIPOutputStream(bos).use { it.write(buildTarBytes()) }
+        return bos.toByteArray()
+    }
+
+    /** 真实 wav：RIFF/WAVE 容器 + 正弦波 PCM，播放器能直接播 */
+    private fun buildWavBytes(): ByteArray {
+        val sampleRate = 8000
+        val seconds = Random.nextInt(10, 20)
+        val sampleCount = sampleRate * seconds
+        val dataBytes = sampleCount * 2 // 16bit 单声道
+        val bos = ByteArrayOutputStream(dataBytes + 44)
+        fun writeInt(v: Int) {
+            bos.write(v); bos.write(v shr 8); bos.write(v shr 16); bos.write(v shr 24)
+        }
+        fun writeShort(v: Int) {
+            bos.write(v); bos.write(v shr 8)
+        }
+        bos.write("RIFF".toByteArray())
+        writeInt(36 + dataBytes)
+        bos.write("WAVE".toByteArray())
+        bos.write("fmt ".toByteArray())
+        writeInt(16)                 // fmt 块长度
+        writeShort(1)                // PCM
+        writeShort(1)                // 单声道
+        writeInt(sampleRate)
+        writeInt(sampleRate * 2)     // byte rate
+        writeShort(2)                // block align
+        writeShort(16)               // 位深
+        bos.write("data".toByteArray())
+        writeInt(dataBytes)
+        val freq = Random.nextInt(200, 1000)
+        for (i in 0 until sampleCount) {
+            val sample = (Math.sin(2.0 * Math.PI * freq * i / sampleRate) * 8000).toInt()
+            bos.write(sample and 0xFF)
+            bos.write((sample shr 8) and 0xFF)
+        }
+        return bos.toByteArray()
+    }
+
+    /** 真实 GIF89a 动图：32x32，双色交替帧，能正常播放 */
+    private fun buildGifBytes(): ByteArray {
+        val w = 32
+        val h = 32
+        val frames = Random.nextInt(30, 50)
+        val bos = ByteArrayOutputStream()
+        bos.write("GIF89a".toByteArray())
+        // 逻辑屏幕描述符：GCT 存在、8bit 色深（256 色）
+        bos.write(w and 0xFF); bos.write(w shr 8)
+        bos.write(h and 0xFF); bos.write(h shr 8)
+        bos.write(0xF7); bos.write(0); bos.write(0)
+        // 全局色表：256 色随机鲜艳色环
+        repeat(256) { i ->
+            val c = Color.HSVToColor(floatArrayOf(i * 360f / 256f, 1f, 1f))
+            bos.write((c shr 16) and 0xFF)
+            bos.write((c shr 8) and 0xFF)
+            bos.write(c and 0xFF)
+        }
+        // NETSCAPE2.0 循环扩展
+        bos.write(0x21); bos.write(0xFF); bos.write(0x0B)
+        bos.write("NETSCAPE2.0".toByteArray())
+        bos.write(0x03); bos.write(0x01); bos.write(0x00); bos.write(0x00); bos.write(0x00)
+        repeat(frames) { f ->
+            // 图形控制扩展：延迟 0.1s
+            bos.write(0x21); bos.write(0xF9); bos.write(0x04); bos.write(0x04)
+            bos.write(0x0A); bos.write(0x00); bos.write(0x00); bos.write(0x00)
+            // 图像描述符
+            bos.write(0x2C)
+            bos.write(0); bos.write(0)   // x
+            bos.write(0); bos.write(0)   // y
+            bos.write(w and 0xFF); bos.write(w shr 8)
+            bos.write(h and 0xFF); bos.write(h shr 8)
+            bos.write(0x00)              // 使用全局色表
+            // LZW 最小码长 8；用 (clear, 颜色码) 对逐像素输出，解码端合法
+            bos.write(8)
+            var cur = 0
+            var curBits = 0
+            var sub = ByteArrayOutputStream()
+            val pixels = w * h
+            for (i in 0 until pixels) {
+                val code = if (i % 2 == 0) 256 else (i / w + f) % 2 // 偶数位发 clear，奇数位发颜色码（逐帧棋盘交替）
+                cur = cur or (code shl curBits)
+                curBits += 10
+                while (curBits >= 8) {
+                    sub.write(cur and 0xFF)
+                    cur = cur shr 8
+                    curBits -= 8
+                }
+            }
+            if (curBits > 0) sub.write(cur and 0xFF)
+            // EOI 码
+            cur = cur or (257 shl curBits)
+            curBits += 10
+            while (curBits >= 8) {
+                sub.write(cur and 0xFF)
+                cur = cur shr 8
+                curBits -= 8
+            }
+            if (curBits > 0) sub.write(cur and 0xFF)
+            // 按最长 255 字节分块写出
+            val bytes = sub.toByteArray()
+            var off = 0
+            while (off < bytes.size) {
+                val len = minOf(255, bytes.size - off)
+                bos.write(len)
+                bos.write(bytes, off, len)
+                off += len
+            }
+            bos.write(0x00) // 块结束符
+        }
+        bos.write(0x3B) // 文件结束符
+        return bos.toByteArray()
+    }
+
     /** Rar! 魔数 + 填充 */
     private fun buildRarBytes(): ByteArray {
         return padRandom(byteArrayOf(0x52, 0x61, 0x72, 0x21, 0x1A, 0x07, 0x00))
-    }
-
-    /** 7z 魔数 + 填充 */
-    private fun buildSevenZipBytes(): ByteArray {
-        return padRandom(
-            byteArrayOf(
-                0x37, 0x7A, 0xBC.toByte(), 0xAF.toByte(), 0x27, 0x1C
-            )
-        )
     }
 
     /** iso9660 魔数（偏移 0x8001 处 CD001）+ 填充 */
@@ -480,6 +616,55 @@ class DataFactoryActivity : BindingActivity<ActivityDataFactoryBinding>() {
         bos.write(ByteArray(0x8001))
         bos.write("CD001".toByteArray())
         return padRandom(bos.toByteArray(), minKb = 512, maxKb = 1024)
+    }
+
+    /** 真实 bzip2 压缩（Apache Commons Compress） */
+    private fun buildBz2Bytes(): ByteArray {
+        val bos = ByteArrayOutputStream()
+        org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream(bos).use {
+            it.write(buildTxtBytes())
+        }
+        return bos.toByteArray()
+    }
+
+    /** 真实 xz 压缩（Apache Commons Compress） */
+    private fun buildXzBytes(): ByteArray {
+        val bos = ByteArrayOutputStream()
+        org.apache.commons.compress.compressors.xz.XZCompressorOutputStream(bos).use {
+            it.write(buildTxtBytes())
+        }
+        return bos.toByteArray()
+    }
+
+    /** 真实 7z 归档（Apache Commons Compress，含一个文本条目） */
+    private fun buildSevenZipBytes(): ByteArray {
+        val tmp = File(cacheDir, "gen_tmp.7z")
+        org.apache.commons.compress.archivers.sevenz.SevenZOutputFile(tmp).use { out ->
+            out.setContentCompression(org.apache.commons.compress.archivers.sevenz.SevenZMethod.LZMA2)
+            val entry = org.apache.commons.compress.archivers.sevenz.SevenZArchiveEntry()
+            entry.name = "test_content.txt"
+            out.putArchiveEntry(entry)
+            out.write(buildTxtBytes())
+            out.closeArchiveEntry()
+        }
+        val bytes = tmp.readBytes()
+        tmp.delete()
+        return bytes
+    }
+
+    /** brotli 无魔数，随机填充（真编码需 brotli4j 带 native so） */
+    private fun buildBrBytes(): ByteArray {
+        return padRandom(ByteArray(0))
+    }
+
+    /** lz4 帧魔数（04 22 4D 18）+ 填充（真编码需 lz4-java 带 native so） */
+    private fun buildLz4Bytes(): ByteArray {
+        return padRandom(byteArrayOf(0x04, 0x22, 0x4D, 0x18))
+    }
+
+    /** zstd 帧魔数（28 B5 2F FD）+ 填充（真编码需 zstd-jni 带 native so） */
+    private fun buildZstdBytes(): ByteArray {
+        return padRandom(byteArrayOf(0x28, 0xB5.toByte(), 0x2F, 0xFD.toByte()))
     }
 
     /** 复制本 app 安装包，真实的 apk */

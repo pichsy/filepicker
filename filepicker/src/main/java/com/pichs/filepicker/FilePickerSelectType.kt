@@ -46,7 +46,7 @@ object FilePickerSelectType {
     const val APK = "apk"
 
     // 压缩包类型
-    const val ZIP_ALL = "zip,rar,7z,tar,gz,bz2,iso"
+    const val ZIP_ALL = "zip,rar,7z,tar,gz,bz2,iso,br,lz4,zstd,xz"
     const val ZIP = "zip"
     const val RAR = "rar"
     const val SEVEN_Z = "7z"
@@ -54,6 +54,10 @@ object FilePickerSelectType {
     const val GZ = "gz"
     const val BZ2 = "bz2"
     const val ISO = "iso"
+    const val BR = "br"
+    const val LZ4 = "lz4"
+    const val ZSTD = "zstd"
+    const val XZ = "xz"
 
 }
 
@@ -86,9 +90,13 @@ object FilePickerMimeType {
             "rar" -> RAR
             "7z" -> SEVEN_Z
             "tar" -> TAR
-            "gz" -> GZ
+            "gz", "tgz" -> GZ
             "bz2" -> BZ2
             "iso" -> ISO
+            "br" -> BR
+            "lz4" -> LZ4
+            "zst", "zstd" -> ZSTD
+            "xz" -> XZ
             else -> ""
         }
     }
@@ -121,16 +129,23 @@ object FilePickerMimeType {
 
     const val APK = "application/vnd.android.package-archive"
 
+    /** 通用压缩格式。 */
     const val ZIP = "application/zip"
     const val RAR = "application/x-rar-compressed"
-
     /** rar 的 IANA 标准类型，部分设备/来源会报这个，需与 RAR 同时兼容 */
     const val RAR_VND = "application/vnd.rar"
+    /** 部分设备的 MimeTypeMap 会把 .rar 映射成这个非标准值，三种都要兼容 */
+    const val RAR_PLAIN = "application/rar"
     const val SEVEN_Z = "application/x-7z-compressed"
     const val TAR = "application/x-tar"
     const val GZ = "application/gzip"
     const val BZ2 = "application/x-bzip2"
     const val ISO = "application/x-iso9660-image"
+    const val BR = "application/br"
+    const val LZ4 = "application/x-lz4"
+    const val ZSTD = "application/x-zstd"
+    const val XZ = "application/x-xz"
+    const val gzip = "application/x-gzip"
 
 }
 
@@ -138,7 +153,8 @@ object SelectTypeUtil {
 
     fun getAllTypes(): List<String> {
         return listOf(
-            IMAGE_VIDEO, IMAGE_VIDEO_GIF, IMAGE, VIDEO, GIF, AUDIO, DOCUMENT, PDF, DOC, PPT, EXCEL, TXT, APK, ZIP_ALL, ZIP, RAR, SEVEN_Z, TAR, GZ, BZ2, ISO
+            IMAGE_VIDEO, IMAGE_VIDEO_GIF, IMAGE, VIDEO, GIF, AUDIO, DOCUMENT, PDF, DOC, PPT, EXCEL, TXT, APK, ZIP_ALL, ZIP, RAR, SEVEN_Z, TAR, GZ, BZ2, ISO,
+            FilePickerSelectType.BR, FilePickerSelectType.LZ4, FilePickerSelectType.ZSTD, FilePickerSelectType.XZ
         )
     }
 

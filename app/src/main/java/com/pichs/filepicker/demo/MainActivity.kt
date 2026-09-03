@@ -8,6 +8,7 @@ import android.service.autofill.Validators.and
 import android.util.Log
 import androidx.activity.viewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.drake.brv.utils.linear
@@ -22,6 +23,7 @@ import com.pichs.filepicker.FilePickerViewModel
 import com.pichs.filepicker.common.ImagePreviewDialog
 import com.pichs.filepicker.demo.databinding.ActivityMainBinding
 import com.pichs.filepicker.demo.databinding.ItemImageBinding
+import com.pichs.filepicker.demo.databinding.ItemTypeChipBinding
 import com.pichs.filepicker.demo.paging.PagingDemoActivity
 import com.pichs.filepicker.demo.paging.ImagePagingDemoActivity
 import com.pichs.filepicker.demo.newpicker.LocalMediaPickerActivity
@@ -62,18 +64,11 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
             val maxFileSizeMB = binding.etMaxFileSize.text.toString().toIntOrNull() ?: 200
             val maxFileSize = maxFileSizeMB * 1024 * 1024
             // 获取类型
-            val type = when (binding.rgType.checkedRadioButtonId) {
-                binding.rbAll.id -> FilePicker.ofAll()
-                binding.rbImage.id -> FilePicker.ofImage()
-                binding.rbVideo.id -> FilePicker.ofVideo()
-                binding.rbAudio.id -> FilePicker.ofAudio()
-                binding.rbDocument.id -> FilePicker.ofDocument()
-                binding.rbAip.id -> FilePicker.ofZipAll()
-                binding.rbApk.id -> FilePicker.ofApk()
-                else -> FilePicker.ofAll()
-            }
+            val type = selectedType
 
-            if (type == FilePicker.ofAll() || type == FilePicker.ofVideo() || type == FilePicker.ofImage() || type == FilePicker.ofAudio()) {
+            if (type == FilePicker.ofAll() || type == FilePicker.ofVideo() || type == FilePicker.ofImage() || type == FilePicker.ofAudio()
+                || type == FilePicker.ofGif() || type == FilePicker.ofAllWithGif()
+            ) {
                 // 权限请求
                 XXPermissions.with(this).unchecked().permission(
                     Permission.READ_MEDIA_IMAGES,
@@ -100,6 +95,7 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
             }
         }
         initRecyclerView()
+        initTypeList()
     }
 
     private fun initRecyclerView() {
@@ -131,6 +127,60 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
     }
 
     private var selectedDataList = mutableListOf<MediaEntity>()
+
+    /** 类型单选列表 */
+    private data class PickerType(val label: String, val type: String)
+
+    private var selectedType: String = FilePicker.ofAll()
+
+    private fun initTypeList() {
+        val types = listOf(
+            PickerType("全部", FilePicker.ofAll()),
+            PickerType("图片", FilePicker.ofImage()),
+            PickerType("视频", FilePicker.ofVideo()),
+            PickerType("GIF", FilePicker.ofGif()),
+            PickerType("音频", FilePicker.ofAudio()),
+            PickerType("文档", FilePicker.ofDocument()),
+            PickerType("pdf", FilePicker.ofPdf()),
+            PickerType("doc", FilePicker.ofDoc()),
+            PickerType("ppt", FilePicker.ofPpt()),
+            PickerType("excel", FilePicker.ofExcel()),
+            PickerType("txt", FilePicker.ofTxt()),
+            PickerType("APK", FilePicker.ofApk()),
+            PickerType("zip_all", FilePicker.ofZipAll()),
+            PickerType("zip", FilePicker.ofZip()),
+            PickerType("rar", FilePicker.ofRar()),
+            PickerType("7z", FilePicker.of7Z()),
+            PickerType("tar", FilePicker.ofTar()),
+            PickerType("gz", FilePicker.ofGz()),
+            PickerType("bz2", FilePicker.ofBz2()),
+            PickerType("iso", FilePicker.ofIso()),
+            PickerType("br", FilePicker.ofBr()),
+            PickerType("lz4", FilePicker.ofLz4()),
+            PickerType("zstd", FilePicker.ofZstd()),
+            PickerType("xz", FilePicker.ofXz()),
+        )
+        binding.rvType.layoutManager = GridLayoutManager(this, 2, GridLayoutManager.HORIZONTAL, false)
+        binding.rvType.setup {
+            addType<PickerType>(R.layout.item_type_chip)
+            onBind {
+                val item = getModel<PickerType>()
+                val itemBinding = getBinding<ItemTypeChipBinding>()
+                itemBinding.tvTypeName.text = item.label
+                val selected = item.type == selectedType
+                itemBinding.tvTypeName.setBackgroundColor(Color.TRANSPARENT)
+                itemBinding.tvTypeName.setTextColor(if (selected) 0xFF2196F3.toInt() else 0xFFCCCCCC.toInt())
+                itemBinding.tvTypeName.paint.isFakeBoldText = selected
+                itemBinding.tvTypeName.setOnClickListener {
+                    if (selectedType != item.type) {
+                        selectedType = item.type
+                        binding.rvType.adapter?.notifyDataSetChanged()
+                    }
+                }
+            }
+        }
+        binding.rvType.models = types
+    }
 
     fun selectFile(type: String, maxSelectCount: Int, maxFileSize: Int) {
         FilePicker.with(this).setMaxSelectNumber(maxSelectCount)

@@ -70,4 +70,7 @@ dependencies {
 
     // Paging3
     implementation(libs.androidx.paging.runtime)
+
+    // 数据制造页：真实压缩文件生成（7z/bz2/xz）
+    implementation("org.apache.commons:commons-compress:1.26.2")
 }

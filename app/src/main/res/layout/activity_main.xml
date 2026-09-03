@@ -78,7 +78,7 @@
                 android:textColorHint="#888" />
         </LinearLayout>
 
-        <!-- 类型选择 RadioGroup -->
+        <!-- 类型选择：两排横向滑动 -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -92,62 +92,12 @@
                 android:text="类型："
                 android:textColor="#fff" />
 
-            <RadioGroup
-                android:id="@+id/rg_type"
-                android:layout_width="wrap_content"
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rv_type"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:orientation="vertical">
-
-                <RadioButton
-                    android:id="@+id/rb_all"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:checked="true"
-                    android:text="全部"
-                    android:textColor="#fff" />
-
-                <RadioButton
-                    android:id="@+id/rb_image"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="图片"
-                    android:textColor="#fff" />
-
-                <RadioButton
-                    android:id="@+id/rb_video"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="视频"
-                    android:textColor="#fff" />
-
-                <RadioButton
-                    android:id="@+id/rb_audio"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="音频"
-                    android:textColor="#fff" />
-
-                <RadioButton
-                    android:id="@+id/rb_document"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Document"
-                    android:textColor="#fff" />
-
-                <RadioButton
-                    android:id="@+id/rb_aip"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="zip_all"
-                    android:textColor="#fff" />
-
-                <RadioButton
-                    android:id="@+id/rb_apk"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="APK"
-                    android:textColor="#fff" />
-            </RadioGroup>
+                android:layout_weight="1"
+                android:overScrollMode="never" />
         </LinearLayout>
 
         <!-- 开始按钮 -->

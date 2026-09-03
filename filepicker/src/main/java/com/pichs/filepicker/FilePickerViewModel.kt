@@ -389,7 +389,9 @@ class FilePickerViewModel : ViewModel() {
                                 .fileNameEndWith(".pptx").or().fileNameEndWith(".xls").or().fileNameEndWith(".xlsx").or().fileNameEndWith(".txt")
                         } else if (selectType.value == FilePickerSelectType.ZIP_ALL) {
                             builder.fileNameEndWith(".zip").or().fileNameEndWith(".rar").or().fileNameEndWith(".7z").or().fileNameEndWith(".tar").or()
-                                .fileNameEndWith(".gz").or().fileNameEndWith(".bz2").or().fileNameEndWith(".iso")
+                                .fileNameEndWith(".gz").or().fileNameEndWith(".bz2").or().fileNameEndWith(".iso").or()
+                                .fileNameEndWith(".br").or().fileNameEndWith(".lz4").or().fileNameEndWith(".zst").or()
+                                .fileNameEndWith(".zstd").or().fileNameEndWith(".xz")
                         } else if (selectType.value == FilePickerSelectType.APK) {
                             builder.mimeTypeEquals(FilePickerMimeType.APK)
                         } else if (selectType.value == FilePickerSelectType.PDF) {
@@ -404,19 +406,41 @@ class FilePickerViewModel : ViewModel() {
                             builder.fileNameEndWith(".ppt").or().fileNameEndWith(".pptx")
                         } else if (selectType.value == FilePickerSelectType.ZIP) {
                             builder.mimeTypeEquals(FilePickerMimeType.ZIP)
+                                .or().fileNameEndWith(".zip")
                         } else if (selectType.value == FilePickerSelectType.RAR) {
+                            // .rar 在不同系统上可能是三种 mime 之一，再以后缀兜底
                             builder.mimeTypeEquals(FilePickerMimeType.RAR)
                                 .or().mimeTypeEquals(FilePickerMimeType.RAR_VND)
+                                .or().mimeTypeEquals(FilePickerMimeType.RAR_PLAIN)
+                                .or().fileNameEndWith(".rar")
                         } else if (selectType.value == FilePickerSelectType.SEVEN_Z) {
                             builder.mimeTypeEquals(FilePickerMimeType.SEVEN_Z)
+                                .or().fileNameEndWith(".7z")
                         } else if (selectType.value == FilePickerSelectType.TAR) {
                             builder.mimeTypeEquals(FilePickerMimeType.TAR)
+                                .or().fileNameEndWith(".tar")
                         } else if (selectType.value == FilePickerSelectType.GZ) {
                             builder.mimeTypeEquals(FilePickerMimeType.GZ)
+                                .or().mimeTypeEquals(FilePickerMimeType.gzip)
+                                .or().fileNameEndWith(".gz").or().fileNameEndWith(".tgz")
                         } else if (selectType.value == FilePickerSelectType.BZ2) {
                             builder.mimeTypeEquals(FilePickerMimeType.BZ2)
+                                .or().fileNameEndWith(".bz2")
                         } else if (selectType.value == FilePickerSelectType.ISO) {
                             builder.mimeTypeEquals(FilePickerMimeType.ISO)
+                                .or().fileNameEndWith(".iso")
+                        } else if (selectType.value == FilePickerSelectType.BR) {
+                            builder.mimeTypeEquals(FilePickerMimeType.BR)
+                                .or().fileNameEndWith(".br")
+                        } else if (selectType.value == FilePickerSelectType.LZ4) {
+                            builder.mimeTypeEquals(FilePickerMimeType.LZ4)
+                                .or().fileNameEndWith(".lz4")
+                        } else if (selectType.value == FilePickerSelectType.ZSTD) {
+                            builder.mimeTypeEquals(FilePickerMimeType.ZSTD)
+                                .or().fileNameEndWith(".zst").or().fileNameEndWith(".zstd")
+                        } else if (selectType.value == FilePickerSelectType.XZ) {
+                            builder.mimeTypeEquals(FilePickerMimeType.XZ)
+                                .or().fileNameEndWith(".xz")
                         } else {
                             builder.oneEqualsOne()
                         }

@@ -87,6 +87,13 @@
                 android:text="视频（点下方按钮选一个复制N份）"
                 android:textColor="#fff" />
 
+            <CheckBox
+                android:id="@+id/cb_gif"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="gif（真实GIF89a动画）"
+                android:textColor="#fff" />
+
             <!-- 文档 -->
             <androidx.appcompat.widget.AppCompatTextView
                 android:layout_width="wrap_content"
@@ -150,6 +157,13 @@
                 android:text="mp3（静音音频帧）"
                 android:textColor="#fff" />
 
+            <CheckBox
+                android:id="@+id/cb_wav"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="wav（真实RIFF正弦波）"
+                android:textColor="#fff" />
+
             <!-- 压缩包 -->
             <androidx.appcompat.widget.AppCompatTextView
                 android:layout_width="wrap_content"
@@ -171,14 +185,70 @@
                 android:id="@+id/cb_tar"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="tar / gz"
+                android:text="tar"
                 android:textColor="#fff" />
 
             <CheckBox
-                android:id="@+id/cb_other"
+                android:id="@+id/cb_gz"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="rar / 7z / iso"
+                android:text="gz / tgz（真实tar.gz）"
+                android:textColor="#fff" />
+
+            <CheckBox
+                android:id="@+id/cb_rar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="rar"
+                android:textColor="#fff" />
+
+            <CheckBox
+                android:id="@+id/cb_7z"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="7z（真实LZMA2）"
+                android:textColor="#fff" />
+
+            <CheckBox
+                android:id="@+id/cb_iso"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="iso（CD001镜像）"
+                android:textColor="#fff" />
+
+            <CheckBox
+                android:id="@+id/cb_bz2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="bz2（真实bzip2）"
+                android:textColor="#fff" />
+
+            <CheckBox
+                android:id="@+id/cb_br"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="br"
+                android:textColor="#fff" />
+
+            <CheckBox
+                android:id="@+id/cb_lz4"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="lz4"
+                android:textColor="#fff" />
+
+            <CheckBox
+                android:id="@+id/cb_zstd"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="zstd"
+                android:textColor="#fff" />
+
+            <CheckBox
+                android:id="@+id/cb_xz"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="xz（真实XZ）"
                 android:textColor="#fff" />
 
             <CheckBox
