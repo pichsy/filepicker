@@ -162,8 +162,10 @@ object FilePickerMimeType {
     /** 通用压缩格式。 */
     const val ZIP = "application/zip"
     const val RAR = "application/x-rar-compressed"
+
     /** rar 的 IANA 标准类型，部分设备/来源会报这个，需与 RAR 同时兼容 */
     const val RAR_VND = "application/vnd.rar"
+
     /** 部分设备的 MimeTypeMap 会把 .rar 映射成这个非标准值，三种都要兼容 */
     const val RAR_PLAIN = "application/rar"
     const val SEVEN_Z = "application/x-7z-compressed"

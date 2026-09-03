@@ -11,6 +11,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.drake.brv.utils.divider
 import com.drake.brv.utils.linear
 import com.drake.brv.utils.models
 import com.drake.brv.utils.setup
@@ -66,9 +67,7 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
             // 获取类型
             val type = selectedType
 
-            if (type == FilePicker.ofAll() || type == FilePicker.ofVideo() || type == FilePicker.ofImage() || type == FilePicker.ofAudio()
-                || type == FilePicker.ofGif() || type == FilePicker.ofAllWithGif()
-            ) {
+            if (type == FilePicker.ofAll() || type == FilePicker.ofVideo() || type == FilePicker.ofImage() || type == FilePicker.ofAudio() || type == FilePicker.ofGif() || type == FilePicker.ofAllWithGif()) {
                 // 权限请求
                 XXPermissions.with(this).unchecked().permission(
                     Permission.READ_MEDIA_IMAGES,
@@ -116,9 +115,7 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
                         ).showPopupWindow()
                     } else {
                         ImagePreviewDialog(
-                            context = this@MainActivity,
-                            title = mediaEntity.name,
-                            url = mediaEntity.path
+                            context = this@MainActivity, title = mediaEntity.name, url = mediaEntity.path
                         ).showPopupWindow()
                     }
                 }
@@ -153,9 +150,12 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
             PickerType("7z", FilePicker.of7Z()),
             // 自定义后缀过滤示例：任意后缀组合，不再需要为每种后缀加 API
             PickerType("自定义(xz,br)", FilePickerSelectType.ofExtensions("xz", "br")),
+            PickerType("自定义(GZ,TGZ)", FilePickerSelectType.ofExtensions("gz,tgz")),
         )
         binding.rvType.layoutManager = GridLayoutManager(this, 2, GridLayoutManager.HORIZONTAL, false)
-        binding.rvType.setup {
+        binding.rvType.divider {
+            setDivider(8, true)
+        }.setup {
             addType<PickerType>(R.layout.item_type_chip)
             onBind {
                 val item = getModel<PickerType>()
@@ -163,8 +163,8 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
                 itemBinding.tvTypeName.text = item.label
                 val selected = item.type == selectedType
                 itemBinding.tvTypeName.isChecked = selected
-                itemBinding.tvTypeName.setBackgroundColor(Color.TRANSPARENT)
-                itemBinding.tvTypeName.setTextColor(if (selected) 0xFF2196F3.toInt() else 0xFFCCCCCC.toInt())
+//                itemBinding.tvTypeName.setBackgroundColor(Color.TRANSPARENT)
+//                itemBinding.tvTypeName.setTextColor(if (selected) 0xFF2196F3.toInt() else 0xFFCCCCCC.toInt())
                 itemBinding.tvTypeName.paint.isFakeBoldText = selected
                 itemBinding.tvTypeName.setOnClickListener {
                     if (selectedType != item.type) {
@@ -178,12 +178,8 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
     }
 
     fun selectFile(type: String, maxSelectCount: Int, maxFileSize: Int) {
-        FilePicker.with(this).setMaxSelectNumber(maxSelectCount)
-            .setMaxFileSize(maxFileSize.toLong())
-            .setSelectType(type)
-            .setSingleClickEnable(true)
-            .setSelectedList(selectedDataList)
-            .setOnSelectCallback { isUseOriginal, list ->
+        FilePicker.with(this).setMaxSelectNumber(maxSelectCount).setMaxFileSize(maxFileSize.toLong()).setSelectType(type).setSingleClickEnable(true)
+            .setSelectedList(selectedDataList).setOnSelectCallback { isUseOriginal, list ->
                 XLog.d("FilePicker", "Selected files: ${list.size}")
                 selectedDataList = list
                 binding.recyclerView.models = list
@@ -196,8 +192,7 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
                     isPreviewPageIndexMode = true,
                     isShowSelectedListDeleteIcon = true,
                     folderNickNameMap = hashMapOf(
-                        "DCIM" to "相册",
-                        "Download" to "下载"
+                        "DCIM" to "相册", "Download" to "下载"
                     )
                 )
             ).start()
