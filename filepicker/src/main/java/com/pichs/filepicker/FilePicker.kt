@@ -53,76 +53,96 @@ class FilePicker {
             }
         }
 
-        fun ofImage(): String {
-            return FilePickerSelectType.IMAGE
-        }
+        // ----------------------------------------------------------------
+        // 已废弃：类型入口 API 统一收敛到 FilePickerSelectType（语义更贴合）。
+        // 以下方法保留转发、保证老代码可用，请尽快迁移到 FilePickerSelectType.ofXxx()。
+        // tar/gz/bz2/iso/br/lz4/zstd/xz 等压缩格式用 FilePickerSelectType.ofExtensions(...) 自定义后缀过滤。
+        // ----------------------------------------------------------------
 
-        fun ofVideo(): String {
-            return FilePickerSelectType.VIDEO
-        }
-
+        @Deprecated("换用 FilePickerSelectType.ofAll()", replaceWith = ReplaceWith("FilePickerSelectType.ofAll()"))
         fun ofAll(): String {
             return FilePickerSelectType.IMAGE_VIDEO
         }
 
+        @Deprecated("换用 FilePickerSelectType.ofAllWithGif()", replaceWith = ReplaceWith("FilePickerSelectType.ofAllWithGif()"))
         fun ofAllWithGif(): String {
             return FilePickerSelectType.IMAGE_VIDEO_GIF
         }
 
+        @Deprecated("换用 FilePickerSelectType.ofImage()", replaceWith = ReplaceWith("FilePickerSelectType.ofImage()"))
+        fun ofImage(): String {
+            return FilePickerSelectType.IMAGE
+        }
+
+        @Deprecated("换用 FilePickerSelectType.ofVideo()", replaceWith = ReplaceWith("FilePickerSelectType.ofVideo()"))
+        fun ofVideo(): String {
+            return FilePickerSelectType.VIDEO
+        }
+
+        @Deprecated("换用 FilePickerSelectType.ofGif()", replaceWith = ReplaceWith("FilePickerSelectType.ofGif()"))
         fun ofGif(): String {
             return FilePickerSelectType.GIF
         }
 
+        @Deprecated("换用 FilePickerSelectType.ofAudio()", replaceWith = ReplaceWith("FilePickerSelectType.ofAudio()"))
         fun ofAudio(): String {
             return FilePickerSelectType.AUDIO
         }
 
+        @Deprecated("换用 FilePickerSelectType.ofDocument()", replaceWith = ReplaceWith("FilePickerSelectType.ofDocument()"))
         fun ofDocument(): String {
             return FilePickerSelectType.DOCUMENT
         }
 
+        @Deprecated("换用 FilePickerSelectType.ofPdf()", replaceWith = ReplaceWith("FilePickerSelectType.ofPdf()"))
         fun ofPdf(): String {
             return FilePickerSelectType.PDF
         }
 
+        @Deprecated("换用 FilePickerSelectType.ofDoc()", replaceWith = ReplaceWith("FilePickerSelectType.ofDoc()"))
         fun ofDoc(): String {
             return FilePickerSelectType.DOC
         }
 
+        @Deprecated("换用 FilePickerSelectType.ofPpt()", replaceWith = ReplaceWith("FilePickerSelectType.ofPpt()"))
         fun ofPpt(): String {
             return FilePickerSelectType.PPT
         }
 
+        @Deprecated("换用 FilePickerSelectType.ofExcel()", replaceWith = ReplaceWith("FilePickerSelectType.ofExcel()"))
         fun ofExcel(): String {
             return FilePickerSelectType.EXCEL
         }
 
+        @Deprecated("换用 FilePickerSelectType.ofTxt()", replaceWith = ReplaceWith("FilePickerSelectType.ofTxt()"))
         fun ofTxt(): String {
             return FilePickerSelectType.TXT
         }
 
+        @Deprecated("换用 FilePickerSelectType.ofApk()", replaceWith = ReplaceWith("FilePickerSelectType.ofApk()"))
         fun ofApk(): String {
             return FilePickerSelectType.APK
         }
 
+        @Deprecated("换用 FilePickerSelectType.ofZipAll()", replaceWith = ReplaceWith("FilePickerSelectType.ofZipAll()"))
         fun ofZipAll(): String {
             return FilePickerSelectType.ZIP_ALL
         }
 
+        @Deprecated("换用 FilePickerSelectType.ofZip()", replaceWith = ReplaceWith("FilePickerSelectType.ofZip()"))
         fun ofZip(): String {
             return FilePickerSelectType.ZIP
         }
 
+        @Deprecated("换用 FilePickerSelectType.ofRar()", replaceWith = ReplaceWith("FilePickerSelectType.ofRar()"))
         fun ofRar(): String {
             return FilePickerSelectType.RAR
         }
 
+        @Deprecated("换用 FilePickerSelectType.of7Z()", replaceWith = ReplaceWith("FilePickerSelectType.of7Z()"))
         fun of7Z(): String {
             return FilePickerSelectType.SEVEN_Z
         }
-
-        // 其他压缩格式（tar/gz/bz2/iso/br/lz4/zstd/xz 等）不再单独提供 API，
-        // 统一用 FilePickerSelectType.ofExtensions("tar", "gz", ...) 自定义后缀过滤。
 
         /**
          * 将 MediaEntity 列表转换为路径列表

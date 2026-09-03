@@ -59,8 +59,48 @@ object FilePickerSelectType {
     const val ZSTD = "zstd"
     const val XZ = "xz"
 
+    // ---------------------------------------------------------------- 类型入口 API
+    // 7.0.0 起统一在 FilePickerSelectType 上提供（替代原 FilePicker.ofXxx 系列，语义更贴合）
+
+    /** 图片和视频 */
+    fun ofAll(): String = IMAGE_VIDEO
+
+    /** 图片、视频和GIF */
+    fun ofAllWithGif(): String = IMAGE_VIDEO_GIF
+
+    fun ofImage(): String = IMAGE
+
+    fun ofVideo(): String = VIDEO
+
+    fun ofGif(): String = GIF
+
+    fun ofAudio(): String = AUDIO
+
+    fun ofDocument(): String = DOCUMENT
+
+    fun ofPdf(): String = PDF
+
+    fun ofDoc(): String = DOC
+
+    fun ofPpt(): String = PPT
+
+    fun ofExcel(): String = EXCEL
+
+    fun ofTxt(): String = TXT
+
+    fun ofApk(): String = APK
+
+    /** 所有压缩包类型 */
+    fun ofZipAll(): String = ZIP_ALL
+
+    fun ofZip(): String = ZIP
+
+    fun ofRar(): String = RAR
+
+    fun of7Z(): String = SEVEN_Z
+
     /** 自定义后缀类型的前缀，由 [ofExtensions] 生成，如 "ext:xz,tar,bak" */
-    const val CUSTOM_EXT_PREFIX = "ext:"
+    private const val CUSTOM_EXT_PREFIX = "ext:"
 
     /**
      * 按任意文件后缀组合自定义过滤类型，如 ofExtensions("xz", "tar", "bak") -> "ext:xz,tar,bak"。

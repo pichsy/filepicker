@@ -135,7 +135,7 @@ glide = { group = "com.github.bumptech.glide", name = "glide", version.ref = "gl
 
 ```kotlin
 FilePicker.with(this) // this: FragmentActivity
-    .setSelectType(FilePicker.ofImage()) // 设置选择类型
+    .setSelectType(FilePickerSelectType.ofImage()) // 设置选择类型
     .setMaxSelectNumber(9) // 设置最大选择数量
     .setSlideChooseEnable(true) // 开启滑动选择
     .setOnSelectCallback(object : OnSelectCallback {
@@ -170,7 +170,7 @@ FilePicker.with(this) // this: FragmentActivity
 
 ```kotlin
 FilePicker.with(this) // this: Fragment
-    .setSelectType(FilePicker.ofImage())
+    .setSelectType(FilePickerSelectType.ofImage())
     .setMaxSelectNumber(5)
     .setMaxFileSize(50 * 1024 * 1024) // 50MB
     .setMinFileSize(1 * 1024) // 1KB
@@ -198,7 +198,7 @@ FilePicker.with(this) // this: Fragment
 
 ```kotlin
 FilePicker.with(this)
-    .setSelectType(FilePicker.ofAudio()) // 文件类型：ofAudio/ofDocument/ofPdf/ofApk/ofZipAll...
+    .setSelectType(FilePickerSelectType.ofAudio()) // 文件类型：ofAudio/ofDocument/ofPdf/ofApk/ofZipAll...
     .setMaxSelectNumber(1)
     .setSingleClickEnable(true) // 单击直接返回，文件选择场景常用
     .setOnSelectCallback { isUseOriginal, list ->
@@ -229,25 +229,35 @@ FilePicker.with(this)
 |-----------------------------|---------------------------|
 | `with(activity)`            | 使用 `FragmentActivity` 初始化 |
 | `with(fragment)`            | 使用 `Fragment` 初始化         |
-| `ofImage()`                 | 只选择图片                     |
-| `ofVideo()`                 | 只选择视频                     |
-| `ofAll()`                   | 选择图片和视频                   |
-| `ofAllWithGif()`            | 选择图片、视频和GIF               |
-| `ofGif()`                   | 只选择GIF                    |
-| `ofAudio()`                 | 只选择音频                     |
-| `ofDocument()`              | 选择所有文档类型                  |
-| `ofPdf()`                   | 只选择PDF                    |
-| `ofDoc()`                   | 只选择DOC和DOCX               |
-| `ofPpt()`                   | 只选择PPT和PPTX               |
-| `ofExcel()`                 | 只选择XLS和XLSX               |
-| `ofTxt()`                   | 只选择TXT                    |
-| `ofApk()`                   | 只选择APK                    |
-| `ofZipAll()`                | 选择所有压缩包类型                 |
-| `ofZip()`                   | 只选择ZIP                    |
-| `ofRar()`                   | 只选择RAR                    |
-| `of7Z()`                    | 只选择7Z                     |
 | `convertToPathList(list)`   | 将 `MediaEntity` 列表转换为路径列表 |
 | `convertToEntityList(list)` | 将路径列表转换为 `MediaEntity` 列表 |
+
+> 7.0.0 起类型入口方法统一收敛到 `FilePickerSelectType`（语义更贴合）。
+> `FilePicker.ofImage()` 等老方法已标注 `@Deprecated`，**仍可正常使用**（内部转发），
+> IDE 会提示迁移，建议尽快替换为 `FilePickerSelectType.ofXxx()`。
+
+### FilePickerSelectType 类型入口
+
+| 方法名                | 描述                        |
+|--------------------|---------------------------|
+| `ofAll()`          | 选择图片和视频                   |
+| `ofAllWithGif()`   | 选择图片、视频和GIF               |
+| `ofImage()`        | 只选择图片                     |
+| `ofVideo()`        | 只选择视频                     |
+| `ofGif()`          | 只选择GIF                    |
+| `ofAudio()`        | 只选择音频                     |
+| `ofDocument()`     | 选择所有文档类型                  |
+| `ofPdf()`          | 只选择PDF                    |
+| `ofDoc()`          | 只选择DOC和DOCX               |
+| `ofPpt()`          | 只选择PPT和PPTX               |
+| `ofExcel()`        | 只选择XLS和XLSX               |
+| `ofTxt()`          | 只选择TXT                    |
+| `ofApk()`          | 只选择APK                    |
+| `ofZipAll()`       | 选择所有压缩包类型                 |
+| `ofZip()`          | 只选择ZIP                    |
+| `ofRar()`          | 只选择RAR                    |
+| `of7Z()`           | 只选择7Z                     |
+| `ofExtensions(...)` | 按任意后缀组合自定义过滤（见下节）         |
 
 ### 自定义后缀过滤
 
@@ -362,6 +372,9 @@ val uiConfig = FilePickerUIConfig().apply {
 
 ### 7.0.0
 
+- **类型入口 API 收敛到 `FilePickerSelectType`**：`ofAll()` / `ofImage()` / `ofVideo()` / `ofZipAll()` 等
+  全部类型方法现在挂在 `FilePickerSelectType` 上（语义更贴合）。`FilePicker.ofXxx()` 系列标注
+  `@Deprecated` 但**保留且可用**（内部转发，行为不变），IDE 会提示迁移。
 - **API 精简（破坏性变更）**：压缩包相关入口只保留核心四个 `ofZipAll()` / `ofZip()` / `ofRar()` / `of7Z()`，
   删除 `ofTar()` / `ofGz()` / `ofBz2()` / `ofIso()` / `ofBr()` / `ofLz4()` / `ofZstd()` / `ofXz()`。
 - **新增自定义后缀过滤**：任意后缀组合不再需要为每种类型加 API，一行搞定：

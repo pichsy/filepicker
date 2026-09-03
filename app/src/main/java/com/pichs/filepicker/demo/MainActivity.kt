@@ -67,7 +67,7 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
             // 获取类型
             val type = selectedType
 
-            if (type == FilePicker.ofAll() || type == FilePicker.ofVideo() || type == FilePicker.ofImage() || type == FilePicker.ofAudio() || type == FilePicker.ofGif() || type == FilePicker.ofAllWithGif()) {
+            if (type == FilePickerSelectType.ofAll() || type == FilePickerSelectType.ofVideo() || type == FilePickerSelectType.ofImage() || type == FilePickerSelectType.ofAudio() || type == FilePickerSelectType.ofGif() || type == FilePickerSelectType.ofAllWithGif()) {
                 // 权限请求
                 XXPermissions.with(this).unchecked().permission(
                     Permission.READ_MEDIA_IMAGES,
@@ -128,26 +128,26 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
     /** 类型单选列表 */
     private data class PickerType(val label: String, val type: String)
 
-    private var selectedType: String = FilePicker.ofAll()
+    private var selectedType: String = FilePickerSelectType.ofAll()
 
     private fun initTypeList() {
         val types = listOf(
-            PickerType("全部", FilePicker.ofAll()),
-            PickerType("图片", FilePicker.ofImage()),
-            PickerType("视频", FilePicker.ofVideo()),
-            PickerType("GIF", FilePicker.ofGif()),
-            PickerType("音频", FilePicker.ofAudio()),
-            PickerType("文档", FilePicker.ofDocument()),
-            PickerType("pdf", FilePicker.ofPdf()),
-            PickerType("doc", FilePicker.ofDoc()),
-            PickerType("ppt", FilePicker.ofPpt()),
-            PickerType("excel", FilePicker.ofExcel()),
-            PickerType("txt", FilePicker.ofTxt()),
-            PickerType("APK", FilePicker.ofApk()),
-            PickerType("zip_all", FilePicker.ofZipAll()),
-            PickerType("zip", FilePicker.ofZip()),
-            PickerType("rar", FilePicker.ofRar()),
-            PickerType("7z", FilePicker.of7Z()),
+            PickerType("全部", FilePickerSelectType.ofAll()),
+            PickerType("图片", FilePickerSelectType.ofImage()),
+            PickerType("视频", FilePickerSelectType.ofVideo()),
+            PickerType("GIF", FilePickerSelectType.ofGif()),
+            PickerType("音频", FilePickerSelectType.ofAudio()),
+            PickerType("文档", FilePickerSelectType.ofDocument()),
+            PickerType("pdf", FilePickerSelectType.ofPdf()),
+            PickerType("doc", FilePickerSelectType.ofDoc()),
+            PickerType("ppt", FilePickerSelectType.ofPpt()),
+            PickerType("excel", FilePickerSelectType.ofExcel()),
+            PickerType("txt", FilePickerSelectType.ofTxt()),
+            PickerType("APK", FilePickerSelectType.ofApk()),
+            PickerType("zip_all", FilePickerSelectType.ofZipAll()),
+            PickerType("zip", FilePickerSelectType.ofZip()),
+            PickerType("rar", FilePickerSelectType.ofRar()),
+            PickerType("7z", FilePickerSelectType.of7Z()),
             // 自定义后缀过滤示例：任意后缀组合，不再需要为每种后缀加 API
             PickerType("自定义(xz,br)", FilePickerSelectType.ofExtensions("xz", "br")),
             PickerType("自定义(GZ,TGZ)", FilePickerSelectType.ofExtensions("gz,tgz")),
@@ -178,7 +178,9 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
     }
 
     fun selectFile(type: String, maxSelectCount: Int, maxFileSize: Int) {
-        FilePicker.with(this).setMaxSelectNumber(maxSelectCount).setMaxFileSize(maxFileSize.toLong()).setSelectType(type).setSingleClickEnable(true)
+        FilePicker.with(this).setMaxSelectNumber(maxSelectCount)
+            .setMaxFileSize(maxFileSize.toLong()).setSelectType(type)
+            .setSingleClickEnable(true)
             .setSelectedList(selectedDataList).setOnSelectCallback { isUseOriginal, list ->
                 XLog.d("FilePicker", "Selected files: ${list.size}")
                 selectedDataList = list

@@ -10,6 +10,7 @@ import com.drake.brv.utils.setup
 import com.hjq.permissions.Permission
 import com.hjq.permissions.XXPermissions
 import com.pichs.filepicker.FilePicker
+import com.pichs.filepicker.FilePickerSelectType
 import com.pichs.filepicker.common.ImagePreviewDialog
 import com.pichs.filepicker.demo.databinding.FragmentMainBinding
 import com.pichs.filepicker.demo.databinding.ItemImageBinding
@@ -96,9 +97,9 @@ class TestFragment : BindingFragment<FragmentMainBinding>() {
 
     fun selectFile(type: String, maxSelectCount: Int, maxFileSize: Int) {
         val selectType = when (type) {
-            "image" -> FilePicker.ofImage()
-            "video" -> FilePicker.ofVideo()
-            else -> FilePicker.ofAll()
+            "image" -> FilePickerSelectType.ofImage()
+            "video" -> FilePickerSelectType.ofVideo()
+            else -> FilePickerSelectType.ofAll()
         }
         FilePicker.with(this)
             .setMaxSelectNumber(maxSelectCount)
