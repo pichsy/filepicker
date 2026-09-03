@@ -194,6 +194,31 @@ FilePicker.with(this) // this: Fragment
     .start()
 ```
 
+### 3. 选择文件（音频 / 文档 / 压缩包）
+
+```kotlin
+FilePicker.with(this)
+    .setSelectType(FilePicker.ofAudio()) // 文件类型：ofAudio/ofDocument/ofPdf/ofApk/ofZipAll...
+    .setMaxSelectNumber(1)
+    .setSingleClickEnable(true) // 单击直接返回，文件选择场景常用
+    .setOnSelectCallback { isUseOriginal, list ->
+        // 返回 MediaEntity（含 path/name/mimeType/size）
+    }
+    .start()
+```
+
+### 4. 自定义后缀过滤
+
+任意后缀组合，不需要为每种后缀单独加类型：
+
+```kotlin
+FilePicker.with(this)
+    .setSelectType(FilePickerSelectType.ofExtensions("xz", "tar", "bak"))
+    .start()
+```
+
+详见下方 [自定义后缀过滤](#自定义后缀过滤)。
+
 ---
 
 ## API 文档
@@ -241,6 +266,22 @@ FilePicker.with(this)
   `application/octet-stream`，mime 轨不可用
 - 图标识别不受影响：内置的 tar/gz/bz2/iso/br/lz4/zstd/xz 类型常量与图标映射仍然生效，
   老代码直接传 `FilePickerSelectType.TAR` 等字符串常量依旧可用
+
+**7.0.0 旧 API 迁移对照表：**
+
+| 6.x（已删除）                | 7.0.0 等价写法                                      |
+|--------------------------|-------------------------------------------------|
+| `ofTar()`                | `FilePickerSelectType.ofExtensions("tar")`      |
+| `ofGz()`                 | `FilePickerSelectType.ofExtensions("gz", "tgz")` |
+| `ofBz2()`                | `FilePickerSelectType.ofExtensions("bz2")`      |
+| `ofIso()`                | `FilePickerSelectType.ofExtensions("iso")`      |
+| `ofBr()`                 | `FilePickerSelectType.ofExtensions("br")`       |
+| `ofLz4()`                | `FilePickerSelectType.ofExtensions("lz4")`      |
+| `ofZstd()`               | `FilePickerSelectType.ofExtensions("zstd")`     |
+| `ofXz()`                 | `FilePickerSelectType.ofExtensions("xz")`       |
+| `ofTar()` + `ofIso()` 组合 | `FilePickerSelectType.ofExtensions("tar", "iso")` |
+
+> 也可以不做任何改动：把 selectType 直接传 `FilePickerSelectType.TAR` 等字符串常量，查询、过滤、图标展示行为与旧版一致。
 
 ### Builder
 
