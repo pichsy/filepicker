@@ -14,6 +14,11 @@ android {
     defaultConfig {
         minSdk = 24
         consumerProguardFiles("consumer-rules.pro", "proguard-rules.pro")
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    testOptions {
+        unitTests.isReturnDefaultValues = true
     }
 
     buildTypes {
@@ -60,6 +65,13 @@ dependencies {
     // 图片加载
     implementation(libs.glide)
 
+    // 测试（版本全部取自离线缓存里已有的 artifact）
+    testImplementation(libs.junit)
+    androidTestImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation("androidx.test:runner:1.6.1")
+    // 仪器测试里要直接对比"旧写法(uri+override)"与"新写法(File+signature)"，需要 Glide 本体
+    androidTestImplementation(libs.glide)
 
 }
 

@@ -655,7 +655,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
 //                    height = width
 //                }
 
-                MediaLoader.loadImageThumbnail(item.uri, item.mimeType, itemBinding.ivCoverImage)
+                MediaLoader.loadThumbnail(item, itemBinding.ivCoverImage)
 
                 itemBinding.clSelectArea.isVisible = !viewModel.isCanSingleClickSelect()
                 itemBinding.ivPreviewImage.isVisible = !viewModel.isCanSingleClickSelect()
@@ -757,7 +757,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                 val itemBinding = getBinding<FilePickerItemRvAlbumSelectedBinding>()
 
                 if (item.isVideo() || item.isImage() || item.isGif()) {
-                    MediaLoader.loadImageThumbnail(item.uri, item.mimeType, itemBinding.ivCoverImage)
+                    MediaLoader.loadThumbnail(item, itemBinding.ivCoverImage)
                 } else {
                     itemBinding.ivCoverImage.setImageResource(FilePickerIconUtils.getFileIcon(item))
                 }

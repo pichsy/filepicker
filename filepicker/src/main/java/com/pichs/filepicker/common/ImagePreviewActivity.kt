@@ -45,7 +45,7 @@ class ImagePreviewActivity : AppCompatActivity() {
 
         imageUrl = intent.getStringExtra("url") ?: ""
 
-        if (imageUrl.isNotEmpty()) {
+        if (imageUrl.isEmpty()) {
             Toast.makeText(applicationContext, "请传入正确的图片地址", Toast.LENGTH_SHORT).show()
             finish()
             return

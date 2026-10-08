@@ -163,6 +163,8 @@ object FileQueryHelper {
                 MediaStore.Files.FileColumns.HEIGHT,
                 MediaStore.Files.FileColumns.DURATION,
                 MediaStore.Files.FileColumns.DATE_ADDED,
+                // 只用于 Glide 缓存失效签名，避免文件变化后仍显示旧缩略图/旧原图
+                MediaStore.Files.FileColumns.DATE_MODIFIED,
                 MediaStore.Files.FileColumns.BUCKET_DISPLAY_NAME,
                 MediaStore.Files.FileColumns.BUCKET_ID,
             )
@@ -203,6 +205,7 @@ object FileQueryHelper {
             val heightIndex = cursor.getColumnIndex(MediaStore.Files.FileColumns.HEIGHT)
             val durationIndex = cursor.getColumnIndex(MediaStore.Files.FileColumns.DURATION)
             val dateAddedIndex = cursor.getColumnIndex(MediaStore.Files.FileColumns.DATE_ADDED)
+            val dateModifiedIndex = cursor.getColumnIndex(MediaStore.Files.FileColumns.DATE_MODIFIED)
             val bucketIdIndex = cursor.getColumnIndex(MediaStore.Files.FileColumns.BUCKET_ID)
             val bucketNameIndex = cursor.getColumnIndex(MediaStore.Files.FileColumns.BUCKET_DISPLAY_NAME)
             val orientationIndex = cursor.getColumnIndex(MediaStore.Files.FileColumns.ORIENTATION)
@@ -226,6 +229,8 @@ object FileQueryHelper {
                 var height = cursor.getInt(heightIndex)
                 val duration = cursor.getLong(durationIndex)
                 val dateAdd = max(0, cursor.getLong(dateAddedIndex) * 1000)// 注意：dateAdd是秒级别的时间戳
+                // DATE_MODIFIED 也是秒级，统一转毫秒，仅作缓存签名
+                val dateModified = if (dateModifiedIndex >= 0) max(0, cursor.getLong(dateModifiedIndex) * 1000) else 0L
                 val bucketId = cursor.getString(bucketIdIndex)
                 val foldName = cursor.getString(bucketNameIndex)
                 val orientation = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -281,6 +286,7 @@ object FileQueryHelper {
                     duration = duration,
                     orientation = orientation,
                     addTime = dateAdd,
+                    dateModified = dateModified,
                 )
 
                 ++addCount
@@ -438,6 +444,8 @@ object FileQueryHelper {
                 MediaStore.Files.FileColumns.HEIGHT,
                 MediaStore.Files.FileColumns.DURATION,
                 MediaStore.Files.FileColumns.DATE_ADDED,
+                // 只用于 Glide 缓存失效签名，避免文件变化后仍显示旧缩略图/旧原图
+                MediaStore.Files.FileColumns.DATE_MODIFIED,
                 MediaStore.Files.FileColumns.BUCKET_DISPLAY_NAME,
                 MediaStore.Files.FileColumns.BUCKET_ID,
             )
@@ -473,6 +481,8 @@ object FileQueryHelper {
                 var height = cursor.getInt(cursor.getColumnIndex(MediaStore.Files.FileColumns.HEIGHT))
                 val duration = cursor.getLong(cursor.getColumnIndex(MediaStore.Files.FileColumns.DURATION))
                 val dateAdd = max(0, cursor.getLong(cursor.getColumnIndex(MediaStore.Files.FileColumns.DATE_ADDED)) * 1000)// 注意：dateAdd是秒级别的时间戳
+                val dateModified = cursor.getColumnIndex(MediaStore.Files.FileColumns.DATE_MODIFIED)
+                    .let { if (it >= 0) max(0, cursor.getLong(it) * 1000) else 0L }
                 val bucketId = cursor.getString(cursor.getColumnIndex(MediaStore.Files.FileColumns.BUCKET_ID))
                 val foldName = cursor.getString(cursor.getColumnIndex(MediaStore.Files.FileColumns.BUCKET_DISPLAY_NAME))
                 val orientation = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -565,6 +575,7 @@ object FileQueryHelper {
                     duration = duration,
                     orientation = orientation,
                     addTime = dateAdd,
+                    dateModified = dateModified,
                 )
 
                 FilePickerLog.d("相册获取", "queryAlbums: mediaEntity:$mediaEntity")

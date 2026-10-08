@@ -141,7 +141,12 @@ class FilePickerVideoPlayerView @JvmOverloads constructor(
         }
         val uri = coverUrl ?: mediaEntity?.path ?: return
         // 在这里使用您项目中的图片加载库（如 Glide, Coil 等）
-        MediaLoader.loadVideoCover(uri, binding.ivCover)
+        if (coverUrl.isNullOrEmpty()) {
+            // 传 entity：带缓存签名，且优先用 content uri 命中 MediaStore 视频缩略图分支拿真实帧
+            MediaLoader.loadVideoCover(mediaEntity, binding.ivCover)
+        } else {
+            MediaLoader.loadVideoCover(uri, binding.ivCover)
+        }
         binding.ivCover.visibility = View.VISIBLE
     }
 

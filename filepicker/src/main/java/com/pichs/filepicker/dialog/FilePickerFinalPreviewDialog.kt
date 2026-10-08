@@ -14,7 +14,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.media3.common.util.UnstableApi
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
-import com.bumptech.glide.Glide
 import com.pichs.filepicker.FilePickerViewModel
 import com.pichs.filepicker.R
 import com.pichs.filepicker.entity.MediaEntity
@@ -117,7 +116,7 @@ class FilePickerFinalPreviewDialog(
                 viewModel.activityLifecycleChannel.consumeAsFlow().collectLatest {
                     if (it == Lifecycle.Event.ON_PAUSE) {
                         // 暂停播放
-                        if (mCurrentIndex >= 0 && mCurrentIndex < viewModel.getCurrentFolderDataList().size) {
+                        if (mCurrentIndex >= 0 && mCurrentIndex < tempSelectDataList.size) {
                             // 查找当前页面的 ViewHolder 并释放播放器
                             val recyclerView = binding.viewPager2.getChildAt(0) as RecyclerView
                             val viewHolder = recyclerView.findViewHolderForAdapterPosition(mCurrentIndex)
@@ -127,12 +126,15 @@ class FilePickerFinalPreviewDialog(
                         }
                     } else if (it == Lifecycle.Event.ON_RESUME) {
                         // 恢复播放
-                        if (mCurrentIndex >= 0 && mCurrentIndex < viewModel.getCurrentFolderDataList().size) {
+                        if (mCurrentIndex >= 0 && mCurrentIndex < tempSelectDataList.size) {
                             // 查找当前页面的 ViewHolder 并恢复播放器
                             val recyclerView = binding.viewPager2.getChildAt(0) as RecyclerView
                             val viewHolder = recyclerView.findViewHolderForAdapterPosition(mCurrentIndex)
                             if (viewHolder is FilePickerPreviewDialog.MediaPagerAdapter.VideoViewHolder) {
-                                viewHolder.videoPlayerView.loadCover(viewModel.getCurrentFolderDataList().getOrNull(mCurrentIndex))
+                                // 本弹窗的 ViewPager/Adapter 全部基于私有 tempSelectDataList，
+                                // 不能用 viewModel.getCurrentFolderDataList()（另一个列表）按同一下标取值，
+                                // 否则恢复前台后会把"别的视频"的封面贴到当前页上（错位）。
+                                viewHolder.videoPlayerView.loadCover(tempSelectDataList.getOrNull(mCurrentIndex)?.mediaEntity)
                             }
                         }
                     }
@@ -183,7 +185,7 @@ class FilePickerFinalPreviewDialog(
 
                 val itemEntity = item.mediaEntity
 
-                MediaLoader.loadImageThumbnail(itemEntity.uri, itemEntity.mimeType, itemBinding.ivCoverImage)
+                MediaLoader.loadThumbnail(itemEntity, itemBinding.ivCoverImage)
 
                 itemBinding.clSelectDelete.isVisible = viewModel.uiConfig.isShowSelectedListDeleteIcon
                 itemBinding.ivDelete.setImageResource(if (viewModel.uiConfig.selectedListDeleteIconResId != 0) viewModel.uiConfig.selectedListDeleteIconResId else R.drawable.filepicker_ic_delete_item)
@@ -482,7 +484,7 @@ class FilePickerFinalPreviewDialog(
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
             val item = tempSelectDataList.getOrNull(position) ?: return
             if (holder is ImageViewHolder) {
-                Glide.with(context).load(item.mediaEntity.path).into(holder.photoView)
+                MediaLoader.loadImage(item.mediaEntity, holder.photoView)
             } else if (holder is VideoViewHolder) {
                 FilePickerLog.d("MediaPagerAdapter", "onBindViewHolder: item.path=${item.mediaEntity.path}, item.uri=${item.mediaEntity.uri}")
                 holder.videoPlayerView.loadCover(item.mediaEntity)

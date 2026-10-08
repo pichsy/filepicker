@@ -71,7 +71,7 @@ class FilePickerPreviewDialog(
         binding = DialogFilePickerPreviewBinding.bind(contentView)
         setBackgroundColor(Color.TRANSPARENT)
         mCurrentItem = curItem
-        mCurrentIndex = itemIndexOfList(mCurrentItem)
+        mCurrentIndex = resolveCurrentIndex()
         initConfigUI()
         initViewPager2()
         initSelectedRecyclerView()
@@ -82,11 +82,14 @@ class FilePickerPreviewDialog(
             launch {
                 viewModel.currentFolderDataList.collectLatest {
                     FilePickerLog.d("FilePickerFragment", "initDataFlow currentFolderDataList: size:${it.size}")
-                    mCurrentIndex = viewModel.getCurrentFolderDataList().indexOf(mCurrentItem)
+                    // 该列表会被 fast→full 两次扫描整体替换，indexOf 可能返回 -1。
+                    // 绝不能把 -1 交给 setCurrentItem：ViewPager2 内部会 Math.max(item, 0)
+                    // 静默夹到第 0 页，表现就是"点的是这张、显示的是第一张"。
+                    val index = resolveCurrentIndex(binding.viewPager2.currentItem)
 
                     binding.viewPager2.adapter?.notifyDataSetChanged()
 
-                    binding.viewPager2.setCurrentItem(mCurrentIndex, false)
+                    binding.viewPager2.setCurrentItem(index, false)
                     updateIndexUI(mCurrentItem)
                     updateBottomMenuSelectNumberUI()
                 }
@@ -193,7 +196,7 @@ class FilePickerPreviewDialog(
                 val item = getModel<MediaEntity>()
                 val itemBinding = getBinding<FilePickerItemRvAlbumSelectedBinding>()
 
-                MediaLoader.loadImageThumbnail(item.uri, item.mimeType, itemBinding.ivCoverImage)
+                MediaLoader.loadThumbnail(item, itemBinding.ivCoverImage)
 
                 itemBinding.clSelectDelete.isVisible = viewModel.uiConfig.isShowSelectedListDeleteIcon
                 itemBinding.ivDelete.setImageResource(if (viewModel.uiConfig.selectedListDeleteIconResId != 0) viewModel.uiConfig.selectedListDeleteIconResId else R.drawable.filepicker_ic_delete_item)
@@ -229,6 +232,12 @@ class FilePickerPreviewDialog(
                 itemBinding.root.setOnClickListener {
                     // 需要切换是当前 的viewpager2 的位置。
                     val indexOfList = itemIndexOfList(item)
+                    if (indexOfList < 0) {
+                        // 该项已不在当前预览列表里（列表被整体替换过）。
+                        // setCurrentItem(-1) 会被 ViewPager2 夹到第 0 页造成错位，直接忽略这次切换。
+                        FilePickerLog.d("FilePickerPreviewDialog", "选中项不在当前列表，忽略切换，path=${item.path}")
+                        return@setOnClickListener
+                    }
                     if (indexOfList != mCurrentIndex) {
                         binding.viewPager2.setCurrentItem(indexOfList, false)
                         mCurrentIndex = indexOfList
@@ -284,6 +293,27 @@ class FilePickerPreviewDialog(
     fun itemIndexOfList(item: MediaEntity?): Int {
         if (item == null) return 0
         return viewModel.getCurrentFolderDataList().indexOf(item)
+    }
+
+    /**
+     * 求一个一定合法的 ViewPager2 目标下标，并同步 mCurrentIndex / mCurrentItem。
+     *
+     * 为什么需要：itemIndexOfList 在"当前项已不在列表里"时返回 -1，而
+     * ViewPager2.setCurrentItemInternal 里有 `item = Math.max(item, 0)`，
+     * 负数会被静默夹到第 0 页 —— 表现就是点开第 k 张却显示第 1 张。
+     * 这里找不到就退回 [fallback]（一般是 ViewPager 当前页），并让 mCurrentItem
+     * 跟随实际显示的那一项，保证图片、页码、角标三者自洽。
+     */
+    private fun resolveCurrentIndex(fallback: Int = 0): Int {
+        val list = viewModel.getCurrentFolderDataList()
+        val found = itemIndexOfList(mCurrentItem)
+        val index = PreviewIndexResolver.resolve(found, list.size, fallback)
+        if (!PreviewIndexResolver.isFound(found, list.size) && list.isNotEmpty()) {
+            mCurrentItem = list[index]
+            FilePickerLog.d("FilePickerPreviewDialog", "当前项不在列表中，回退到下标 $index (size=${list.size})")
+        }
+        mCurrentIndex = index
+        return index
     }
 
     @SuppressLint("SetTextI18n")
@@ -406,11 +436,9 @@ class FilePickerPreviewDialog(
             }
         })
 
-        val index = itemIndexOfList(mCurrentItem)
+        val index = resolveCurrentIndex(binding.viewPager2.currentItem)
 
         binding.viewPager2.setCurrentItem(index, false)
-
-        binding.tvIndex.text = "${index + 1}/${viewModel.getCurrentFolderDataList().size}"
 
         updateIndexUI(mCurrentItem)
     }
@@ -421,7 +449,10 @@ class FilePickerPreviewDialog(
         if (item == null) {
             return
         }
-        binding.tvIndex.text = "${itemIndexOfList(item) + 1}/${viewModel.getCurrentFolderDataList().size}"
+        val size = viewModel.getCurrentFolderDataList().size
+        // 下标为 -1 时退回 mCurrentIndex，避免出现 "0/N" 这种"看不到第几张"的显示
+        val index = itemIndexOfList(item).let { if (it >= 0) it else mCurrentIndex }
+        binding.tvIndex.text = if (size > 0) "${index + 1}/$size" else "0/0"
         // 这里需要根据是否选中来右上角角标。
         val indexOfSelect = viewModel.indexOfSelected(item)
         if (indexOfSelect == -1) {
@@ -509,7 +540,7 @@ class FilePickerPreviewDialog(
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
             val item = viewModel.getCurrentFolderDataList().getOrNull(position) ?: return
             if (holder is ImageViewHolder) {
-                MediaLoader.loadImage(item.uri, item.mimeType, holder.photoView)
+                MediaLoader.loadImage(item, holder.photoView)
 //                Glide.with(context).load(item.path).into(holder.photoView)
             } else if (holder is VideoViewHolder) {
                 FilePickerLog.d("MediaPagerAdapter", "onBindViewHolder: item.path=${item.path}, item.uri=${item.uri}")

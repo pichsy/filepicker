@@ -62,7 +62,7 @@ class LocalMediaPagingAdapter(
 
         fun bind(mediaEntity: MediaEntity) {
             // 加载媒体缩略图
-            MediaLoader.loadImage(mediaEntity.uri, mediaEntity.mimeType, binding.ivCoverImage)
+            MediaLoader.loadThumbnail(mediaEntity, binding.ivCoverImage)
             
             // 设置时长（仅视频显示）
             if (mediaEntity.isVideo() && mediaEntity.duration > 0) {

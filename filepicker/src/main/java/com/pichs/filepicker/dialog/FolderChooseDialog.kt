@@ -97,10 +97,10 @@ class FolderChooseDialog(
 
                 val firstEntity = item.mediaEntityList.firstOrNull()
                 if (firstEntity != null) {
-                    MediaLoader.loadImageThumbnail(firstEntity.uri, firstEntity.mimeType, itemBinding.ivCover)
+                    MediaLoader.loadThumbnail(firstEntity, itemBinding.ivCover)
                 } else {
                     val ent = list.firstOrNull()?.mediaEntityList?.firstOrNull()
-                    MediaLoader.loadImageThumbnail(ent?.uri, ent?.mimeType, itemBinding.ivCover)
+                    MediaLoader.loadThumbnail(ent, itemBinding.ivCover)
                 }
 
                 itemBinding.root.setOnClickListener {

@@ -19,6 +19,12 @@ data class MediaEntity(
     var size: Long = 0,
     var duration: Long = 0,
     var addTime: Long? = null,
+    /**
+     * 文件最后修改时间（毫秒）。
+     * 仅用于 Glide 缓存失效签名：文件被覆盖/编辑后，缩略图和原图的旧缓存都会立即失效，
+     * 避免出现"缩略图是这张、点开是另一张"。默认 0 表示未知（退化为无签名）。
+     */
+    var dateModified: Long = 0,
     // 是否为选中状态， -1 表示未选中，0标识选中列表中的位置， 默认值为 -1
     internal var selectedIndex: Int = -1,
 ) : Parcelable {
@@ -199,14 +205,35 @@ data class MediaEntity(
             return fileName.substringAfterLast('.', "").ifEmpty { null }
         }
 
+    /**
+     * 相等性仍以 [path] 为主（要保持与 ViewModel 里 `path -> 角标` 索引表一致的语义），
+     * 但修掉了"没有 path 就互相相等"的坑：
+     *
+     * 旧实现 `path == other.path` 在两个 path 都为 null 时成立，于是所有拿不到路径的实体
+     * 会被判成同一个。列表里一旦混入这类项，`indexOf/contains` 就会命中错误的元素，
+     * 表现为预览错位（缩略图是这张、点开是另一张）。现在 path 无效时退回比较 [uri]，
+     * 两者都没有有效标识则一律视为不相等。
+     */
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is MediaEntity) return false
-        return path == other.path
+        val thisPath = path
+        val otherPath = other.path
+        if (!thisPath.isNullOrEmpty() && !otherPath.isNullOrEmpty()) {
+            return thisPath == otherPath
+        }
+        val thisUri = uri
+        val otherUri = other.uri
+        if (thisUri != null && otherUri != null) {
+            return thisUri == otherUri
+        }
+        return false
     }
 
     override fun hashCode(): Int {
-        return path?.hashCode() ?: 0
+        val path = path
+        if (!path.isNullOrEmpty()) return path.hashCode()
+        return uri?.hashCode() ?: 0
     }
 }
 

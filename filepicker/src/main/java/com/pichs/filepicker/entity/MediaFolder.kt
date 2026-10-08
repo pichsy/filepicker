@@ -30,18 +30,16 @@ data class MediaFolder(
         return result
     }
 
+    /**
+     * 值相等。旧实现三个字段都写反了（相等时 `return false`），导致除了同一个引用以外
+     * 永远不相等：`mediaFolders.remove(folder)`、`contains` 之类的操作全部失效。
+     */
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as MediaFolder
-
-        if (name.equals(other.name, true)) return false
-        if (folderPath.equals(other.folderPath, true)) return false
-        if (mediaEntityList != other.mediaEntityList) return false
-        if (mediaEntityList.size != other.mediaEntityList.size) return false
-
-        return true
+        if (other !is MediaFolder) return false
+        return name.equals(other.name, true) &&
+                folderPath.equals(other.folderPath, true) &&
+                mediaEntityList == other.mediaEntityList
     }
 
 }
