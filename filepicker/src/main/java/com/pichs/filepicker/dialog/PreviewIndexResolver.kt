@@ -9,7 +9,8 @@ package com.pichs.filepicker.dialog
  * 可能已不在新列表里，`indexOf` 就会返回 -1 —— 表现就是"点的是这张、显示的是第一张"。
  * 所以任何交给 `setCurrentItem` 的下标都必须先经过这里。
  *
- * 抽成纯函数是为了能被单元测试直接覆盖（见 PreviewIndexResolverTest）。
+ * 刻意抽成不依赖 Android 的纯函数：下标规整是这套逻辑里最容易写错、也最难在真机上
+ * 复现的一环，保持无副作用纯函数，任何地方都能直接把它拎出来单独验证。
  */
 internal object PreviewIndexResolver {
 
