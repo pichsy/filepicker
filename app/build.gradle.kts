@@ -13,7 +13,7 @@ android {
         //noinspection OldTargetApi
         targetSdk = 35
         versionCode = 700
-        versionName = "7.0.0"
+        versionName = "7.1.0"
     }
 
     buildTypes {

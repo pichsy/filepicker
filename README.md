@@ -43,7 +43,7 @@
 ```kotlin
 dependencies {
     // 基础组件库 （必须）
-    implementation("com.gitee.pichs:filepicker:7.0.0")
+    implementation("com.gitee.pichs:filepicker:7.1.0")
 
     // 基础组件库 （必须）
     implementation("com.gitee.pichs:xwidget:5.8.1")
@@ -86,7 +86,7 @@ dependencies {
 # libs.version.toml中写法
 [versions]
 xwidget="5.8.1"
-filepicker="7.0.0"
+filepicker="7.1.0"
 brv="1.6.1"
 basepopup="3.2.1"
 glide="4.16.0"
@@ -266,10 +266,16 @@ GIF / 音频 / 文档不显示；有 tab 的类型里入口**跟着当前 tab �
 | ---------- | ------------------------------------------------------------------ |
 | 位置         | 网格左上角第一格，随列表滚动，尺寸与相邻格子一致                                            |
 | 点击         | 调起系统相机（拍照 `ACTION_IMAGE_CAPTURE` / 录像 `ACTION_VIDEO_CAPTURE`）         |
-| 拍完         | 自动插到列表**第一个**位置；**只插入，不会自动选中**                                     |
+| 拍完         | 自动插到列表**第一个**位置，并**默认勾选上**（"这张就是要用的"）                              |
+| 已到上限       | 仍然插入，但**不勾选**（不会超过 `maxSelectNumber`），并 toast 提示                     |
+| 单选立即返回     | `maxSelectNumber == 1` 且开了 `setSingleClickEnable(true)` 时，拍完**直接回调返回**，\
+               拍到的这张会**替换**掉已有选择（宿主通过 `setSelectedList` 预置的那张也一样）              |
+| 大小超限       | 产物不符合 `minFileSize` / `maxFileSize` 时**不插入、不勾选**，toast 提示（文案见\
+               `cameraEntrySizeLimitToastContent`）                                  |
 | 产物落地       | 写进系统相册（`DCIM/Camera`），和系统相机拍的照片放在一起                                  |
 | 取消拍摄       | 会清理掉本次产生的空记录/空文件，不会在相册里留下打不开的空条目                                   |
-| 图标         | 默认用库内图标，可用 `cameraEntryIconResId`（拍照）/ `cameraEntryVideoIconResId`（录像）替换 |
+| 图标与文案      | 图标默认用库内资源，可换 `cameraEntryIconResId`（拍照）/ `cameraEntryVideoIconResId`（录像）；\
+               文字标签用 `cameraEntryPhotoText` / `cameraEntryVideoText`              |
 
 **权限与 manifest**：
 
@@ -496,8 +502,12 @@ val uiConfig = FilePickerUIConfig().apply {
 | `selectedListDeleteIconBackgroundColor`  | `Int`                     | 已选列表项删除按钮的背景色     | `Color.TRANSPARENT` |
 | `atLeastSelectOneToastContent`           | `String`                  | 未选择任何文件时的提示       | `"至少选择一个"`          |
 | `selectMaxNumberOverToastContent`        | `String`                  | 超出最大选择数量时的提示      | `"已达到最大选择数量"`       |
-| `cameraEntryIconResId`                   | `Int`                     | 拍照/录像入口的图标（0 = 库内默认） | `0`                 |
-| `cameraEntryFailedToastContent`          | `String`                  | 相机入口启动失败时的提示      | `"无法启动相机"`          |
+| `cameraEntryIconResId`                   | `Int`                     | 拍照入口的图标（0 = 库内默认）      | `0`                 |
+| `cameraEntryVideoIconResId`              | `Int`                     | 录像入口的图标（0 = 库内默认）      | `0`                 |
+| `cameraEntryPhotoText`                   | `String`                  | 「拍照」半边下面的文字         | `"拍照"`             |
+| `cameraEntryVideoText`                   | `String`                  | 「录像」半边下面的文字         | `"录像"`             |
+| `cameraEntryFailedToastContent`          | `String`                  | 相机入口启动失败时的提示        | `"无法启动相机"`          |
+| `cameraEntrySizeLimitToastContent`       | `String`                  | 拍摄产物不符合大小限制时的提示     | `"拍摄的文件不符合大小限制，未加入列表"` |
 | `folderNickNameMap`                      | `HashMap<String, String>` | 文件夹名称映射，用于自定义显示名称 | `emptyHashMap()`    |
 
 ***
@@ -532,19 +542,79 @@ val uiConfig = FilePickerUIConfig().apply {
 
 ## 升级日志
 
-### 7.0.0
+### 7.1.0
 
-* **新增拍照 / 录像入口（默认关闭）**：`setShowCameraEntry(true)` 会在网格第一格放一个相机格子，\
-  点击调起系统相机，拍完自动插到列表第一个（只插入、不自动选中）。仅对**单一的图片或视频类型**\
-  （`ofImage()` / `ofVideo()`）生效。\
-  默认关闭，不开启时对宿主零影响；库不声明 CAMERA 权限、不给宿主 manifest 加任何声明\
-  （输出走 MediaStore，Android 10+ 无需存储权限）。详见「拍照 / 录像入口」一节。
+> 本版**没有破坏性 API 变更**：未删除任何方法、未修改任何签名，老代码升级后可直接编译。
+> 只有两处 `equals` / `hashCode` 的语义变了，见末尾「行为变更」。
 
-* **新增文档类型入口**：`ofMarkdown()`（`.md` / `.markdown`）、`ofXmind()`（`.xmind`）、`ofFreemind()`（`.mm`），\
-  各有专属图标（`filepicker_ic_file_markdown` / `_xmind` / `_freemind`）。三者**只按后缀查询与识别**\
-  （`.xmind` 的 mime 是 `application/zip`、`.md` 可能是 `text/plain`，mime 轨不可靠），\
-  归在文档类型下，**不属于压缩包**：不参与 `ZIP_ALL` / `isArchive()` 推导。\
+#### 新增
+
+* **拍照 / 录像入口（默认关闭）**：`setShowCameraEntry(true)` 在网格第一格放一个相机格子，\
+  点击调起**系统相机**拍照或录像，产物写进系统相册（`DCIM/Camera`）并自动插到列表第一个。\
+  默认 `false`，不开启时对宿主零影响 —— 不挂 header、不注册 viewType、不碰权限、\
+  不给宿主 manifest 加任何声明（无 `<provider>`、无 `<queries>`）。
+
+  * 画法随"当前类型下相机能产出什么"变：只有图片 / 只有视频 → 整格一个按钮（图标 + 文字）；\
+    图片与视频都有（`ofAll()` / `ofAllWithGif()` 的「全部」页）→ **从中间劈开，左半边录像、\
+    右半边拍照**，中间一条分隔线
+  * 有 tab 的类型里入口**跟着当前 tab 走**：在「视频」页只给录像、「图片」页只给拍照、「GIF」页不给
+  * 拍完回来**默认勾上**（"这张就是要用的"）；已到 `maxSelectNumber` 上限时只插入不勾选并给提示；\
+    单选 + `setSingleClickEnable(true)` 时拍完直接回调返回
+  * 产物大小不符合 `minFileSize` / `maxFileSize` 时不插入、不勾选，并给提示
+  * 宿主声明了 CAMERA 却未授权时，库**先申请权限**再起相机
+  * 探相机用 `startActivity` 包 try/catch，**不用 `resolveActivity()`** —— targetSdk ≥ 30 且宿主\
+    没声明 `<queries>` 时它对相机 action 一律返回 `null`（实测），拿它当守卫会让入口永远点不动
+  * 详见「[拍照 / 录像入口](#5-拍照--录像入口默认关闭)」一节
+
+* **文档类型入口**：`ofMarkdown()`（`.md` / `.markdown`）、`ofXmind()`（`.xmind`）、`ofFreemind()`（`.mm`），\
+  各有专属图标。三者**只按后缀查询与识别**（`.xmind` 的 mime 是 `application/zip`、`.md` 可能是\
+  `text/plain`，mime 轨不可靠），归在文档类型下、**不属于压缩包**：不参与 `ZIP_ALL` / `isArchive()` 推导。\
   后缀表见 `FilePickerSelectType.DOC_EXTS`。`ofDocument()` 的查询条件不含这三种，行为不变。
+
+* **`FilePickerUIConfig` 新增相机入口相关配置**：`cameraEntryIconResId`、`cameraEntryVideoIconResId`、\
+  `cameraEntryPhotoText`、`cameraEntryVideoText`、`cameraEntrySizeLimitToastContent`、\
+  `cameraEntryFailedToastContent` —— 图标与文案全部可自定义，方便多语言适配。
+
+#### 修复
+
+* **缩略图与原图不同源**（"缩略图是这张、点开是另一张"）：缩略图的权威来源改为**真实文件**，\
+  系统预生成的缩略图只当首帧占位；缩略图与原图统一带 `MediaStoreSignature`（mime + 修改时间 + 方向），\
+  文件被覆盖/编辑后旧缓存立即失效、不会继续显示旧图。`MediaEntity` 为此新增 `dateModified`，\
+  查询补上 `DATE_MODIFIED` 列。
+
+* **预览页显示的不是点的那张**：`ViewPager2.setCurrentItem` 内部会把负下标**静默夹到第 0 页**，\
+  而列表在 fast→full 两次扫描之间会被整体替换，`indexOf` 可能返回 -1。现在所有交给 `setCurrentItem`\
+  的下标都先过一道 `PreviewIndexResolver`，规整到 `[0, size-1]`。
+
+* **`ofAllWithGif()` 图片全丢**：拼查询条件时，请求里同时含图片和 GIF、又不是"只有 GIF"时\
+  （正是 `ofAllWithGif`），图片那一支一个条件都没加上，最终只剩 `mime_type LIKE 'video/%'`，\
+  图片被整片排除。已补上该分支。
+
+* **视频预览里封面缩在中间**：两个原因叠加 —— ① 只有视频面被按宽高比撑开，封面一直是\
+  `wrap_content` + `fitCenter`，高度取决于缩略图自己的固有尺寸；② 宽高比**没算旋转角**：\
+  竖着录的视频存储宽高是横的（如 3840×2160），真实方向在 `orientation` / `unappliedRotationDegrees` 里，\
+  而封面缩略图是系统**已经旋转好**的竖图，两者对不上就被按高度压小。现在两者共用同一个盒子，\
+  并且都按显示方向算比例。
+
+* **拍摄产物被当成"没拍到"丢掉**：原先用 `MediaStore` 的 `SIZE <= 0` 判断有没有内容，\
+  但个别机型 `SIZE` 回填滞后，会把刚拍的照片丢掉。现在 `SIZE` 为 0 时再真读一个字节确认；\
+  另外"查询失败"不再等同于"没有内容" —— 那条路径不删任何东西。
+
+* **`ImagePreviewActivity` 的 url 判空写反了**：正常地址会被当成非法地址直接 toast 并结束。
+
+#### 行为变更（等于修 bug，接入方留意）
+
+这两处原来都是错的，修完之后语义变了 —— 如果宿主曾绕过它们，升级后行为会跟着变：
+
+* **`MediaEntity.equals` / `hashCode`**：原来只比 `path`，两个都拿不到 path 时会被判成**同一个实体**，\
+  于是 `indexOf` / `contains` 会命中错的元素（典型表现就是预览错位）。现在 path 无效时退回比较 `uri`，\
+  两者都没有有效标识则一律**不相等**。
+
+* **`MediaFolder.equals`**：原来三个字段的判断写反了（相等时返回 `false`），除了同一个引用以外\
+  **永远不相等**，`mediaFolders.remove(folder)` / `contains` 之类的操作全部失效。现在按\
+  name + folderPath + mediaEntityList 正常比较。
+
+### 7.0.0
 
 * **类型入口 API 收敛到** **`FilePickerSelectType`**：`ofAll()` / `ofImage()` / `ofVideo()` / `ofZipAll()` 等\
   全部类型方法现在挂在 `FilePickerSelectType` 上（语义更贴合）。`FilePicker.ofXxx()` 系列标注\
