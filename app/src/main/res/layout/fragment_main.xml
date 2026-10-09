@@ -116,6 +116,7 @@
             android:id="@+id/cb_show_camera"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:buttonTint="#FFFFFF"
             android:text="显示相机入口（图片/视频类型生效；两者都有时格子劈成左右两半）"
             android:textColor="#fff" />
     </LinearLayout>

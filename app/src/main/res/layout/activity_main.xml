@@ -100,6 +100,28 @@
                 android:overScrollMode="never" />
         </LinearLayout>
 
+        <!-- 是否显示相机入口（拍照/录像）。
+             勾选后原样传给 FilePicker.setShowCameraEntry()，是否真的显示由库内部判定：
+             只有图片/视频类型才会出现（两者都有时格子劈成左右两半），选"全部"时也会显示。 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="16dp"
+            android:paddingTop="4dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="4dp">
+
+            <androidx.appcompat.widget.AppCompatCheckBox
+                android:id="@+id/cb_show_camera"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:buttonTint="#FFFFFF"
+                android:text="显示相机入口（图片/视频类型生效；两者都有时格子劈成左右两半）"
+                android:textColor="#fff" />
+        </LinearLayout>
+
         <!-- 开始按钮 -->
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btn_start"

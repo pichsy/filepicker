@@ -71,6 +71,9 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
             val maxFileSize = maxFileSizeMB * 1024 * 1024
             // 获取类型
             val type = selectedType
+            // 是否显示拍照/录像入口。原样传递，不在 demo 里替库做类型判断 ——
+            // 这样正好能在"全部 + 勾选"的组合下验证库自己的类型判定
+            val showCameraEntry = binding.cbShowCamera.isChecked
 
             if (type == FilePickerSelectType.ofAll() || type == FilePickerSelectType.ofVideo() || type == FilePickerSelectType.ofImage() || type == FilePickerSelectType.ofAudio() || type == FilePickerSelectType.ofGif() || type == FilePickerSelectType.ofAllWithGif()) {
                 // 权限请求
@@ -80,7 +83,7 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
                     Permission.READ_MEDIA_AUDIO,
                 ).request { permissions, all ->
                     if (all) {
-                        selectFile(type, maxSelectCount, maxFileSize)
+                        selectFile(type, maxSelectCount, maxFileSize, showCameraEntry)
                     } else {
                         XXPermissions.startPermissionActivity(this, permissions)
                     }
@@ -91,7 +94,7 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
                     Permission.MANAGE_EXTERNAL_STORAGE,
                 ).request { permissions, all ->
                     if (all) {
-                        selectFile(type, maxSelectCount, maxFileSize)
+                        selectFile(type, maxSelectCount, maxFileSize, showCameraEntry)
                     } else {
                         XXPermissions.startPermissionActivity(this, permissions)
                     }
@@ -183,9 +186,10 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
         binding.rvType.models = types
     }
 
-    fun selectFile(type: String, maxSelectCount: Int, maxFileSize: Int) {
+    fun selectFile(type: String, maxSelectCount: Int, maxFileSize: Int, showCameraEntry: Boolean) {
         FilePicker.with(this).setMaxSelectNumber(maxSelectCount)
             .setMaxFileSize(maxFileSize.toLong()).setSelectType(type)
+            .setShowCameraEntry(showCameraEntry)
             .setSingleClickEnable(true)
             .setSelectedList(selectedDataList).setOnSelectCallback { isUseOriginal, list ->
                 XLog.d("FilePicker", "Selected files: ${list.size}")
