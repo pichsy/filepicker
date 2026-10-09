@@ -1,15 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  首页：只留"选什么/选多少 → 开始"这条主链路。
+  数据制造、相机 intent 探测这类调试入口都挪到右上角的设置页（SettingsActivity）。
+-->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:background="#000000"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="#0A0A0A"
+    android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
         android:orientation="vertical">
 
+        <!-- 顶栏：标题居中，右上角设置 -->
         <com.pichs.xwidget.view.XConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="56dp"
@@ -20,165 +26,145 @@
                 android:layout_height="wrap_content"
                 android:text="图库选择"
                 android:textColor="#fff"
-                android:textSize="18sp"
+                android:textSize="17sp"
                 android:textStyle="bold"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
 
+            <com.pichs.xwidget.view.XImageView
+                android:id="@+id/iv_settings"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:layout_marginEnd="8dp"
+                android:padding="10dp"
+                android:src="@drawable/ic_demo_settings"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
         </com.pichs.xwidget.view.XConstraintLayout>
-        <!-- 数量 maxSelectCount 输入框 -->
+
+        <!-- 表单区：统一 16dp 内边距，标签在上、控件在下 -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:padding="16dp">
+            android:orientation="vertical"
+            android:paddingStart="16dp"
+            android:paddingTop="12dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="16dp">
 
-            <androidx.appcompat.widget.AppCompatTextView
+            <com.pichs.xwidget.view.XTextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="最大选择数量："
-                android:textColor="#fff" />
+                android:text="最大选择数量"
+                android:textColor="#9E9E9E"
+                android:textSize="13sp" />
 
             <androidx.appcompat.widget.AppCompatEditText
                 android:id="@+id/et_max_select_count"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:hint="请输入数量"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:layout_marginTop="6dp"
+                android:background="@drawable/demo_input_bg"
+                android:gravity="center_vertical"
+                android:hint="0 表示不限"
+                android:importantForAutofill="no"
                 android:inputType="number"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:singleLine="true"
                 android:text="9"
                 android:textColor="#fff"
-                android:textColorHint="#888" />
-        </LinearLayout>
+                android:textColorHint="#666666"
+                android:textSize="15sp" />
 
-        <!-- 最大文件大小输入框 -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:padding="16dp">
-
-            <androidx.appcompat.widget.AppCompatTextView
+            <com.pichs.xwidget.view.XTextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="最大文件大小(M)："
-                android:textColor="#fff" />
+                android:layout_marginTop="14dp"
+                android:text="最大文件大小（MB）"
+                android:textColor="#9E9E9E"
+                android:textSize="13sp" />
 
             <androidx.appcompat.widget.AppCompatEditText
                 android:id="@+id/et_max_file_size"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:hint="如200"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:layout_marginTop="6dp"
+                android:background="@drawable/demo_input_bg"
+                android:gravity="center_vertical"
+                android:hint="如 200，留空表示不限"
+                android:importantForAutofill="no"
                 android:inputType="number"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:singleLine="true"
                 android:textColor="#fff"
-                android:textColorHint="#888" />
-        </LinearLayout>
+                android:textColorHint="#666666"
+                android:textSize="15sp" />
 
-        <!-- 类型选择：两排横向滑动 -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:padding="16dp">
-
-            <androidx.appcompat.widget.AppCompatTextView
+            <com.pichs.xwidget.view.XTextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="类型："
-                android:textColor="#fff" />
+                android:layout_marginTop="14dp"
+                android:text="类型"
+                android:textColor="#9E9E9E"
+                android:textSize="13sp" />
 
+            <!-- 两排横向滑动，chips 由 MainActivity 用 GridLayoutManager(HORIZONTAL, 2) 填 -->
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rv_type"
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
+                android:layout_marginTop="6dp"
                 android:overScrollMode="never" />
-        </LinearLayout>
-
-        <!-- 是否显示相机入口（拍照/录像）。
-             勾选后原样传给 FilePicker.setShowCameraEntry()，是否真的显示由库内部判定：
-             只有图片/视频类型才会出现（两者都有时格子劈成左右两半），选"全部"时也会显示。 -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:paddingStart="16dp"
-            android:paddingTop="4dp"
-            android:paddingEnd="16dp"
-            android:paddingBottom="4dp">
 
             <androidx.appcompat.widget.AppCompatCheckBox
                 android:id="@+id/cb_show_camera"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
                 android:buttonTint="#FFFFFF"
-                android:text="显示相机入口（图片/视频类型生效；两者都有时格子劈成左右两半）"
-                android:textColor="#fff" />
+                android:text="显示相机入口"
+                android:textColor="#DDDDDD"
+                android:textSize="14sp" />
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btn_start"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="20dp"
+                android:background="@drawable/demo_btn_primary_bg"
+                android:text="开始"
+                android:textAllCaps="false"
+                android:textColor="#fff"
+                android:textSize="15sp" />
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/preview_fragment"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/demo_btn_secondary_bg"
+                android:text="在 Fragment 中调用"
+                android:textAllCaps="false"
+                android:textColor="#DDDDDD"
+                android:textSize="14sp" />
+
         </LinearLayout>
 
-        <!-- 开始按钮 -->
-        <androidx.appcompat.widget.AppCompatButton
-            android:id="@+id/btn_start"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_margin="16dp"
-            android:layout_marginStart="56dp"
-            android:layout_marginEnd="56dp"
-            android:backgroundTint="#E60B4D"
-            android:text="开始"
-            android:textColor="#fff" />
-
-        <!-- 开始按钮 -->
-        <androidx.appcompat.widget.AppCompatButton
-            android:id="@+id/preview_fragment"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_margin="16dp"
-            android:layout_marginStart="56dp"
-            android:layout_marginEnd="56dp"
-            android:backgroundTint="#E60B4D"
-            android:text="Fragment中调用"
-            android:textAllCaps="false"
-            android:textColor="#fff" />
-
-        <!-- 数据制造入口 -->
-        <androidx.appcompat.widget.AppCompatButton
-            android:id="@+id/btn_data_factory"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_margin="16dp"
-            android:layout_marginStart="56dp"
-            android:layout_marginEnd="56dp"
-            android:backgroundTint="#2E7D32"
-            android:text="数据制造（生成测试文件）"
-            android:textAllCaps="false"
-            android:textColor="#fff" />
-
-        <!-- 相机 intent 探测（临时验证用，验证完可连同 CameraProbeActivity 一起删） -->
-        <androidx.appcompat.widget.AppCompatButton
-            android:id="@+id/btn_camera_probe"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_margin="16dp"
-            android:layout_marginStart="56dp"
-            android:layout_marginEnd="56dp"
-            android:backgroundTint="#1565C0"
-            android:text="相机 intent 探测（拍照/录像组合方案真机验证）"
-            android:textAllCaps="false"
-            android:textColor="#fff" />
-
-
+        <!-- 选择结果展示 -->
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recycler_view"
             android:layout_width="match_parent"
             android:layout_height="120dp"
-            android:layout_marginTop="20dp" />
+            android:layout_marginStart="12dp"
+            android:layout_marginTop="4dp"
+            android:layout_marginEnd="12dp"
+            android:layout_marginBottom="16dp" />
 
     </LinearLayout>
 </ScrollView>

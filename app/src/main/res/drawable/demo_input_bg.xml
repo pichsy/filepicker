@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 首页输入框：圆角深色块（原来是系统默认下划线，黑底上很难看） -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="#1F1F1F" />
+    <corners android:radius="10dp" />
+</shape>

@@ -52,14 +52,9 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
             startActivity(Intent(this, TestActivity::class.java))
         }
 
-        // 数据制造入口：批量生成测试文件
-        binding.btnDataFactory.fastClick {
-            startActivity(Intent(this, DataFactoryActivity::class.java))
-        }
-
-        // 相机 intent 探测（临时验证用）
-        binding.btnCameraProbe.fastClick {
-            startActivity(Intent(this, CameraProbeActivity::class.java))
+        // 右上角设置：数据制造、相机 intent 探测这些调试入口都收进去了，首页只留主链路
+        binding.ivSettings.fastClick {
+            startActivity(Intent(this, SettingsActivity::class.java))
         }
 
         // 开始按钮点击事件
@@ -141,6 +136,7 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
     private fun initTypeList() {
         val types = listOf(
             PickerType("全部", FilePickerSelectType.ofAll()),
+            PickerType("全部含GIF", FilePickerSelectType.ofAllWithGif()),
             PickerType("图片", FilePickerSelectType.ofImage()),
             PickerType("视频", FilePickerSelectType.ofVideo()),
             PickerType("GIF", FilePickerSelectType.ofGif()),
@@ -151,6 +147,11 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
             PickerType("ppt", FilePickerSelectType.ofPpt()),
             PickerType("excel", FilePickerSelectType.ofExcel()),
             PickerType("txt", FilePickerSelectType.ofTxt()),
+            // 新加的文档类型：按后缀识别（xmind 本质是 zip、md 可能被报成 text/plain，
+            // 所以不走 mime 轨），这里给个入口方便验证
+            PickerType("markdown", FilePickerSelectType.ofMarkdown()),
+            PickerType("xmind", FilePickerSelectType.ofXmind()),
+            PickerType("freemind", FilePickerSelectType.ofFreemind()),
             PickerType("APK", FilePickerSelectType.ofApk()),
             PickerType("zip_all", FilePickerSelectType.ofZipAll()),
             PickerType("zip", FilePickerSelectType.ofZip()),

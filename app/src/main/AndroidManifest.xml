@@ -64,6 +64,12 @@
             android:exported="true"
             android:launchMode="singleTop" />
 
+        <!-- 设置页：收纳数据制造、相机探测这些调试入口 -->
+        <activity
+            android:name=".SettingsActivity"
+            android:exported="true"
+            android:launchMode="singleTop" />
+
         <activity
             android:name=".paging.PagingDemoActivity"
             android:exported="true"

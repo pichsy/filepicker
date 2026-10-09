@@ -1,16 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  类型 chip。原来是 #121212 的底 + #333 的选中态，落在 #0A0A0A 的首页底色上几乎看不见，
+  这里整体调亮一档，选中态用首页的主色。
+-->
 <com.pichs.xwidget.roundview.XRoundButton xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/tv_type_name"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    android:background="#121212"
-    android:paddingHorizontal="15dp"
     android:layout_marginHorizontal="4dp"
-    android:paddingVertical="8dp"
+    android:layout_marginVertical="4dp"
+    android:background="#1F1F1F"
     android:gravity="center"
-    app:xp_radius="20dp"
-    app:xp_checkedBackground="#333333"
-    android:textColor="#fff"
-    app:xp_checkedTextColor="#015DFF"
-    android:textSize="15sp" />
+    android:paddingHorizontal="14dp"
+    android:paddingVertical="8dp"
+    android:textColor="#CCCCCC"
+    android:textSize="14sp"
+    app:xp_checkedBackground="#E60B4D"
+    app:xp_checkedTextColor="#FFFFFF"
+    app:xp_radius="20dp" />
