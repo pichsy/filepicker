@@ -1219,8 +1219,38 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                 }
                 return@launch
             }
-            // 插到列表最前面。只插入，不自动选中 —— 不碰 selectedData
-            viewModel.insertCapturedMedia(entity)
+            // 插到列表最前面
+            if (!viewModel.insertCapturedMedia(entity)) {
+                // 唯一原因是大小不符合 minFileSize / maxFileSize（口径与查询侧一致）。
+                // 不插、不勾，但必须告诉用户一声 —— 否则"拍完回来什么都没有"会被当成 bug
+                Toast.makeText(ctx, viewModel.uiConfig.cameraEntrySizeLimitToastContent, Toast.LENGTH_SHORT).show()
+                return@launch
+            }
+
+            // 单击立即返回模式（maxSelectNumber==1 && setSingleClickEnable(true)）：
+            // 拍到的这张就是结果 —— 直接替换掉已有选择并返回，跟"点一下格子就返回"完全一致。
+            //
+            // 这里**刻意放在上限判断之前**：宿主可能通过 setSelectedList 传进来一张已选的，
+            // 此时"已到上限"是必然成立的。要是先判上限，用户就会卡在
+            // "选了旧的 → 拍完新的 → 弹已达上限" 的死角里，拍的照片反而用不上。
+            // 单击模式的结果恒为 1 张，本来也不存在超上限的问题。
+            if (viewModel.isCanSingleClickSelect()) {
+                callbackToChooser(arrayListOf(entity))
+                return@launch
+            }
+
+            // 普通模式：插进来之后默认"这张就是要用的"，顺手勾上；
+            // 但**已经到上限时不能勾** —— 否则会超出 maxSelectNumber
+            val countBefore = viewModel.getSelectedCount() + viewModel.tempSelectData.size
+            if (viewModel.isOverMaxSelectNumber(countBefore)) {
+                Toast.makeText(ctx, viewModel.uiConfig.selectMaxNumberOverToastContent, Toast.LENGTH_SHORT).show()
+                return@launch
+            }
+            viewModel.takeSelectionSnapshot()
+            viewModel.addSelectedData(entity)
+            // 角标只变了新增这一条；已选数量从 0 变成 1 时最后一行/最后一项的 bottomMargin 也要跟着刷
+            updateSelectDataUI(viewModel.getSelectionChangedPaths(), countBefore == 0)
+            updateBottomMenuSelectNumberUI()
         }
     }
 

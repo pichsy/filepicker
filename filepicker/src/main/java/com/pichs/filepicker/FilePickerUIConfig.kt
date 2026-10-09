@@ -114,6 +114,12 @@ public data class FilePickerUIConfig(
     var cameraEntryFailedToastContent: String = "无法启动相机",
 
     /**
+     * 拍摄产物不符合 minFileSize / maxFileSize 时的提示。
+     * 这种情况不插入列表、也不勾选，所以必须给个说法。
+     */
+    var cameraEntrySizeLimitToastContent: String = "拍摄的文件不符合大小限制，未加入列表",
+
+    /**
      * 相机入口里"拍照"那半边的文字（图标下方的标签）
      */
     var cameraEntryPhotoText: String = "拍照",
@@ -163,6 +169,7 @@ public data class FilePickerUIConfig(
         putInt("cameraEntryIconResId", cameraEntryIconResId)
         putInt("cameraEntryVideoIconResId", cameraEntryVideoIconResId)
         putString("cameraEntryFailedToastContent", cameraEntryFailedToastContent)
+        putString("cameraEntrySizeLimitToastContent", cameraEntrySizeLimitToastContent)
         putString("cameraEntryPhotoText", cameraEntryPhotoText)
         putString("cameraEntryVideoText", cameraEntryVideoText)
         putBundle("folderNickNameMap", Bundle().apply {
@@ -205,6 +212,7 @@ public data class FilePickerUIConfig(
                 cameraEntryIconResId = bundle.getInt("cameraEntryIconResId", 0),
                 cameraEntryVideoIconResId = bundle.getInt("cameraEntryVideoIconResId", 0),
                 cameraEntryFailedToastContent = bundle.getString("cameraEntryFailedToastContent", "无法启动相机"),
+                cameraEntrySizeLimitToastContent = bundle.getString("cameraEntrySizeLimitToastContent", "拍摄的文件不符合大小限制，未加入列表"),
                 cameraEntryPhotoText = bundle.getString("cameraEntryPhotoText", "拍照"),
                 cameraEntryVideoText = bundle.getString("cameraEntryVideoText", "录像"),
                 folderNickNameMap = folderNickNameMap,

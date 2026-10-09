@@ -384,14 +384,23 @@ class FilePickerViewModel : ViewModel() {
      * 2. **全库文件夹数据**（allFolderDataList）→ 否则下一次 resetListDataWithSelectData()
      *    （按 addTime 倒序重排）或切相册，这一条就没了。
      *
-     * 只插入，不自动选中 —— 不碰 selectedData，角标和底部已选列表都不变。
+     * 只负责插入；勾选与否由调用方决定。
+     *
+     * @return 是否真的插进了当前列表。返回 false 只有一种原因：文件大小不符合
+     *         [minFileSize] / [maxFileSize]（口径与查询侧一致），此时调用方也不该把它勾上。
      */
-    fun insertCapturedMedia(entity: MediaEntity) {
-        // 口径与查询侧对齐（见 loadData 里的 sizeLessThanEqualTo）：超过上限的文件不该进列表 ——
-        // 插进来下次重扫也会被剔掉，不如一开始就不插。0 和 Long.MAX_VALUE 都是"未设置"的哨兵值。
+    fun insertCapturedMedia(entity: MediaEntity): Boolean {
+        // 大小口径必须与查询侧逐字对齐（见 loadData：sizeGreaterThan(minSize) + sizeLessThanEqualTo(maxSize)），
+        // 否则会出现"拍完能看见、切个相册或重扫一下就没了"的鬼影。
+        // 0 和 Long.MAX_VALUE 都是 maxFileSize 的"未设置"哨兵值。
         val maxSize = maxFileSize.value
         if (!(maxSize <= 0L || maxSize == Long.MAX_VALUE) && entity.size > maxSize) {
-            return
+            return false
+        }
+        // 注意 size 为 0 的情况：那表示 SIZE 还没回填（个别机型），是"未知"而不是"太小"，
+        // 不能按 minFileSize 拒掉 —— 否则又会把用户刚拍的照片弄丢（同 FilePickerFragment.isUsableCapture）
+        if (entity.size > 0L && entity.size <= minFileSize.value) {
+            return false
         }
 
         val path = entity.path
@@ -428,6 +437,7 @@ class FilePickerViewModel : ViewModel() {
         // FilePickerFragment 里那条 collectLatest（重新排序全库 + 重建当前列表），
         // 对"插一张刚拍的图"来说太重了。相册选择弹窗读的是 getAllDataList()，不依赖通知。
         _allFolderDataList.update { allFolders }
+        return true
     }
 
 
