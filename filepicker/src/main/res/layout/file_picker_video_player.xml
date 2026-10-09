@@ -16,10 +16,16 @@
         app:use_controller="false" />
     <!-- 添加封面 ImageView -->
 
+    <!--
+      封面：默认撑满容器（fitCenter 按比例留边），等拿到视频宽高比之后再被
+      FilePickerVideoPlayerView.applyAspectRatioToViews() 收成和 playerView 一样的盒子。
+      这里**不能用 wrap_content** —— 那样它的高度会取决于缩略图的固有尺寸，
+      和视频面对不上，表现就是"视频铺满宽度、封面缩在中间"。
+    -->
     <com.pichs.xwidget.view.XImageView
         android:id="@+id/iv_cover"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:layout_gravity="center"
         android:background="#000"
         android:scaleType="fitCenter"

@@ -148,6 +148,63 @@ class FilePickerVideoPlayerView @JvmOverloads constructor(
             MediaLoader.loadVideoCover(uri, binding.ivCover)
         }
         binding.ivCover.visibility = View.VISIBLE
+
+        // 播放前 onVideoSizeChanged 还没触发，先拿 MediaStore 里的宽高把封面撑起来。
+        // 不撑的话封面会用缩略图的固有尺寸（loadVideoCover 固定 override(512,384)，是个 4:3 的扁盒子）
+        // 居中显示，而视频面是全宽 —— 两者对不上，表现就是"视频铺满、封面缩在中间"。
+        val videoWidth = mediaEntity?.width ?: 0
+        val videoHeight = mediaEntity?.height ?: 0
+        val rotation = mediaEntity?.orientation ?: 0
+        if (videoWidth > 0 && videoHeight > 0) {
+            applyAspectRatioToViews(displayAspectRatio(videoWidth, videoHeight, rotation))
+        }
+    }
+
+    /**
+     * 由"存储宽高 + 旋转角"算**显示**宽高比。
+     *
+     * 相机录出来的文件里 `width/height` 是传感器尺寸（例如 3840×2160，横的），
+     * 真正的显示方向在 `orientation` / `unappliedRotationDegrees` 里（竖着录的通常是 90）。
+     * 不把旋转算进去就会得到横屏比例，而封面缩略图是**已经旋转好的竖图** ——
+     * 两者对不上，`fitCenter` 就会把封面按高度压小，表现正是"视频铺满宽度、封面缩在中间"。
+     *
+     * 实测数据（华为 BRE-AL80）：
+     *   VID_xx.mp4  width=3840 height=2160 orientation=90  → 显示比例应为 0.5625（竖），
+     *   按 width/height 直接算会得到 1.78（横），封面就被压到约 1/3 宽。
+     */
+    private fun displayAspectRatio(width: Int, height: Int, rotationDegrees: Int): Float {
+        if (width <= 0 || height <= 0) return 0f
+        return if (rotationDegrees == 90 || rotationDegrees == 270) {
+            height.toFloat() / width
+        } else {
+            width.toFloat() / height
+        }
+    }
+
+    /**
+     * 让**视频面和封面用同一个盒子**：宽度撑满，高度按视频宽高比算。
+     *
+     * 原来只有 playerView 在 onVideoSizeChanged 里被撑开，iv_cover 一直是
+     * wrap_content + fitCenter，它的高度取决于缩略图自己的固有尺寸，
+     * 图像再在盒子里 fitCenter 一次，就变成"视频铺满宽度、封面缩在中间"。
+     */
+    private fun applyAspectRatioToViews(aspectRatio: Float) {
+        if (aspectRatio <= 0f) return
+        val apply = Runnable {
+            val containerWidth = binding.videoRoot.width.takeIf { it > 0 } ?: return@Runnable
+            val targetHeight = (containerWidth / aspectRatio).toInt()
+            if (targetHeight <= 0) return@Runnable
+            listOf(binding.playerView, binding.ivCover).forEach { view ->
+                val params = view.layoutParams
+                if (params.width != FrameLayout.LayoutParams.MATCH_PARENT || params.height != targetHeight) {
+                    params.width = FrameLayout.LayoutParams.MATCH_PARENT
+                    params.height = targetHeight
+                    view.layoutParams = params
+                }
+            }
+        }
+        // loadCover 可能发生在布局之前，那时量不到宽度，等一帧再来
+        if (binding.videoRoot.width > 0) apply.run() else binding.videoRoot.post(apply)
     }
 
     fun loadVideoAndPlay(entiity: MediaEntity?, startPosition: Long = -1) {
@@ -176,14 +233,14 @@ class FilePickerVideoPlayerView @JvmOverloads constructor(
                 }
 
                 override fun onVideoSizeChanged(videoSize: VideoSize) {
-                    val videoWidth = videoSize.width
-                    val videoHeight = videoSize.height
-                    if (videoWidth > 0 && videoHeight > 0) {
-                        val aspectRatio = videoWidth.toFloat() / videoHeight
-                        val layoutParams = binding.playerView.layoutParams
-                        layoutParams.width = FrameLayout.LayoutParams.MATCH_PARENT
-                        layoutParams.height = (binding.playerView.width / aspectRatio).toInt()
-                        binding.playerView.layoutParams = layoutParams
+                    if (videoSize.width > 0 && videoSize.height > 0) {
+                        // 除了视频面，封面也要一起撑成同一个盒子 —— 否则两者尺度不一致。
+                        // 注意用 unappliedRotationDegrees 还原显示方向（见 displayAspectRatio）
+                        applyAspectRatioToViews(
+                            displayAspectRatio(
+                                videoSize.width, videoSize.height, videoSize.unappliedRotationDegrees
+                            )
+                        )
                     }
                 }
             })
