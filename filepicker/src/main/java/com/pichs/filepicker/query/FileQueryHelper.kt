@@ -127,7 +127,15 @@ object FileQueryHelper {
                     if (queryType == QueryType.IMAGE) {
                         if (isOnlyGif) {
                             queryWhereBuilder.mimeTypeEquals(MIME_TYPE_GIF).or()
-                        } else if (!isContainsGif) {
+                        } else if (isContainsGif) {
+                            // 请求里本来就含 gif（ofAllWithGif）：image/% 已经把 gif 覆盖了，
+                            // 不能再排除 gif。
+                            // 这个分支原来是漏的 —— isContainsGif && !isOnlyGif 时两个分支都不进，
+                            // IMAGE 一个条件都加不上，最终只剩 video/%，**图片被整片排除**：
+                            //   section:((mime_type LIKE ? )) AND (_size > ? )
+                            //   selectionAllArgs: video/%, 0
+                            queryWhereBuilder.mimeTypeStartWith(getMimeTypePrefix(queryType)).or()
+                        } else {
                             queryWhereBuilder.mimeTypeStartWith(getMimeTypePrefix(queryType)).and().mimeTypeNotEquals(MIME_TYPE_GIF).or()
                         }
                     } else {
@@ -412,7 +420,15 @@ object FileQueryHelper {
                     if (queryType == QueryType.IMAGE) {
                         if (isOnlyGif) {
                             queryWhereBuilder.mimeTypeEquals(MIME_TYPE_GIF).or()
-                        } else if (!isContainsGif) {
+                        } else if (isContainsGif) {
+                            // 请求里本来就含 gif（ofAllWithGif）：image/% 已经把 gif 覆盖了，
+                            // 不能再排除 gif。
+                            // 这个分支原来是漏的 —— isContainsGif && !isOnlyGif 时两个分支都不进，
+                            // IMAGE 一个条件都加不上，最终只剩 video/%，**图片被整片排除**：
+                            //   section:((mime_type LIKE ? )) AND (_size > ? )
+                            //   selectionAllArgs: video/%, 0
+                            queryWhereBuilder.mimeTypeStartWith(getMimeTypePrefix(queryType)).or()
+                        } else {
                             queryWhereBuilder.mimeTypeStartWith(getMimeTypePrefix(queryType)).and().mimeTypeNotEquals(MIME_TYPE_GIF).or()
                         }
                     } else {
