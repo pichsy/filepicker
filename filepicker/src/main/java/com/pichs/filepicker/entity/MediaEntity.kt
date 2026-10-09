@@ -140,6 +140,27 @@ data class MediaEntity(
     }
 
     /**
+     * Markdown / 思维导图（xmind、freemind）按**文件名后缀**识别，不看 mime：
+     * - `.xmind` 本质是 zip 容器，mime 常为 `application/zip`（按 mime 判会显示成 zip 图标）；
+     * - `.md` 在部分设备/来源被报成 `text/plain`（会被 [isTxt] 认走）；
+     * - `.mm` 基本只有 `application/octet-stream`。
+     *
+     * 后缀表统一登记在 [FilePickerSelectType.extsOf] 的文档类型登记处。
+     * 注意：调用方需保证判定顺序——图标映射里必须排在 [isTxt] / [isZip] 之前（见 FilePickerIconUtils）。
+     */
+    fun isMarkdown(): Boolean = matchDocType(FilePickerSelectType.MARKDOWN)
+
+    fun isXmind(): Boolean = matchDocType(FilePickerSelectType.XMIND)
+
+    fun isFreemind(): Boolean = matchDocType(FilePickerSelectType.FREEMIND)
+
+    /** 按文档类型登记处（DOC_EXTS）的后缀识别，仅比对文件名后缀 */
+    private fun matchDocType(type: String): Boolean {
+        val ext = fileExtension ?: return false
+        return ext in FilePickerSelectType.extsOf(type)
+    }
+
+    /**
      * 是否是压缩包（zip/rar/7z/tar/gz/bz2/iso/br/lz4/zstd/xz）。
      * 类型与后缀全部来自 FilePickerSelectType 登记处，不再单独手抄。
      */

@@ -37,6 +37,20 @@ object FilePickerIconUtils {
                 R.drawable.filepicker_ic_file_ppt
             }
 
+            // Markdown / 思维导图：按后缀识别，必须排在 isTxt() / isZip() 之前，
+            // 否则 .md（mime 可能报 text/plain）会被 txt 图标、.xmind（zip 容器）会被 zip 图标抢走
+            mediaEntity.isMarkdown() -> {
+                R.drawable.filepicker_ic_file_markdown
+            }
+
+            mediaEntity.isXmind() -> {
+                R.drawable.filepicker_ic_file_xmind
+            }
+
+            mediaEntity.isFreemind() -> {
+                R.drawable.filepicker_ic_file_freemind
+            }
+
             mediaEntity.isTxt() -> {
                 R.drawable.filepicker_ic_file_txt
             }

@@ -6,12 +6,14 @@ import com.pichs.filepicker.FilePickerSelectType.BZ2
 import com.pichs.filepicker.FilePickerSelectType.DOC
 import com.pichs.filepicker.FilePickerSelectType.DOCUMENT
 import com.pichs.filepicker.FilePickerSelectType.EXCEL
+import com.pichs.filepicker.FilePickerSelectType.FREEMIND
 import com.pichs.filepicker.FilePickerSelectType.GIF
 import com.pichs.filepicker.FilePickerSelectType.GZ
 import com.pichs.filepicker.FilePickerSelectType.IMAGE
 import com.pichs.filepicker.FilePickerSelectType.IMAGE_VIDEO
 import com.pichs.filepicker.FilePickerSelectType.IMAGE_VIDEO_GIF
 import com.pichs.filepicker.FilePickerSelectType.ISO
+import com.pichs.filepicker.FilePickerSelectType.MARKDOWN
 import com.pichs.filepicker.FilePickerSelectType.PDF
 import com.pichs.filepicker.FilePickerSelectType.PPT
 import com.pichs.filepicker.FilePickerSelectType.RAR
@@ -19,6 +21,7 @@ import com.pichs.filepicker.FilePickerSelectType.SEVEN_Z
 import com.pichs.filepicker.FilePickerSelectType.TAR
 import com.pichs.filepicker.FilePickerSelectType.TXT
 import com.pichs.filepicker.FilePickerSelectType.VIDEO
+import com.pichs.filepicker.FilePickerSelectType.XMIND
 import com.pichs.filepicker.FilePickerSelectType.ZIP
 import com.pichs.filepicker.FilePickerSelectType.ZIP_ALL
 
@@ -41,6 +44,11 @@ object FilePickerSelectType {
     const val PPT = "ppt"
     const val EXCEL = "excel"
     const val TXT = "txt"
+
+    // 文档类型：Markdown / 思维导图（xmind、freemind），按文件名后缀识别，不属于压缩包
+    const val MARKDOWN = "markdown"
+    const val XMIND = "xmind"
+    const val FREEMIND = "freemind"
 
     // 应用类型，安装包
     const val APK = "apk"
@@ -83,14 +91,31 @@ object FilePickerSelectType {
     fun archiveTypes(): Set<String> = ARCHIVE_EXTS.keys
 
     /**
+     * 文档类型（Markdown / 思维导图）-> 文件后缀 的登记处。
+     *
+     * 这三种格式在 MediaStore 上没有可靠 mime，所以只登记后缀、不登记 mime，查询与识别都走后缀轨：
+     * - `.xmind` 本质是 zip 容器，mime 常被报成 `application/zip`（按 mime 查会把所有 zip 捞进来，按 mime 识别会显示成 zip 图标）；
+     * - `.md` 在部分设备/来源被报成 `text/plain`（会被 txt 认走）；
+     * - `.mm` 基本只有 `application/octet-stream`。
+     *
+     * 与 [ARCHIVE_EXTS] 分开：这三类是文档，不是压缩包，不参与 `isArchive()` / `ZIP_ALL` 的任何推导。
+     */
+    private val DOC_EXTS: Map<String, List<String>> = linkedMapOf(
+        MARKDOWN to listOf("md", "markdown"),
+        XMIND to listOf("xmind"),
+        FREEMIND to listOf("mm"),
+    )
+
+    /**
      * 类型对应的后缀列表：
      * ZIP_ALL -> 全部压缩格式后缀；单个压缩包类型 -> 其后缀（含别名如 gz/tgz、zst/zstd）；
-     * "ext:" 开头的自定义类型 -> 其后缀；未知类型返回空表。
+     * 文档类型（markdown/xmind/freemind）-> 其后缀；"ext:" 开头的自定义类型 -> 其后缀；未知类型返回空表。
      */
     fun extsOf(type: String): List<String> {
         return when {
             type == ZIP_ALL -> ARCHIVE_EXTS.values.flatten()
             ARCHIVE_EXTS.containsKey(type) -> ARCHIVE_EXTS.getValue(type)
+            DOC_EXTS.containsKey(type) -> DOC_EXTS.getValue(type)
             isCustomExtType(type) -> parseCustomExts(type)
             else -> emptyList()
         }
@@ -124,6 +149,15 @@ object FilePickerSelectType {
     fun ofExcel(): String = EXCEL
 
     fun ofTxt(): String = TXT
+
+    /** 只选择 Markdown（.md / .markdown） */
+    fun ofMarkdown(): String = MARKDOWN
+
+    /** 只选择 XMind 思维导图（.xmind） */
+    fun ofXmind(): String = XMIND
+
+    /** 只选择 FreeMind 思维导图（.mm） */
+    fun ofFreemind(): String = FREEMIND
 
     fun ofApk(): String = APK
 
@@ -288,7 +322,7 @@ object SelectTypeUtil {
 
     fun getAllTypes(): List<String> {
         return listOf(
-            IMAGE_VIDEO, IMAGE_VIDEO_GIF, IMAGE, VIDEO, GIF, AUDIO, DOCUMENT, PDF, DOC, PPT, EXCEL, TXT, APK, ZIP_ALL, ZIP, RAR, SEVEN_Z, TAR, GZ, BZ2, ISO,
+            IMAGE_VIDEO, IMAGE_VIDEO_GIF, IMAGE, VIDEO, GIF, AUDIO, DOCUMENT, PDF, DOC, PPT, EXCEL, TXT, MARKDOWN, XMIND, FREEMIND, APK, ZIP_ALL, ZIP, RAR, SEVEN_Z, TAR, GZ, BZ2, ISO,
             FilePickerSelectType.BR, FilePickerSelectType.LZ4, FilePickerSelectType.ZSTD, FilePickerSelectType.XZ
         )
     }
