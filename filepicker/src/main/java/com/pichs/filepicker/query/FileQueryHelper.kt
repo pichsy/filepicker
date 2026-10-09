@@ -594,6 +594,88 @@ object FileQueryHelper {
 
 
     /**
+     * 按单个 uri 回查一条 [MediaEntity]（拍照/录像完成后回填列表用）。
+     *
+     * 字段口径必须与 [queryAlbums] 里拼 MediaEntity 的那两段**逐字一致**：
+     * DATE_ADDED / DATE_MODIFIED 是秒级要 *1000；ORIENTATION 只有 Q+ 才有列。
+     * 对不上的后果很具体 —— [com.pichs.filepicker.loader.MediaLoader] 的缓存签名是
+     * `MediaStoreSignature(mimeType, dateModified, orientation)`，签名不一致会让同一条媒体
+     * 在缩略图和原图两边各算出一份缓存，又回到"缩略图是这张、点开是另一张"。
+     *
+     * 返回 null 表示查不到（相机没写成、或记录已被清掉），调用方按失败处理。
+     */
+    @SuppressLint("Range")
+    suspend fun queryEntityByUri(context: Context, uri: Uri): MediaEntity? = withContext(Dispatchers.IO) {
+        val projection = arrayOf(
+            MediaStore.Files.FileColumns._ID,
+            MediaStore.Files.FileColumns.DATA,
+            MediaStore.Files.FileColumns.DISPLAY_NAME,
+            MediaStore.Files.FileColumns.SIZE,
+            MediaStore.Files.FileColumns.MIME_TYPE,
+            MediaStore.Files.FileColumns.WIDTH,
+            MediaStore.Files.FileColumns.HEIGHT,
+            MediaStore.Files.FileColumns.DURATION,
+            MediaStore.Files.FileColumns.DATE_ADDED,
+            MediaStore.Files.FileColumns.DATE_MODIFIED,
+        ) + if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            arrayOf(MediaStore.Files.FileColumns.ORIENTATION)
+        } else {
+            emptyArray<String>()
+        }
+
+        try {
+            context.contentResolver.query(uri, projection, null, null, null)?.use { cursor ->
+                if (!cursor.moveToFirst()) return@withContext null
+
+                val id = cursor.getLong(cursor.getColumnIndex(MediaStore.Files.FileColumns._ID))
+                val filePath = cursor.getString(cursor.getColumnIndex(MediaStore.Files.FileColumns.DATA))
+                val mimeType = cursor.getString(cursor.getColumnIndex(MediaStore.Files.FileColumns.MIME_TYPE))
+                val orientationIndex = cursor.getColumnIndex(MediaStore.Files.FileColumns.ORIENTATION)
+
+                MediaEntity(
+                    uri = if (id > 0) buildContentUri(mimeType, id) else uri,
+                    name = cursor.getString(cursor.getColumnIndex(MediaStore.Files.FileColumns.DISPLAY_NAME))
+                        ?: filePath?.let { FilePickerFileUtils.getFileName(it) },
+                    path = filePath,
+                    size = cursor.getLong(cursor.getColumnIndex(MediaStore.Files.FileColumns.SIZE)),
+                    mimeType = mimeType,
+                    width = cursor.getInt(cursor.getColumnIndex(MediaStore.Files.FileColumns.WIDTH)),
+                    height = cursor.getInt(cursor.getColumnIndex(MediaStore.Files.FileColumns.HEIGHT)),
+                    duration = cursor.getLong(cursor.getColumnIndex(MediaStore.Files.FileColumns.DURATION)),
+                    orientation = if (orientationIndex >= 0) cursor.getInt(orientationIndex) else 0,
+                    addTime = max(
+                        0,
+                        cursor.getLong(cursor.getColumnIndex(MediaStore.Files.FileColumns.DATE_ADDED)) * 1000
+                    ),
+                    dateModified = max(
+                        0,
+                        cursor.getLong(cursor.getColumnIndex(MediaStore.Files.FileColumns.DATE_MODIFIED)) * 1000
+                    ),
+                )
+            }
+        } catch (e: Exception) {
+            FilePickerLog.e("相册获取, queryEntityByUri 失败: ${e.message}")
+            null
+        }
+    }
+
+    /**
+     * 由 mimeType + id 拼出与查询结果完全一致的 content uri。
+     * 三处用到（两次 [queryAlbums] + [queryEntityByUri]），集中在这里，避免手抄漂移。
+     */
+    private fun buildContentUri(mimeType: String?, id: Long): Uri {
+        return ContentUris.withAppendedId(
+            when {
+                mimeType?.startsWith("video/", true) == true -> MediaStore.Video.Media.EXTERNAL_CONTENT_URI
+                mimeType?.startsWith("image/", true) == true -> MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+                mimeType?.startsWith("audio/", true) == true -> MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
+                else -> MediaStore.Files.getContentUri(VOLUME_NAME)
+            },
+            id
+        )
+    }
+
+    /**
      * 仅仅有GIF类型，没有IMAGE类型
      */
     private fun isOnlyGifNotImage(queryTypes: MutableSet<QueryType>): Boolean {

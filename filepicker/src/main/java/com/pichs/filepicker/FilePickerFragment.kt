@@ -1,15 +1,20 @@
 package com.pichs.filepicker
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity.RESULT_CANCELED
 import android.app.Activity.RESULT_OK
+import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Color
+import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.OptIn
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
@@ -29,15 +34,19 @@ import com.drake.brv.utils.linear
 import com.drake.brv.utils.models
 import com.drake.brv.utils.setup
 import com.google.android.material.tabs.TabLayout
+import com.pichs.filepicker.camera.CameraEntryModel
+import com.pichs.filepicker.camera.FilePickerCaptureHelper
 import com.pichs.filepicker.databinding.FilePickerItemRvAlbumBinding
 import com.pichs.filepicker.databinding.FilePickerItemRvAlbumSelectedBinding
 import com.pichs.filepicker.databinding.FilePickerItemRvAudioAlbumBinding
+import com.pichs.filepicker.databinding.FilePickerItemRvCameraBinding
 import com.pichs.filepicker.databinding.FragmentFilepickerHomeBinding
 import com.pichs.filepicker.dialog.FilePickerFinalPreviewDialog
 import com.pichs.filepicker.dialog.FilePickerPreviewDialog
 import com.pichs.filepicker.dialog.FolderChooseDialog
 import com.pichs.filepicker.entity.MediaEntity
 import com.pichs.filepicker.loader.MediaLoader
+import com.pichs.filepicker.query.FileQueryHelper
 import com.pichs.filepicker.utils.FilePickerClickHelper
 import com.pichs.filepicker.utils.FilePickerIconUtils
 import com.pichs.filepicker.utils.FilePickerLog
@@ -53,6 +62,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import razerdp.basepopup.BasePopupWindow
+import java.io.File
 
 class FilePickerFragment : Fragment(), View.OnClickListener {
 
@@ -67,7 +77,44 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
     // 主列表是否为网格布局（网格的最后一行 margin 刷新范围与线性不同）
     private var isGridMode = false
 
+    // 相机入口是否真的挂到了网格上：决定空列表时"暂无素材"要不要让位给相机格
+    private var isCameraEntryAttached = false
+
+    // 一次拍摄在途时的落地信息。必须能被重建认领（见 onSaveInstanceState），
+    // 否则宿主被回收后回来会对不上这次输出，那条 pending 记录就永远留在相册里了
+    private var pendingCapture: FilePickerCaptureHelper.PendingCapture? = null
+
+    /** 权限申请期间要记住用户点的是哪半边（拍照 / 录像） */
+    private var pendingCaptureIsVideo = false
+
+    /**
+     * CAMERA 权限。库自己不声明这个权限，只在**宿主声明了却没授权**时才会走到这里 ——
+     * 那种情况下 ACTION_IMAGE_CAPTURE / ACTION_VIDEO_CAPTURE 会直接抛 SecurityException。
+     *
+     * 华为 BRE-AL80 / Android 12 上实测的原话（demo 声明了 CAMERA 但未授权时）：
+     * `Permission Denial: starting Intent { act=android.media.action.VIDEO_CAPTURE ... } with revoked permission android.permission.CAMERA`
+     * 所以这条路径不是防御性编程，是必需的。
+     */
+    private val cameraPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            val ctx = context ?: return@registerForActivityResult
+            if (granted) {
+                launchSystemCamera(pendingCaptureIsVideo)
+            } else {
+                Toast.makeText(ctx, viewModel.uiConfig.cameraEntryFailedToastContent, Toast.LENGTH_SHORT).show()
+            }
+        }
+
+    private val captureLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            onCaptureResult(result.resultCode, result.data)
+        }
+
     companion object {
+        private const val STATE_CAPTURE_URI = "filepicker_capture_uri"
+        private const val STATE_CAPTURE_IS_VIDEO = "filepicker_capture_is_video"
+        private const val STATE_CAPTURE_PRE_Q_FILE = "filepicker_capture_pre_q_file"
+
         /**
          * @param bundle 传递参数
          */
@@ -85,6 +132,9 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
         super.onViewCreated(view, savedInstanceState)
 
         currentTabType = viewModel.selectType.value
+
+        // 拍摄途中宿主被回收再回来时，认领回那次未完成的输出（回执已经由 ActivityResult 框架补发）
+        restorePendingCapture(savedInstanceState)
 
         if (!isSelectTypeEqualsAll(viewModel.selectType.value) || viewModel.uiConfig.isHideSelectTab) {
             binding.selectTypeTabLayout.isVisible = false
@@ -122,6 +172,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
         } else {
             initLinearRecycler()
         }
+        refreshCameraEntry()
         if (viewModel.isCanSlideChoose()) {
             initRecyclerSlideChoose()
         }
@@ -220,39 +271,22 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
 
         binding.selectTypeTabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
             override fun onTabSelected(tab: TabLayout.Tab?) {
-                when (tab?.tag) {
-                    "all" -> {
-                        if (currentTabType == viewModel.selectType.value) {
-                            return
-                        }
-                        currentTabType = viewModel.selectType.value
-                        resetListDataWithSelectData()
-                    }
-
-                    "video" -> {
-                        if (currentTabType == FilePickerSelectType.VIDEO) {
-                            return
-                        }
-                        currentTabType = FilePickerSelectType.VIDEO
-                        resetListDataWithSelectData()
-                    }
-
-                    "image" -> {
-                        if (currentTabType == FilePickerSelectType.IMAGE) {
-                            return
-                        }
-                        currentTabType = FilePickerSelectType.IMAGE
-                        resetListDataWithSelectData()
-                    }
-
-                    "gif" -> {
-                        if (currentTabType == FilePickerSelectType.GIF) {
-                            return
-                        }
-                        currentTabType = FilePickerSelectType.GIF
-                        resetListDataWithSelectData()
-                    }
+                // 四个分支原本是一模一样的四段拷贝，这里收敛成"先算目标类型"，
+                // 顺便给相机入口留出跟着 tab 走的挂点
+                val targetType = when (tab?.tag) {
+                    "all" -> viewModel.selectType.value
+                    "video" -> FilePickerSelectType.VIDEO
+                    "image" -> FilePickerSelectType.IMAGE
+                    "gif" -> FilePickerSelectType.GIF
+                    else -> return
                 }
+                if (currentTabType == targetType) {
+                    return
+                }
+                currentTabType = targetType
+                // 相机入口跟着 tab 走：在"图片"页不该给录像入口，GIF 页干脆不给入口
+                refreshCameraEntry()
+                resetListDataWithSelectData()
             }
 
             override fun onTabUnselected(tab: TabLayout.Tab?) {
@@ -325,7 +359,8 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                     }
                     // 这里处理数据
                     binding.recyclerView.models = list
-                    binding.llEmpty.isVisible = list.isEmpty()
+                    // llEmpty 在布局里盖在 recyclerView 之上，挂着相机入口时不能让它遮住相机格
+                    binding.llEmpty.isVisible = list.isEmpty() && !isCameraEntryAttached
                     updateBottomMenuSelectNumberUI()
                 }
             }
@@ -638,6 +673,8 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
 
         binding.recyclerView.grid(4).setup {
             addType<MediaEntity>(R.layout.file_picker_item_rv_album)
+            // 相机入口走 BRV 的 header 通道，刻意不进 models（原因见 CameraEntryModel 的注释）
+            addType<CameraEntryModel>(R.layout.file_picker_item_rv_camera)
 
             itemDifferCallback = BrvItemDifferCallback()
 
@@ -646,6 +683,49 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
             }
 
             onBind {
+                // BRV 的 onBind 是全局唯一的一个（BindingAdapter.onBind，不按 type 分发），
+                // 多类型必须在这里先分流，否则相机项走到下面的 getModel<MediaEntity>() 直接 CCE
+                val cameraModel = _data as? CameraEntryModel
+                if (cameraModel != null) {
+                    val cameraBinding = getBinding<FilePickerItemRvCameraBinding>()
+                    val config = viewModel.uiConfig
+                    cameraBinding.ivCameraPhoto.setImageResource(
+                        config.cameraEntryIconResId.takeIf { it != 0 }
+                            ?: R.drawable.filepicker_ic_camera_entry
+                    )
+                    cameraBinding.ivCameraVideo.setImageResource(
+                        config.cameraEntryVideoIconResId.takeIf { it != 0 }
+                            ?: R.drawable.filepicker_ic_video_entry
+                    )
+                    cameraBinding.tvCameraPhoto.text = config.cameraEntryPhotoText
+                    cameraBinding.tvCameraVideo.text = config.cameraEntryVideoText
+
+                    // 只允许一种模式时把另一半和分隔线收掉：LinearLayout 会跳过 GONE 的子 view，
+                    // 剩下那一半（weight=1）自然撑满整格，图标也顺势放大
+                    val isSplit = cameraModel.allowPhoto && cameraModel.allowVideo
+                    cameraBinding.llHalfPhoto.isVisible = cameraModel.allowPhoto
+                    cameraBinding.llHalfVideo.isVisible = cameraModel.allowVideo
+                    cameraBinding.vCameraDivider.isVisible = isSplit
+
+                    // 图标尺寸跟着"劈不劈"变：劈开时半边只有屏宽/8 宽（360dp 机器上约 44dp），
+                    // 用整格的尺寸会把图标和下面那行文字一起挤出去；单模式时整格空着，
+                    // 就放大到 44dp 让它更有存在感（矢量图放大会自动按比例重绘，不会糊）
+                    val iconSize = XDisplayHelper.dp2px(requireContext(), if (isSplit) 22f else 30f)
+                    cameraBinding.ivCameraPhoto.updateLayoutParams {
+                        width = iconSize
+                        height = iconSize
+                    }
+                    cameraBinding.ivCameraVideo.updateLayoutParams {
+                        width = iconSize
+                        height = iconSize
+                    }
+
+                    // 点击挂在整半边（图标 + 文字）上，热区更大
+                    cameraBinding.llHalfPhoto.setOnClickListener { startCapture(isVideo = false) }
+                    cameraBinding.llHalfVideo.setOnClickListener { startCapture(isVideo = true) }
+                    return@onBind
+                }
+
                 val item = getModel<MediaEntity>()
 
                 val itemBinding = getBinding<FilePickerItemRvAlbumBinding>()
@@ -687,8 +767,14 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                     itemBinding.root.isSelected = false
                 }
 
-                // 判断是否是最后一行
-                var lastRowStart = itemCount - (itemCount % 4).let { if (it == 0) 4 else it }
+                // 判断是否是最后一行。
+                // 行首必须在 **adapter 坐标**里算：相机入口是网格里的普通一格（占 adapter position 0），
+                // 它后面的媒体格整体右移一格，所以"按 4 取模"只有在 adapter 下标上才对应真实视觉行。
+                // 算出行首之后，再换算回 models 下标，才能和 modelPosition 比大小。
+                // （反过来先用 modelCount 取模会错：header + 8 张图会算出 m4 那行是"最后一行"，
+                //   网格中间凭空多出一道 80dp 的空隙，而真正最后一行的 m7 反而没有。）
+                val adapterLastRowStart = itemCount - (itemCount % 4).let { if (it == 0) 4 else it }
+                val lastRowStart = adapterLastRowStart - adapter.headerCount
 
                 FilePickerLog.d("FilePickerFragment7777", "modelPosition:$modelPosition, lastRowStart:$lastRowStart, itemCount:$itemCount")
 
@@ -712,7 +798,9 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                         viewModel.takeSelectionSnapshot()
                         viewModel.removeSelectedData(item)
                         itemBinding.root.isSelected = false
-                        notifyItemChanged(modelPosition)
+                        // notifyItemChanged 收的是 adapter position，而 modelPosition 是 models 下标，
+                        // 相机入口作为 header 占了 position 0，所以要补 headerCount（没挂 header 时是 0）
+                        notifyItemChanged(modelPosition + adapter.headerCount)
                         updateBottomMenuSelectNumberUI()
                         // 更新角标（只刷新角标变化的格子）
                         updateSelectDataUI(
@@ -726,9 +814,13 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                         }
                         viewModel.addSelectedData(item)
                         itemBinding.root.isSelected = true
-                        notifyItemChanged(modelPosition)
+                        notifyItemChanged(modelPosition + adapter.headerCount)
                         updateBottomMenuSelectNumberUI()
-                        notifyItemRangeChanged(lastRowStart, itemCount - lastRowStart) // 刷新最后一行
+                        // 刷新最后一行（adapterLastRowStart 本来就是 adapter 坐标，不用再换算）
+                        notifyItemRangeChanged(
+                            adapterLastRowStart,
+                            itemCount - adapterLastRowStart
+                        )
 //                        updateSelectDataUI()
                     }
                 }
@@ -823,7 +915,10 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
 //                if (isOverMaxSelectNumber(viewModel.getSelectedDataList().size + viewModel.tempSelectData.size)) {
 //                    return@FilePickerPreviewDialog
 //                }
-                binding.recyclerView.bindingAdapter.notifyItemChanged(position)
+                // position 是弹窗按 currentFolderDataList 算出来的下标（即 models 下标），
+                // 换到 adapter position 要补上相机 entry 占的 header
+                val adapter = binding.recyclerView.bindingAdapter
+                adapter.notifyItemChanged(position + adapter.headerCount)
             } else {
                 // 更新角标（变更发生在弹窗内部，这里兜底刷新所有带角标的格子 + 被取消的这一格）
                 updateSelectDataUI(
@@ -939,41 +1034,227 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
     private fun updateSelectDataUI(affectedPaths: Set<String>? = null, marginChanged: Boolean = false) {
         binding.recyclerView.post {
             val adapter = binding.recyclerView.bindingAdapter
+            // models 下标 → adapter position 差一个相机 header（没挂 header 时是 0）
+            val headerCount = adapter.headerCount
             val entityList = binding.recyclerView.models as? List<MediaEntity>
             if (entityList == null) {
-                // 拿不到当前列表时，保持原有全量刷新行为
-                adapter.notifyItemRangeChanged(0, viewModel.currentFolderDataList.value.size)
+                // 拿不到当前列表时，保持原有全量刷新行为（范围放到 adapter 全长，把 header 也带上）
+                adapter.notifyItemRangeChanged(0, adapter.itemCount)
                 return@post
             }
             if (entityList.isEmpty()) {
                 return@post
             }
+            // 全部长度都用 adapter 坐标（含相机 header），行首才对应真实视觉行，
+            // 否则会漏刷/多刷一行 —— 原因与网格 onBind 里 lastRowStart 的注释同源
+            val total = adapter.itemCount
             val targets = affectedPaths ?: viewModel.getBadgedPathSet()
             // 最后一行（网格）/最后一项（线性）的 bottomMargin 依赖 已选数量 > 0，数量跨过 0 时需要同步
-            var marginStart = entityList.size
+            var marginStart = total
             if (marginChanged) {
                 marginStart = if (isGridMode) {
-                    val remainder = entityList.size % 4
-                    entityList.size - if (remainder == 0) 4 else remainder
+                    val remainder = total % 4
+                    total - if (remainder == 0) 4 else remainder
                 } else {
-                    entityList.size - 1
+                    total - 1
                 }
             }
-            if (targets.isEmpty() && marginStart >= entityList.size) {
+            if (targets.isEmpty() && marginStart >= total) {
                 return@post
             }
             if (targets.isNotEmpty()) {
                 for (position in entityList.indices) {
                     val path = entityList[position].path
                     if (path != null && path in targets) {
-                        adapter.notifyItemChanged(position)
+                        adapter.notifyItemChanged(position + headerCount)
                     }
                 }
             }
-            if (marginStart < entityList.size) {
-                adapter.notifyItemRangeChanged(marginStart, entityList.size - marginStart)
+            if (marginStart < total) {
+                adapter.notifyItemRangeChanged(marginStart, total - marginStart)
             }
         }
+    }
+
+    // ------------------------------------------------------------------
+    // 拍照 / 录像入口
+    // ------------------------------------------------------------------
+
+    /**
+     * 挂载 / 更新 / 摘除网格第一格的相机入口。
+     *
+     * 走 BRV 的 header 通道：它只是 adapter 里多出来的 position 0，models 本身不受影响，
+     * 所以预览弹窗、滑动连选、选中角标那几套下标体系都不用动（详见 CameraEntryModel 的注释）。
+     *
+     * 类型取 currentTabType 而不是 selectType：有 tab 时入口要跟着 tab 走 ——
+     * 在"图片"页给出录像入口属于骗用户（录出来的东西不会出现在这个页里）；
+     * 没有 tab 时 currentTabType 恒等于 selectType，所以统一用它就对了。
+     */
+    private fun refreshCameraEntry() {
+        if (!isGridMode) {
+            return
+        }
+        val adapter = binding.recyclerView.bindingAdapter
+        val model = viewModel.cameraModesFor(currentTabType)
+        if (model == null) {
+            if (isCameraEntryAttached) {
+                adapter.removeHeaderAt(0)
+                isCameraEntryAttached = false
+            }
+            return
+        }
+        if (isCameraEntryAttached) {
+            // 同一个 viewType 只换数据；headers 的 setter 内部会 notifyDataSetChanged
+            adapter.headers = listOf(model)
+        } else {
+            // addHeader 是 BindingAdapter 的成员（BRV 没提供 RecyclerView 侧的扩展函数）
+            adapter.addHeader(model)
+            isCameraEntryAttached = true
+        }
+    }
+
+    private fun startCapture(isVideo: Boolean) {
+        // 已经有一次拍摄在途（相机 App 还没起来又点了一下）：忽略，
+        // 否则会造出第二条 pending 记录，而回执只能认领一条，另一条就永远留在相册里了
+        if (pendingCapture != null) {
+            return
+        }
+        pendingCaptureIsVideo = isVideo
+        if (needRequestCameraPermission()) {
+            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+            return
+        }
+        launchSystemCamera(isVideo)
+    }
+
+    /**
+     * 宿主 App 声明了 CAMERA 却未授权时，ACTION_IMAGE_CAPTURE 会直接抛 SecurityException
+     * （官方 javadoc 明写）。库自己不声明这个权限，所以只在宿主声明过的前提下才去申请。
+     */
+    private fun needRequestCameraPermission(): Boolean {
+        val ctx = context ?: return false
+        if (!isPermissionDeclared(ctx, Manifest.permission.CAMERA)) {
+            return false
+        }
+        return ContextCompat.checkSelfPermission(ctx, Manifest.permission.CAMERA) !=
+                PackageManager.PERMISSION_GRANTED
+    }
+
+    private fun isPermissionDeclared(context: Context, permission: String): Boolean {
+        return try {
+            val info = context.packageManager.getPackageInfo(
+                context.packageName, PackageManager.GET_PERMISSIONS
+            )
+            info.requestedPermissions?.contains(permission) == true
+        } catch (e: Exception) {
+            // 查不到就当没声明：顶多失败时弹个 toast，好过每次点相机都弹权限框
+            false
+        }
+    }
+
+    private fun launchSystemCamera(isVideo: Boolean) {
+        val ctx = context ?: return
+        val capture = if (isVideo) {
+            FilePickerCaptureHelper.createVideoOutput(ctx)
+        } else {
+            FilePickerCaptureHelper.createImageOutput(ctx)
+        }
+        if (capture == null) {
+            // 宿主在 pre-Q 没给 WRITE_EXTERNAL_STORAGE，或 MediaProvider 拒绝写入
+            Toast.makeText(ctx, viewModel.uiConfig.cameraEntryFailedToastContent, Toast.LENGTH_SHORT).show()
+            return
+        }
+        pendingCapture = capture
+        try {
+            captureLauncher.launch(FilePickerCaptureHelper.buildCaptureIntent(capture))
+        } catch (e: Exception) {
+            // 设备上没有能响应拍照/录像的相机 App（ActivityNotFoundException），
+            // 或宿主声明了 CAMERA 但被用户拒绝（SecurityException）
+            FilePickerLog.e("FilePickerFragment 启动系统相机失败: ${e.message}")
+            FilePickerCaptureHelper.discard(ctx, capture)
+            pendingCapture = null
+            Toast.makeText(ctx, viewModel.uiConfig.cameraEntryFailedToastContent, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun onCaptureResult(resultCode: Int, data: Intent?) {
+        val capture = pendingCapture ?: return
+        pendingCapture = null
+        val ctx = context ?: return
+
+        if (resultCode != RESULT_OK) {
+            // 用户在相机里退出了。这里**不能**无条件清理：部分 ROM / 三方相机会先写盘再回
+            // RESULT_CANCELED，而 Q+ 上的 delete() 会把文件本体一起删掉。
+            // discard 内部已经有"有内容就不删、只落定"的兜底，所以直接交给它。
+            FilePickerCaptureHelper.discard(ctx, capture)
+            return
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            var uri = FilePickerCaptureHelper.finalizeCapture(ctx, capture, data)
+            var entity = FileQueryHelper.queryEntityByUri(ctx, uri)
+
+            if (!isUsableCapture(ctx, uri, entity)) {
+                // 最后一道兜底：个别老 ROM / 三方相机既不理 EXTRA_OUTPUT、也不回 data.data，
+                // 只在回执里塞一张缩略图 Bitmap。这时把那张图存下来，好过用户拍完什么都没有。
+                // 拿不到 bitmap 时返回 null，下面继续按"没产出内容"处理。
+                val fallback = FilePickerCaptureHelper.saveThumbnailFallback(ctx, data)
+                if (fallback != null) {
+                    uri = fallback
+                    entity = FileQueryHelper.queryEntityByUri(ctx, fallback)
+                }
+            }
+
+            if (entity == null) {
+                // 查不到 ≠ 没拍到：列缺失、竞态、provider 拒绝都会返回 null。
+                // 所以这条路径只放弃回填，绝不删任何东西（删错了就是用户永久丢照片）。
+                FilePickerLog.e("FilePickerFragment 拍摄产物查询失败，放弃回填: uri=$uri")
+                return@launch
+            }
+            if (!isUsableCapture(ctx, uri, entity)) {
+                // 确认确实是空的：这次没有产出内容，清掉我们建的那条记录/空文件
+                FilePickerLog.e("FilePickerFragment 相机未产出有效内容: uri=$uri")
+                if (uri == capture.outputUri) {
+                    FilePickerCaptureHelper.discard(ctx, capture)
+                }
+                return@launch
+            }
+            // 插到列表最前面。只插入，不自动选中 —— 不碰 selectedData
+            viewModel.insertCapturedMedia(entity)
+        }
+    }
+
+    /**
+     * 这次拍摄到底有没有产出可用内容。
+     *
+     * 不能只看 MediaStore 的 SIZE：我们建那条记录时文件还是 0 字节（pre-Q 先建空文件再 insert，
+     * Q+ 的 IS_PENDING 期间元数据由延迟扫描回填），相机写完盘之后 SIZE 什么时候回填并不保证。
+     * 所以 SIZE 为 0 时再真读一个字节确认 —— 读到了就说明只是 SIZE 没跟上，内容是在的。
+     */
+    private fun isUsableCapture(context: Context, uri: Uri, entity: MediaEntity?): Boolean {
+        if (entity == null) return false
+        if (entity.size > 0L) return true
+        return FilePickerCaptureHelper.hasContent(context, uri)
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        // 拍摄途中宿主可能被回收（相机 App 吃内存时很常见），回来后要靠这些认领回执，
+        // 顺带保证那条 pending 记录一定会被落定或清理
+        pendingCapture?.let { capture ->
+            outState.putString(STATE_CAPTURE_URI, capture.outputUri.toString())
+            outState.putBoolean(STATE_CAPTURE_IS_VIDEO, capture.isVideo)
+            outState.putString(STATE_CAPTURE_PRE_Q_FILE, capture.preQFile?.absolutePath)
+        }
+    }
+
+    private fun restorePendingCapture(savedInstanceState: Bundle?) {
+        val uri = savedInstanceState?.getString(STATE_CAPTURE_URI) ?: return
+        pendingCapture = FilePickerCaptureHelper.PendingCapture(
+            outputUri = Uri.parse(uri),
+            isVideo = savedInstanceState.getBoolean(STATE_CAPTURE_IS_VIDEO, false),
+            preQFile = savedInstanceState.getString(STATE_CAPTURE_PRE_Q_FILE)?.let { File(it) },
+        )
     }
 
     var isFirstResume = true

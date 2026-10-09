@@ -58,6 +58,12 @@
             android:exported="true"
             android:launchMode="singleTop" />
 
+        <!-- 相机 intent 探测页（临时验证用，验证完可删） -->
+        <activity
+            android:name=".CameraProbeActivity"
+            android:exported="true"
+            android:launchMode="singleTop" />
+
         <activity
             android:name=".paging.PagingDemoActivity"
             android:exported="true"

@@ -138,6 +138,19 @@
             android:textAllCaps="false"
             android:textColor="#fff" />
 
+        <!-- 相机 intent 探测（临时验证用，验证完可连同 CameraProbeActivity 一起删） -->
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btn_camera_probe"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="16dp"
+            android:layout_marginStart="56dp"
+            android:layout_marginEnd="56dp"
+            android:backgroundTint="#1565C0"
+            android:text="相机 intent 探测（拍照/录像组合方案真机验证）"
+            android:textAllCaps="false"
+            android:textColor="#fff" />
+
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recycler_view"

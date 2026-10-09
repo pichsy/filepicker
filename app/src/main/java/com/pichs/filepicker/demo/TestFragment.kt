@@ -40,6 +40,9 @@ class TestFragment : BindingFragment<FragmentMainBinding>() {
                 binding.rbVideo.id -> "video"
                 else -> "all"
             }
+            // 是否显示拍照/录像入口。原样传递，不在 demo 里替库做类型判断 ——
+            // 这样正好能在"全部 + 勾选"的组合下验证库自己的类型判定（应当不显示）
+            val showCameraEntry = binding.cbShowCamera.isChecked
             // 权限请求
             XXPermissions.with(this)
                 .unchecked()
@@ -49,7 +52,7 @@ class TestFragment : BindingFragment<FragmentMainBinding>() {
                     Permission.READ_MEDIA_AUDIO,
                 ).request { permissions, all ->
                     if (all) {
-                        selectFile(type, maxSelectCount, maxFileSize)
+                        selectFile(type, maxSelectCount, maxFileSize, showCameraEntry)
                     } else {
                         XXPermissions.startPermissionActivity(this, permissions)
                     }
@@ -95,7 +98,7 @@ class TestFragment : BindingFragment<FragmentMainBinding>() {
         }
     }
 
-    fun selectFile(type: String, maxSelectCount: Int, maxFileSize: Int) {
+    fun selectFile(type: String, maxSelectCount: Int, maxFileSize: Int, showCameraEntry: Boolean) {
         val selectType = when (type) {
             "image" -> FilePickerSelectType.ofImage()
             "video" -> FilePickerSelectType.ofVideo()
@@ -105,6 +108,7 @@ class TestFragment : BindingFragment<FragmentMainBinding>() {
             .setMaxSelectNumber(maxSelectCount)
             .setMaxFileSize(maxFileSize.toLong())
             .setSelectType(selectType)
+            .setShowCameraEntry(showCameraEntry)
             .setOnSelectCallback { isUseOriginal, list ->
                 XLog.d("FilePicker", "Selected files: ${list.size}")
                 binding.recyclerView.models = list

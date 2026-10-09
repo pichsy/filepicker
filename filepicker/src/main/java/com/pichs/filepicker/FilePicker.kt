@@ -241,6 +241,28 @@ class FilePicker {
             return this
         }
 
+        /**
+         * 是否显示网格第一格的"拍照 / 录像"入口，点击调起系统相机。
+         *
+         * **默认 false**：不开启时整条链路完全不参与 —— 不挂 header、不注册 viewType、
+         * 不声明权限、不请求权限，对宿主等同于不存在。
+         *
+         * 开启后按"这个类型下相机能产出什么"决定画法：
+         * - 只允许一种 → 整个格子就是那一个按钮（ofImage() 整格拍照、ofVideo() 整格录像）；
+         * - 两种都允许 → 格子从中间劈开，左半边录像、右半边拍照（ofAll() / ofAllWithGif()）。
+         *
+         * 有 tab 的类型（ofAll / ofAllWithGif）里，入口**跟着当前 tab 走**：在"视频"页只给
+         * 录像、在"图片"页只给拍照、在"GIF"页不给 —— 否则录出来的东西不会出现在当前页里。
+         * GIF / 音频 / 文档类型不显示入口。
+         */
+        var mShowCameraEntry: Boolean = false
+            private set
+
+        fun setShowCameraEntry(enable: Boolean): Builder {
+            this.mShowCameraEntry = enable
+            return this
+        }
+
         var mMaxSelectNumber = 0
             private set
 
@@ -319,6 +341,7 @@ class FilePicker {
                             intent.putExtra("uiConfigData", bd.mUiConfig.toTransportBundle())
                             intent.putExtra("singleClickEnable", bd.mSingleClickEnable)
                             intent.putExtra("slideChooseEnable", bd.mSlideChooseEnable)
+                            intent.putExtra("showCameraEntry", bd.mShowCameraEntry)
                             FilePickerViewModel.userUseSelectDataList.clear()
                             FilePickerViewModel.userUseSelectDataList.addAll(bd.mSelectedList)
                             launch(intent)
@@ -357,6 +380,7 @@ class FilePicker {
                         intent.putExtra("uiConfigData", bd.mUiConfig.toTransportBundle())
                         intent.putExtra("singleClickEnable", bd.mSingleClickEnable)
                         intent.putExtra("slideChooseEnable", bd.mSlideChooseEnable)
+                        intent.putExtra("showCameraEntry", bd.mShowCameraEntry)
                         FilePickerViewModel.userUseSelectDataList.clear()
                         FilePickerViewModel.userUseSelectDataList.addAll(bd.mSelectedList)
                         launch(intent)

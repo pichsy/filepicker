@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  网格里"拍照 / 录像"入口那一格。
+
+  约束与 file_picker_item_rv_album.xml 的 iv_cover_image 完全一致（1:1、match_parent 宽、
+  layout_margin 1dp），所以它和紧邻的媒体格在网格里严格对齐。
+
+  内部由代码按 CameraEntryModel 的 allowPhoto / allowVideo 决定画法：
+  - 只允许一种 → 隐藏另一半和分隔线，剩下那一半撑满整格；
+  - 两种都允许 → 格子从中间劈开，左半边录像、右半边拍照，中间 1dp 分隔线。
+    （左右顺序由这里的子 view 先后决定：换顺序就等于换左右，代码不用动。）
+
+  每半边是"图标 + 下方文字"（文字让用户一眼知道这半边是干嘛的）。
+  图标尺寸不写死在 XML：劈开时半边只有屏宽/8 宽（360dp 机器上约 44dp），
+  用整格的尺寸会把文字和图标一起挤出去 —— 改由 onBind 按"劈不劈"在代码里设。
+-->
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/cl_root"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_gravity="top|center_horizontal"
+    android:layout_margin="1dp"
+    android:background="#121212">
+
+    <LinearLayout
+        android:id="@+id/ll_camera_entry"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:orientation="horizontal"
+        app:layout_constraintDimensionRatio="H,1:1"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <!-- 左半边：录像 -->
+        <LinearLayout
+            android:id="@+id/ll_half_video"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="#1F1F1F"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <com.pichs.xwidget.view.XImageView
+                android:id="@+id/iv_camera_video"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/filepicker_ic_video_entry" />
+
+            <com.pichs.xwidget.view.XTextView
+                android:id="@+id/tv_camera_video"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="录像"
+                android:textColor="#B3B3B3"
+                android:textSize="11sp" />
+        </LinearLayout>
+
+        <View
+            android:id="@+id/v_camera_divider"
+            android:layout_width="1dp"
+            android:layout_height="match_parent"
+            android:background="#33FFFFFF" />
+
+        <!-- 右半边：拍照 -->
+        <LinearLayout
+            android:id="@+id/ll_half_photo"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="#1F1F1F"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <com.pichs.xwidget.view.XImageView
+                android:id="@+id/iv_camera_photo"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/filepicker_ic_camera_entry" />
+
+            <com.pichs.xwidget.view.XTextView
+                android:id="@+id/tv_camera_photo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="拍照"
+                android:textColor="#B3B3B3"
+                android:textSize="11sp" />
+        </LinearLayout>
+
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

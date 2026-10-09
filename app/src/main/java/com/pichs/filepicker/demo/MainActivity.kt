@@ -57,6 +57,11 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
             startActivity(Intent(this, DataFactoryActivity::class.java))
         }
 
+        // 相机 intent 探测（临时验证用）
+        binding.btnCameraProbe.fastClick {
+            startActivity(Intent(this, CameraProbeActivity::class.java))
+        }
+
         // 开始按钮点击事件
         binding.btnStart.fastClick {
             // 获取最大选择数量

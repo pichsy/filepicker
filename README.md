@@ -234,6 +234,61 @@ FilePicker.with(this)
 
 详见下方 [自定义后缀过滤](#自定义后缀过滤)。
 
+### 5. 拍照 / 录像入口（默认关闭）
+
+在网格第一格放一个"相机"格子，点击调起**系统相机**拍照或录像，拍完自动插到列表第一个。
+
+```kotlin
+FilePicker.with(this)
+    .setSelectType(FilePickerSelectType.ofImage())  // 或 ofVideo()
+    .setShowCameraEntry(true)
+    .start()
+```
+
+**默认 `false`**：不开启时这条链路完全不参与 —— 不占列表格子、不注册 viewType、不请求权限，\
+对宿主等同于不存在。
+
+生效条件：`setShowCameraEntry(true)`，且当前类型下相机**能产出点东西**（图片或视频）。
+GIF / 音频 / 文档不显示；有 tab 的类型里入口**跟着当前 tab 走**。
+
+格子的画法按"能产出几种"决定：
+
+| 当前生效类型 | 格子 |
+| --- | --- |
+| 只有图片（`ofImage()`，或 `ofAll()` 的「图片」页） | 整格 = 拍照 |
+| 只有视频（`ofVideo()`，或 `ofAll()` 的「视频」页） | 整格 = 录像 |
+| 图片 + 视频（`ofAll()` / `ofAllWithGif()` 的「全部」页） | **从中间劈开**：左半边录像、右半边拍照 |
+| 只有 GIF（「GIF」页） | 不显示入口 |
+
+行为说明：
+
+| 项          | 说明                                                                 |
+| ---------- | ------------------------------------------------------------------ |
+| 位置         | 网格左上角第一格，随列表滚动，尺寸与相邻格子一致                                            |
+| 点击         | 调起系统相机（拍照 `ACTION_IMAGE_CAPTURE` / 录像 `ACTION_VIDEO_CAPTURE`）         |
+| 拍完         | 自动插到列表**第一个**位置；**只插入，不会自动选中**                                     |
+| 产物落地       | 写进系统相册（`DCIM/Camera`），和系统相机拍的照片放在一起                                  |
+| 取消拍摄       | 会清理掉本次产生的空记录/空文件，不会在相册里留下打不开的空条目                                   |
+| 图标         | 默认用库内图标，可用 `cameraEntryIconResId`（拍照）/ `cameraEntryVideoIconResId`（录像）替换 |
+
+**权限与 manifest**：
+
+* 库**不声明也不占用** CAMERA 权限 —— 拍摄由相机 App 自己完成，调用方不需要该权限。\
+  但如果**宿主 App 自己声明了** `android.permission.CAMERA` 却还没授权，`ACTION_IMAGE_CAPTURE` /\
+  `ACTION_VIDEO_CAPTURE` 会直接抛 `SecurityException`（系统规定）。这种情况下库会**先申请权限**，\
+  授权后自动继续拍摄。真机实测原话（华为 BRE-AL80 / Android 12，宿主声明了但未授权）：\
+  `Permission Denial: starting Intent { act=android.media.action.VIDEO_CAPTURE ... } with revoked permission android.permission.CAMERA`
+* 库**不往宿主 manifest 里加任何东西**（没有 `<provider>`、没有 `<queries>`）。
+* 产物写入系统相册：**Android 10+ 不需要任何存储权限**；Android 7.0–9 需要 `WRITE_EXTERNAL_STORAGE`\
+  （与本库查询相册本身的前提一致）。
+
+> **为什么不用 `resolveActivity()` 判断有没有相机 App**（官方文档推荐这么写）：\
+> 宿主 targetSdk ≥ 30 时，没声明 `<queries>` 的应用会被包可见性过滤，`resolveActivity()` /
+> `queryIntentActivities()` 对这几个相机 action **一律返回 null / 0**，但 `startActivity` 依然能成功。
+> 同一台华为设备上实测：四个相机 action 的 `resolveActivity` 全是 `null`，而实际能起
+> `com.huawei.camera/com.android.camera.VideoCamera`。用 `resolveActivity() != null` 当守卫
+> 会让相机入口**永远点不动**。本库因此改成 `startActivity` 包 try/catch。
+
 ***
 
 ## API 文档
@@ -296,6 +351,9 @@ FilePicker.with(this)
 | `ofPpt()`           | 只选择PPT和PPTX       |
 | `ofExcel()`         | 只选择XLS和XLSX       |
 | `ofTxt()`           | 只选择TXT            |
+| `ofMarkdown()`      | 只选择 Markdown（`.md` / `.markdown`） |
+| `ofXmind()`         | 只选择 XMind 思维导图（`.xmind`） |
+| `ofFreemind()`      | 只选择 FreeMind 思维导图（`.mm`） |
 | `ofApk()`           | 只选择APK            |
 | `ofZipAll()`        | 选择所有压缩包类型         |
 | `ofZip()`           | 只选择ZIP            |
@@ -312,6 +370,7 @@ FilePicker.with(this)
 | ---------- | ----------------------------------------------- | ------------------ |
 | 选图片/视频     | `ofImage()` / `ofVideo()` / `ofAll()`           | 相册网格模式、大图预览、原图选项齐全 |
 | 选音频/文档/APK | `ofAudio()` / `ofDocument()` / `ofApk()`        | 专属查询条件与图标          |
+| 选 Markdown/思维导图 | `ofMarkdown()` / `ofXmind()` / `ofFreemind()` | 按后缀查询，专属图标（见下）    |
 | 选压缩包       | `ofZipAll()` / `ofZip()` / `ofRar()` / `of7Z()` | mime + 后缀双轨查询，图标专属 |
 | 选其他任意后缀    | `ofExtensions("xz", "bak", ...)`                | 无对应类型时的通用方案        |
 
@@ -323,6 +382,32 @@ FilePicker.with(this)
 
 * 查询按文件名后缀匹配，**会包含隐藏目录（`.`** **开头路径）下的文件**——若需排除，\
   设置 `setMaxFileSize()`（走 `filePathNotContains("/.")` 过滤）或自行过滤结果
+
+### Markdown / 思维导图（按后缀识别）
+
+```kotlin
+FilePicker.with(this)
+    .setSelectType(FilePickerSelectType.ofMarkdown())   // .md / .markdown
+    // .setSelectType(FilePickerSelectType.ofXmind())    // .xmind
+    // .setSelectType(FilePickerSelectType.ofFreemind()) // .mm
+    .start()
+```
+
+这三个类型**只按文件名后缀查询与识别，不走 mime 轨**，因为 MediaStore 给不出可靠的 mime：
+
+| 后缀        | MediaStore 常见 mime                       | 后果（若按 mime 判）        |
+| --------- | ---------------------------------------- | ------------------- |
+| `.xmind`  | `application/zip`（xmind 本质是 zip 容器）      | 查询会捞出所有 zip；图标显示成 zip |
+| `.md`     | `text/plain` 或 `application/octet-stream` | 图标显示成 txt           |
+| `.mm`     | `application/octet-stream`               | 无专属图标               |
+
+因此它们**不属于压缩包**：不参与 `ZIP_ALL`、`isArchive()` 的任何推导，与`.xmind` 是 zip 容器这件事无关。\
+图标映射里这三个判断排在 `isTxt()` / `isZip()` 之前，后缀命中即显示专属图标。
+
+> 归属上它们是文档类型，但 **`ofDocument()` 的查询条件不含这三种**（`ofDocument()` 行为保持不变），\
+> 需要单独用 `ofMarkdown()` / `ofXmind()` / `ofFreemind()`。
+
+后缀表统一登记在 `FilePickerSelectType.DOC_EXTS`，新增别名（如 `mdown` / `mkd`）只需加一行，查询与图标自动跟上。
 
 ### 自定义后缀过滤
 
@@ -373,6 +458,7 @@ FilePicker.with(this)
 | `setMinFileSize(size)`          | 设置最小文件大小（字节）                                     |
 | `setSlideChooseEnable(enable)`  | 是否启用滑动选择，默认 `true`                               |
 | `setSingleClickEnable(enable)`  | 是否启用单选立即返回，默认 `false`。仅在 `maxSelectNumber` 为1时生效 |
+| `setShowCameraEntry(enable)`    | 是否显示网格第一格的拍照/录像入口，默认 `false`。仅对单一的图片或视频类型生效，详见下文 |
 | `setSelectedList(list)`         | 设置已选中的 `MediaEntity` 列表                          |
 | `setSelectedPathList(list)`     | 设置已选中的文件路径列表                                     |
 | `setUiConfig(config)`           | 设置自定义UI配置                                        |
@@ -410,6 +496,8 @@ val uiConfig = FilePickerUIConfig().apply {
 | `selectedListDeleteIconBackgroundColor`  | `Int`                     | 已选列表项删除按钮的背景色     | `Color.TRANSPARENT` |
 | `atLeastSelectOneToastContent`           | `String`                  | 未选择任何文件时的提示       | `"至少选择一个"`          |
 | `selectMaxNumberOverToastContent`        | `String`                  | 超出最大选择数量时的提示      | `"已达到最大选择数量"`       |
+| `cameraEntryIconResId`                   | `Int`                     | 拍照/录像入口的图标（0 = 库内默认） | `0`                 |
+| `cameraEntryFailedToastContent`          | `String`                  | 相机入口启动失败时的提示      | `"无法启动相机"`          |
 | `folderNickNameMap`                      | `HashMap<String, String>` | 文件夹名称映射，用于自定义显示名称 | `emptyHashMap()`    |
 
 ***
@@ -445,6 +533,18 @@ val uiConfig = FilePickerUIConfig().apply {
 ## 升级日志
 
 ### 7.0.0
+
+* **新增拍照 / 录像入口（默认关闭）**：`setShowCameraEntry(true)` 会在网格第一格放一个相机格子，\
+  点击调起系统相机，拍完自动插到列表第一个（只插入、不自动选中）。仅对**单一的图片或视频类型**\
+  （`ofImage()` / `ofVideo()`）生效。\
+  默认关闭，不开启时对宿主零影响；库不声明 CAMERA 权限、不给宿主 manifest 加任何声明\
+  （输出走 MediaStore，Android 10+ 无需存储权限）。详见「拍照 / 录像入口」一节。
+
+* **新增文档类型入口**：`ofMarkdown()`（`.md` / `.markdown`）、`ofXmind()`（`.xmind`）、`ofFreemind()`（`.mm`），\
+  各有专属图标（`filepicker_ic_file_markdown` / `_xmind` / `_freemind`）。三者**只按后缀查询与识别**\
+  （`.xmind` 的 mime 是 `application/zip`、`.md` 可能是 `text/plain`，mime 轨不可靠），\
+  归在文档类型下，**不属于压缩包**：不参与 `ZIP_ALL` / `isArchive()` 推导。\
+  后缀表见 `FilePickerSelectType.DOC_EXTS`。`ofDocument()` 的查询条件不含这三种，行为不变。
 
 * **类型入口 API 收敛到** **`FilePickerSelectType`**：`ofAll()` / `ofImage()` / `ofVideo()` / `ofZipAll()` 等\
   全部类型方法现在挂在 `FilePickerSelectType` 上（语义更贴合）。`FilePicker.ofXxx()` 系列标注\

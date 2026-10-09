@@ -55,6 +55,8 @@ class FilePickerActivity : AppCompatActivity() {
         var selectType = intent.getStringExtra("selectType") ?: FilePickerSelectType.IMAGE_VIDEO
         var singleClickEnable = intent.getBooleanExtra("singleClickEnable", false)
         var slideChooseEnable = intent.getBooleanExtra("slideChooseEnable", true)
+        // 默认 false：不开启时不会挂相机 header，也不会碰相机权限
+        val showCameraEntry = intent.getBooleanExtra("showCameraEntry", false)
 
         // uiConfigData 是拍平的纯基本类型 Bundle（避免自定义 Parcelable 过 system_server
         // 反序列化报 ClassNotFoundException）；旧 key 保留兼容直接以 Parcelable extra
@@ -101,6 +103,7 @@ class FilePickerActivity : AppCompatActivity() {
         viewModel.maxSelectNumber.value = maxSelectNumber
         viewModel.singleClickEnable.value = singleClickEnable
         viewModel.slideChooseEnable.value = slideChooseEnable
+        viewModel.showCameraEntry.value = showCameraEntry
 
         // 如果有传入已选数据，则添加到已选列表中
 //        if (FilePickerViewModel.userUseSelectDataList.value.isNotEmpty()) {

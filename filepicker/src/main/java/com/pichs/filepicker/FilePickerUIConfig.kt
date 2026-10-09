@@ -95,6 +95,34 @@ public data class FilePickerUIConfig(
      */
     var selectMaxNumberOverToastContent: String = "已达到最大选择数量",
 
+    /**
+     * 网格第一格"拍照 / 录像"入口的图标。0 表示使用库内默认图标。
+     * 注意：**是否显示**这个入口由 [FilePicker.Builder.setShowCameraEntry] 控制，不在这里；
+     * 这里只管它长什么样。
+     */
+    var cameraEntryIconResId: Int = 0,
+
+    /**
+     * 相机入口里"录像"半边的图标。0 表示使用库内默认图标。
+     * 仅当类型同时允许拍照和录像、格子被从中间劈开时才会用到。
+     */
+    var cameraEntryVideoIconResId: Int = 0,
+
+    /**
+     * 相机入口启动失败时的提示（宿主设备没有相机 App、pre-Q 缺写外部存储权限、相机拒绝写入）
+     */
+    var cameraEntryFailedToastContent: String = "无法启动相机",
+
+    /**
+     * 相机入口里"拍照"那半边的文字（图标下方的标签）
+     */
+    var cameraEntryPhotoText: String = "拍照",
+
+    /**
+     * 相机入口里"录像"那半边的文字（图标下方的标签）
+     */
+    var cameraEntryVideoText: String = "录像",
+
 
     //=====================文件夹别名，如果要翻译文件夹则可以使用这个。====================
 
@@ -132,6 +160,11 @@ public data class FilePickerUIConfig(
         putInt("selectedListDeleteIconBackgroundColor", selectedListDeleteIconBackgroundColor)
         putString("atLeastSelectOneToastContent", atLeastSelectOneToastContent)
         putString("selectMaxNumberOverToastContent", selectMaxNumberOverToastContent)
+        putInt("cameraEntryIconResId", cameraEntryIconResId)
+        putInt("cameraEntryVideoIconResId", cameraEntryVideoIconResId)
+        putString("cameraEntryFailedToastContent", cameraEntryFailedToastContent)
+        putString("cameraEntryPhotoText", cameraEntryPhotoText)
+        putString("cameraEntryVideoText", cameraEntryVideoText)
         putBundle("folderNickNameMap", Bundle().apply {
             folderNickNameMap.forEach { (key, value) -> putString(key, value) }
         })
@@ -169,6 +202,11 @@ public data class FilePickerUIConfig(
                 selectedListDeleteIconBackgroundColor = bundle.getInt("selectedListDeleteIconBackgroundColor", Color.TRANSPARENT),
                 atLeastSelectOneToastContent = bundle.getString("atLeastSelectOneToastContent", "至少选择一个"),
                 selectMaxNumberOverToastContent = bundle.getString("selectMaxNumberOverToastContent", "已达到最大选择数量"),
+                cameraEntryIconResId = bundle.getInt("cameraEntryIconResId", 0),
+                cameraEntryVideoIconResId = bundle.getInt("cameraEntryVideoIconResId", 0),
+                cameraEntryFailedToastContent = bundle.getString("cameraEntryFailedToastContent", "无法启动相机"),
+                cameraEntryPhotoText = bundle.getString("cameraEntryPhotoText", "拍照"),
+                cameraEntryVideoText = bundle.getString("cameraEntryVideoText", "录像"),
                 folderNickNameMap = folderNickNameMap,
             )
         }

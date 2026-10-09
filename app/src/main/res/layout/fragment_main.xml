@@ -99,6 +99,27 @@
         </RadioGroup>
     </LinearLayout>
 
+    <!-- 是否显示相机入口（拍照/录像）。
+         勾选后原样传给 FilePicker.setShowCameraEntry()，是否真的显示由库内部判定：
+         只有单一的图片或视频类型才会出现，选"全部"时勾了也不显示。 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="16dp"
+        android:paddingTop="4dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="4dp">
+
+        <androidx.appcompat.widget.AppCompatCheckBox
+            android:id="@+id/cb_show_camera"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="显示相机入口（图片/视频类型生效；两者都有时格子劈成左右两半）"
+            android:textColor="#fff" />
+    </LinearLayout>
+
     <!-- 最大文件大小输入框 -->
     <LinearLayout
         android:layout_width="match_parent"

@@ -5,6 +5,7 @@ import android.util.AttributeSet
 import android.view.MotionEvent
 import androidx.core.view.isNotEmpty
 import androidx.recyclerview.widget.RecyclerView
+import com.drake.brv.BindingAdapter
 
 class FilePickerRecyclerView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
@@ -102,33 +103,40 @@ class FilePickerRecyclerView @JvmOverloads constructor(
 
 
     private fun handleSelection(e: MotionEvent) {
-        val childView = findChildViewUnder(e.x, e.y)
-        childView?.let {
-            val position = getChildAdapterPosition(it)
-            if (position != NO_POSITION && position != lastTouchPosition) {
-                lastTouchPosition = position
+        val childView = findChildViewUnder(e.x, e.y) ?: return
+        val adapterPosition = getChildAdapterPosition(childView)
+        if (adapterPosition == NO_POSITION) return
 
-                if (startPosition == NO_POSITION) {
-                    startPosition = position
-                    targetSelectionState = !it.isSelected  // 首次状态决定本次滑动的统一状态
-                }
+        // 相机入口是 BRV 的 header（adapter position 0），不参与滑动连选：
+        // 一是它本来就不能被选中，二是上层拿到 startPosition/currentPosition 后是当成
+        // models 下标去 subList 的，直接递 adapter position 会整体错位一格 —— 也就是串格。
+        // 摸到 header 时什么都不做（不置 startPosition），滑到第一个媒体格时再正常起选。
+        val headerCount = (adapter as? BindingAdapter)?.headerCount ?: 0
+        if (adapterPosition < headerCount) return
+        val position = adapterPosition - headerCount
+        if (position != lastTouchPosition) {
+            lastTouchPosition = position
 
-                // 限制选中数量
-                if (targetSelectionState && maxSelectNumber > 0) {
-                    val selectedCount = currentSelectedCountProvider?.invoke() ?: 0
-                    if (selectedCount >= maxSelectNumber) {
-                        isSelectionMode = false
-                        lastTouchPosition = NO_POSITION
-                        startPosition = NO_POSITION
-                        stopAutoScroll()
-                        onItemSelectionChanged?.onSelectionMaxStopped(maxSelectNumber)
-                        onItemSelectionChanged?.onTouchSelectEnd()
-                        return
-                    }
-                }
-
-                onItemSelectionChanged?.onItemSelectionChanged(startPosition, position, targetSelectionState)
+            if (startPosition == NO_POSITION) {
+                startPosition = position
+                targetSelectionState = !childView.isSelected  // 首次状态决定本次滑动的统一状态
             }
+
+            // 限制选中数量
+            if (targetSelectionState && maxSelectNumber > 0) {
+                val selectedCount = currentSelectedCountProvider?.invoke() ?: 0
+                if (selectedCount >= maxSelectNumber) {
+                    isSelectionMode = false
+                    lastTouchPosition = NO_POSITION
+                    startPosition = NO_POSITION
+                    stopAutoScroll()
+                    onItemSelectionChanged?.onSelectionMaxStopped(maxSelectNumber)
+                    onItemSelectionChanged?.onTouchSelectEnd()
+                    return
+                }
+            }
+
+            onItemSelectionChanged?.onItemSelectionChanged(startPosition, position, targetSelectionState)
         }
     }
 

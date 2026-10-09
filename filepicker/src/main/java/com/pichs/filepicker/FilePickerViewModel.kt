@@ -5,6 +5,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.common.collect.Multimaps.index
+import com.pichs.filepicker.camera.CameraEntryModel
 import com.pichs.filepicker.entity.MediaEntity
 import com.pichs.filepicker.entity.MediaFolder
 import com.pichs.filepicker.query.FileQueryHelper
@@ -59,6 +60,33 @@ class FilePickerViewModel : ViewModel() {
     val selectType = MutableStateFlow(FilePickerSelectType.IMAGE_VIDEO)
     val maxFileSize = MutableStateFlow(0L)
     val minFileSize = MutableStateFlow(0L)
+
+    /**
+     * 是否显示网格第一格的"拍照 / 录像"入口。默认 false —— 不开启时这条链路完全不参与，
+     * 不挂 header、不注册 viewType、不碰权限，等同于没写这段代码。
+     */
+    val showCameraEntry = MutableStateFlow(false)
+
+    /**
+     * 给定类型下，相机入口能提供哪些模式；返回 null 表示这个类型不该有相机入口。
+     *
+     * 调用方传的应当是**当前生效的类型**（有 tab 时是当前 tab，因为 header 要跟着 tab 走）：
+     * 在"图片"页给出录像入口属于骗用户 —— 录出来的东西不会出现在这个页里。
+     *
+     * 图片和视频的任意组合都放行（含 ofAll / ofAllWithGif）；GIF 不给（相机产不出 gif）；
+     * 音频/文档走的是线性列表（initLinearRecycler），不在这个范围内。
+     * 只看类型、不看 maxSelectNumber：多选图片时同样可以"先拍一张再挑几张"。
+     */
+    fun cameraModesFor(type: String): CameraEntryModel? {
+        if (!showCameraEntry.value) return null
+        val allowPhoto = type == FilePickerSelectType.IMAGE ||
+                type == FilePickerSelectType.IMAGE_VIDEO ||
+                type == FilePickerSelectType.IMAGE_VIDEO_GIF
+        val allowVideo = type == FilePickerSelectType.VIDEO ||
+                type == FilePickerSelectType.IMAGE_VIDEO ||
+                type == FilePickerSelectType.IMAGE_VIDEO_GIF
+        return if (allowPhoto || allowVideo) CameraEntryModel(allowPhoto, allowVideo) else null
+    }
 
     fun isCanShowBottomSelectRecyclerView(): Boolean {
         return uiConfig.isShowHomePageSelectedBottomListWidget && (selectType.value == FilePickerSelectType.IMAGE_VIDEO || selectType.value == FilePickerSelectType.IMAGE || selectType.value == FilePickerSelectType.VIDEO || selectType.value == FilePickerSelectType.IMAGE_VIDEO_GIF || selectType.value == FilePickerSelectType.GIF)
@@ -344,6 +372,62 @@ class FilePickerViewModel : ViewModel() {
         if (isAllDataLoaded.value) {
             userUseSelectDataList.clear()
         }
+    }
+
+
+    /**
+     * 把刚刚拍摄完成、且已经落进 MediaStore 的那条媒体插到列表最前面。
+     *
+     * 两处都要插，缺一不可：
+     * 1. **当前展示列表**（currentFolderDataList）→ 宿主立刻看得到，插 models 下标 0。
+     *    相机入口是 header，不属于 models，所以下标 0 就是"第一个媒体格"；
+     * 2. **全库文件夹数据**（allFolderDataList）→ 否则下一次 resetListDataWithSelectData()
+     *    （按 addTime 倒序重排）或切相册，这一条就没了。
+     *
+     * 只插入，不自动选中 —— 不碰 selectedData，角标和底部已选列表都不变。
+     */
+    fun insertCapturedMedia(entity: MediaEntity) {
+        // 口径与查询侧对齐（见 loadData 里的 sizeLessThanEqualTo）：超过上限的文件不该进列表 ——
+        // 插进来下次重扫也会被剔掉，不如一开始就不插。0 和 Long.MAX_VALUE 都是"未设置"的哨兵值。
+        val maxSize = maxFileSize.value
+        if (!(maxSize <= 0L || maxSize == Long.MAX_VALUE) && entity.size > maxSize) {
+            return
+        }
+
+        val path = entity.path
+
+        // 去重用 MediaEntity 自己的 equals（path 为主，path 无效时退回比较 uri），
+        // 与本库其它集合的判等口径一致；直接比 path 会在 path 为 null 时退化成 "null == null"，
+        // 命中列表里第一条 null-path 项从而静默不插入
+        val current = _currentFolderDataList.value.toMutableList()
+        if (current.none { it == entity }) {
+            current.add(0, entity)
+            _currentFolderDataList.value = current
+        }
+
+        // 归档到它真正所在的相册：口径与 MediaResult.addMediaEntity / 查询时的
+        // getFolderName+getFolderPath 保持一致，否则重排时它会掉进另一个相册
+        val folderPath = path?.let { FilePickerFileUtils.getFolderPath(it) }.orEmpty()
+        val allFolders = _allFolderDataList.value
+        val matched = allFolders.find { it.folderPath?.equals(folderPath, true) == true }
+        if (matched != null) {
+            if (matched.mediaEntityList.none { it == entity }) {
+                matched.mediaEntityList.add(0, entity)
+            }
+        } else if (folderPath.isNotEmpty()) {
+            val newFolder = MediaFolder(
+                name = FilePickerFileUtils.getFolderName(path.orEmpty()),
+                folderPath = folderPath,
+                mediaEntityList = mutableListOf(entity),
+            )
+            newFolder.nickName = FilePickerFileUtils.getNickName(newFolder.name ?: "", uiConfig)
+            allFolders.add(newFolder)
+        }
+        // 这里刻意**不**重新发射 allFolderDataList：它是原地修改的，同一个引用进
+        // MutableStateFlow.update 会被判等挡掉、不会发射 —— 而这也正是想要的：发射会触发
+        // FilePickerFragment 里那条 collectLatest（重新排序全库 + 重建当前列表），
+        // 对"插一张刚拍的图"来说太重了。相册选择弹窗读的是 getAllDataList()，不依赖通知。
+        _allFolderDataList.update { allFolders }
     }
 
 
