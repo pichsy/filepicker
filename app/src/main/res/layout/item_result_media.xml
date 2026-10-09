@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  选择结果里的"看得见"的一类：图片 / 视频 / GIF。
+  缩略图统一走 MediaLoader.loadThumbnail（图片与视频各走各的取图通道），
+  上面叠三个可选标记：视频播标记 + 时长、GIF 标记、选中序号角标。
+-->
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="2dp">
+
+    <com.pichs.xwidget.view.XImageView
+        android:id="@+id/iv_cover"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:background="@drawable/demo_cell_bg"
+        android:scaleType="centerCrop"
+        app:layout_constraintDimensionRatio="H,1:1"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- 视频：居中的播放三角 -->
+    <com.pichs.xwidget.view.XImageView
+        android:id="@+id/iv_play"
+        android:layout_width="28dp"
+        android:layout_height="28dp"
+        android:src="@drawable/ic_demo_play"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@+id/iv_cover"
+        app:layout_constraintEnd_toEndOf="@+id/iv_cover"
+        app:layout_constraintStart_toStartOf="@+id/iv_cover"
+        app:layout_constraintTop_toTopOf="@+id/iv_cover" />
+
+    <!-- 视频时长与 GIF 标记共用左下角（两者互斥：一个是视频、一个是 GIF，不会同时出现） -->
+    <com.pichs.xwidget.roundview.XRoundTextView
+        android:id="@+id/tv_duration"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="4dp"
+        android:layout_marginBottom="4dp"
+        android:background="#66000000"
+        android:paddingStart="5dp"
+        android:paddingTop="1dp"
+        android:paddingEnd="5dp"
+        android:paddingBottom="1dp"
+        android:textColor="#FFFFFF"
+        android:textSize="10sp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@+id/iv_cover"
+        app:layout_constraintStart_toStartOf="@+id/iv_cover"
+        app:xp_radius="3dp" />
+
+    <com.pichs.xwidget.roundview.XRoundTextView
+        android:id="@+id/tv_gif"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="4dp"
+        android:layout_marginBottom="4dp"
+        android:background="#CCE60B4D"
+        android:paddingStart="5dp"
+        android:paddingTop="1dp"
+        android:paddingEnd="5dp"
+        android:paddingBottom="1dp"
+        android:text="GIF"
+        android:textColor="#FFFFFF"
+        android:textSize="10sp"
+        android:textStyle="bold"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@+id/iv_cover"
+        app:layout_constraintStart_toStartOf="@+id/iv_cover"
+        app:xp_radius="3dp" />
+
+    <!-- 从结果中移除（右上角） -->
+    <com.pichs.xwidget.view.XImageView
+        android:id="@+id/iv_delete"
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:layout_margin="3dp"
+        android:src="@drawable/ic_demo_delete"
+        app:layout_constraintEnd_toEndOf="@+id/iv_cover"
+        app:layout_constraintTop_toTopOf="@+id/iv_cover" />
+
+    <!-- 选中序号：右下角，与选择器网格里的角标位置保持一致 -->
+    <com.pichs.xwidget.roundview.XRoundTextView
+        android:id="@+id/tv_index"
+        android:layout_width="18dp"
+        android:layout_height="18dp"
+        android:layout_marginEnd="4dp"
+        android:layout_marginBottom="4dp"
+        android:background="#E60B4D"
+        android:gravity="center"
+        android:textColor="#FFFFFF"
+        android:textSize="10sp"
+        app:layout_constraintBottom_toBottomOf="@+id/iv_cover"
+        app:layout_constraintEnd_toEndOf="@+id/iv_cover"
+        app:xp_radius="12dp" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

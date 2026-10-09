@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 结果列表里"从结果中移除"的按钮：半透明黑圆底 + 白叉 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#B3000000"
+        android:pathData="M12,12m-12,0a12,12 0 1,0 24,0a12,12 0 1,0 -24,0" />
+    <group
+        android:pivotX="12"
+        android:pivotY="12"
+        android:scaleX="0.52"
+        android:scaleY="0.52">
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M19,6.41L17.59,5 12,10.59 6.41,5 5,6.41 10.59,12 5,17.59 6.41,19 12,13.41 17.59,19 19,17.59 13.41,12z" />
+    </group>
+</vector>

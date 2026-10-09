@@ -67,6 +67,17 @@
             android:textSize="14sp" />
 
         <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/preview_fragment"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/demo_btn_secondary_bg"
+            android:text="在 Fragment 中调用（另一个接入示例）"
+            android:textAllCaps="false"
+            android:textColor="#DDDDDD"
+            android:textSize="14sp" />
+
+        <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btn_camera_probe"
             android:layout_width="match_parent"
             android:layout_height="48dp"

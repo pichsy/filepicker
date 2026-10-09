@@ -143,28 +143,35 @@
                 android:textColor="#fff"
                 android:textSize="15sp" />
 
-            <androidx.appcompat.widget.AppCompatButton
-                android:id="@+id/preview_fragment"
-                android:layout_width="match_parent"
-                android:layout_height="44dp"
-                android:layout_marginTop="10dp"
-                android:background="@drawable/demo_btn_secondary_bg"
-                android:text="在 Fragment 中调用"
-                android:textAllCaps="false"
-                android:textColor="#DDDDDD"
-                android:textSize="14sp" />
-
         </LinearLayout>
 
-        <!-- 选择结果展示 -->
+        <!--
+          选择结果：4 列纵向网格。
+          高度用 wrap_content 交给外层 ScrollView 滚 —— 它是嵌在 ScrollView 里的，
+          自己不滚（nestedScrollingEnabled=false），否则两层滚动会打架。
+        -->
+        <com.pichs.xwidget.view.XTextView
+            android:id="@+id/tv_result_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="2dp"
+            android:text="选择结果"
+            android:textColor="#9E9E9E"
+            android:textSize="13sp"
+            android:visibility="gone" />
+
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recycler_view"
             android:layout_width="match_parent"
-            android:layout_height="120dp"
-            android:layout_marginStart="12dp"
-            android:layout_marginTop="4dp"
-            android:layout_marginEnd="12dp"
-            android:layout_marginBottom="16dp" />
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:layout_marginTop="6dp"
+            android:layout_marginEnd="10dp"
+            android:layout_marginBottom="20dp"
+            android:nestedScrollingEnabled="false"
+            android:overScrollMode="never"
+            android:visibility="gone" />
 
     </LinearLayout>
 </ScrollView>

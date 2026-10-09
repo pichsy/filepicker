@@ -23,5 +23,10 @@ class SettingsActivity : BindingActivity<ActivitySettingsBinding>() {
         binding.btnCameraProbe.fastClick {
             startActivity(Intent(this, CameraProbeActivity::class.java))
         }
+
+        // 从首页挪过来的：Fragment 接入方式的示例
+        binding.previewFragment.fastClick {
+            startActivity(Intent(this, TestActivity::class.java))
+        }
     }
 }

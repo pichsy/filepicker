@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  选择结果里"看不见"的一类：音频 / 文档 / 压缩包 / apk / 其它后缀。
+  没有缩略图可放，就整格做成一块**按类型着色的色块**（颜色由代码按类型给，
+  见 MainActivity.fileCellColor），上面写后缀角标 + 文件名（最多两行、超长省略）。
+-->
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="2dp">
+
+    <FrameLayout
+        android:id="@+id/fl_file"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        app:layout_constraintDimensionRatio="H,1:1"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <com.pichs.xwidget.view.XTextView
+            android:id="@+id/tv_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:ellipsize="end"
+            android:gravity="center"
+            android:lineSpacingExtra="1dp"
+            android:maxLines="2"
+            android:paddingStart="6dp"
+            android:paddingTop="22dp"
+            android:paddingEnd="6dp"
+            android:paddingBottom="6dp"
+            android:textColor="#FFFFFF"
+            android:textSize="11sp" />
+
+        <!-- 后缀角标：让用户一眼知道是 pdf 还是 zip -->
+        <com.pichs.xwidget.view.XTextView
+            android:id="@+id/tv_ext"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="start|top"
+            android:layout_margin="4dp"
+            android:background="@drawable/demo_ext_badge_bg"
+            android:maxLength="6"
+            android:paddingStart="4dp"
+            android:paddingTop="1dp"
+            android:paddingEnd="4dp"
+            android:paddingBottom="1dp"
+            android:textColor="#EEEEEE"
+            android:textSize="9sp"
+            android:textStyle="bold" />
+
+        <!-- 从结果中移除（右上角） -->
+        <com.pichs.xwidget.view.XImageView
+            android:id="@+id/iv_delete"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_gravity="end|top"
+            android:layout_margin="3dp"
+            android:src="@drawable/ic_demo_delete" />
+
+        <!-- 选中序号：右下角，与选择器网格里的角标位置保持一致 -->
+        <com.pichs.xwidget.roundview.XRoundTextView
+            android:id="@+id/tv_index"
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:layout_gravity="end|bottom"
+            android:layout_margin="4dp"
+            android:background="#E60B4D"
+            android:gravity="center"
+            android:textColor="#FFFFFF"
+            android:textSize="10sp"
+            app:xp_radius="12dp" />
+
+    </FrameLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

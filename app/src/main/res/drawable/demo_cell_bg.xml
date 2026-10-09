@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 媒体格缩略图下垫的底色（图还没加载出来时不至于一片透明） -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="#1F1F1F" />
+    <corners android:radius="8dp" />
+</shape>
