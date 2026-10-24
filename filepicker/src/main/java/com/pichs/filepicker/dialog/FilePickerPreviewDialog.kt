@@ -412,6 +412,8 @@ class FilePickerPreviewDialog(
     private fun initViewPager2() {
         // ViewPager2 预览
         binding.viewPager2.adapter = MediaPagerAdapter(context)
+        // 预加载左右各一页：滑动开始时相邻页的大图已经在解，不会等到停在那一页才加载
+        binding.viewPager2.offscreenPageLimit = 1
 
         binding.viewPager2.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
             @SuppressLint("NotifyDataSetChanged")

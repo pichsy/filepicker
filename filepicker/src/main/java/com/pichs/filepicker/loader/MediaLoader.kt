@@ -7,6 +7,7 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.RequestBuilder
 import com.bumptech.glide.load.DecodeFormat
 import com.bumptech.glide.load.engine.DiskCacheStrategy
+import com.bumptech.glide.load.resource.bitmap.DownsampleStrategy
 import com.bumptech.glide.signature.MediaStoreSignature
 import com.pichs.filepicker.R
 import com.pichs.filepicker.entity.MediaEntity
@@ -167,10 +168,30 @@ object MediaLoader {
     /** 大图预览：读原文件，整屏尺寸会跳过 MediaStore 缩略图分支，带 signature 保证不显示旧图 */
     private fun loadOriginalImage(entity: MediaEntity, view: ImageView) {
         val uri = entity.uri ?: return
+        // 与网格缩略图同 model（File），命中它的内存/磁盘缓存，先秒出一张小图顶上，
+        // 大图解码完成后再替换，翻页不会先看到一片黑。
+        val thumbModel: Any = entity.path?.takeIf { it.isNotEmpty() }?.let(::File) ?: uri
+        // 关键：**不要按原图全尺寸解码**。一张 4000x3000 的照片是 ~48MB 的 Bitmap，
+        // 预览页每翻一页解一张，既卡又容易 OOM；按屏幕 2 倍采样后屏幕内看不出差别，
+        // 放大也还有余量，解码量和内存都降一个数量级。
+        val dm = view.resources.displayMetrics
+        val targetWidth = (dm.widthPixels * 2).coerceAtLeast(1)
+        val targetHeight = (dm.heightPixels * 2).coerceAtLeast(1)
         Glide.with(view)
             .load(uri)
+            .override(targetWidth, targetHeight)
+            .downsample(DownsampleStrategy.AT_MOST)
             .dontTransform()
             .dontAnimate()
+            .thumbnail(
+                Glide.with(view)
+                    .load(thumbModel)
+                    .override(THUMB_SIZE, THUMB_SIZE)
+                    .dontAnimate()
+                    .format(DecodeFormat.PREFER_RGB_565)
+                    .signature(signatureOf(entity))
+                    .diskCacheStrategy(DiskCacheStrategy.AUTOMATIC)
+            )
             .placeholder(R.drawable.filepicker_placeholder_image)
             .error(R.drawable.filepicker_placeholder_image)
             .signature(signatureOf(entity))
