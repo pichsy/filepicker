@@ -55,7 +55,7 @@ class FilePickerEditDialog(
         )
     }
 
-    private enum class Tool { CROP, DOODLE, TEXT, MOSAIC }
+    private enum class Tool { NONE, CROP, DOODLE, TEXT, MOSAIC }
 
     private lateinit var cropView: CropView
     private lateinit var secondaryPanel: LinearLayout
@@ -141,11 +141,12 @@ class FilePickerEditDialog(
         toolText.setOnClickListener {
             currentTool = Tool.TEXT
             cropView.setCropMode(false)
-            cropView.setTextEditEnabled(true)
             updateToolColors()
             buildSecondaryPanel()
             showTextInput()
         }
+        // 点画布上已选中的文字：进入这段文字的编辑状态
+        cropView.onTextEditRequested = { index -> showTextInput(index) }
         toolCrop.setOnClickListener { switchTool(Tool.CROP) }
         toolMosaic.setOnClickListener { switchTool(Tool.MOSAIC) }
         btnDone.setOnClickListener { export() }
@@ -154,7 +155,8 @@ class FilePickerEditDialog(
 
         progressBar.visibility = View.VISIBLE
         loadBitmapAsync()
-        switchTool(Tool.CROP)
+        // 进入编辑页默认什么都不选：没有裁剪框、没有二级面板
+        switchTool(Tool.NONE)
     }
 
     // ------------------------------------------------------------------
@@ -231,6 +233,24 @@ class FilePickerEditDialog(
         onResult(path)
     }
 
+    /** 返回键：文字输入时先收键盘（颜色条带动画落回底部），再按一次才退出输入 */
+    override fun onBackPressed(): Boolean {
+        val overlay = textInputOverlay
+        if (overlay != null) {
+            if (textKeyboardVisible) {
+                // 键盘还开着：先收键盘（颜色条会动画落回底部）
+                val imm = context.getSystemService(Context.INPUT_METHOD_SERVICE)
+                    as? android.view.inputmethod.InputMethodManager
+                imm?.hideSoftInputFromWindow(overlay.windowToken, 0)
+            } else {
+                // 键盘已收起：再按一次退出文字输入
+                cancelTextInput()
+            }
+            return true
+        }
+        return super.onBackPressed()
+    }
+
     override fun onDismiss() {
         super.onDismiss()
         FilePickerLog.d(TAG, "onDismiss")
@@ -245,9 +265,25 @@ class FilePickerEditDialog(
     private var textBgMode = false
     /** 颜色条选中的颜色（背景模式=背景色，字体模式=字色） */
     private var textStyleColor = DOODLE_COLORS.first()
+    /** 正在编辑的文字下标；-1 = 新增文字 */
+    private var editingTextIndex = -1
+    /** 文字输入时键盘是否可见（返回键先收键盘，再退出输入） */
+    private var textKeyboardVisible = false
 
-    private fun showTextInput() {
+    private fun showTextInput(editIndex: Int = -1) {
         if (textInputOverlay != null || !::contentRoot.isInitialized) return
+        editingTextIndex = editIndex
+        // 编辑已有文字：回填内容和样式，并把画布上那份临时隐藏
+        val editingLayer = cropView.textLayerOrNull(editIndex)
+        if (editingLayer != null) {
+            textBgMode = editingLayer.backgroundColor != null
+            textStyleColor = editingLayer.backgroundColor ?: editingLayer.textColor
+            cropView.setTextHidden(editIndex, true)
+        } else {
+            textBgMode = false
+            textStyleColor = DOODLE_COLORS.first()
+        }
+
         val statusBar = run {
             val res = context.resources
             val id = res.getIdentifier("status_bar_height", "dimen", "android")
@@ -266,7 +302,7 @@ class FilePickerEditDialog(
             android.view.ViewGroup.LayoutParams.MATCH_PARENT,
         ))
 
-        // ---- 输入框（支持圆角背景样式实时预览）----
+        // ---- 输入框（支持样式实时预览）----
         val editText = android.widget.EditText(context).apply {
             hint = "输入文字"
             setHintTextColor(0x80FFFFFF.toInt())
@@ -279,12 +315,15 @@ class FilePickerEditDialog(
             maxLines = 4
             setPadding(dp(12), dp(8), dp(12), dp(8))
         }
-        val editLp = android.widget.FrameLayout.LayoutParams(
+        host.addView(editText, android.widget.FrameLayout.LayoutParams(
             android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
             android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
             android.view.Gravity.CENTER,
-        )
-        host.addView(editText, editLp)
+        ))
+        if (editingLayer != null) {
+            editText.setText(editingLayer.text)
+            editText.setSelection(editingLayer.text.length)
+        }
 
         // ---- 顶部：取消 / 绿色圆角完成 ----
         val cancel = TextView(context).apply {
@@ -292,7 +331,7 @@ class FilePickerEditDialog(
             setTextColor(Color.WHITE)
             textSize = 16f
             setPadding(dp(16), dp(12), dp(16), dp(12))
-            setOnClickListener { hideTextInput() }
+            setOnClickListener { cancelTextInput() }
         }
         host.addView(cancel, android.widget.FrameLayout.LayoutParams(
             android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
@@ -324,19 +363,21 @@ class FilePickerEditDialog(
             rightMargin = dp(12)
         })
 
-        // ---- 底部颜色条：T（字体/背景切换） + 8 个颜色 ----
+        // ---- 底部颜色条：T（背景开关） + 8 个颜色 ----
         val accessory = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = android.view.Gravity.CENTER_VERTICAL
         }
+        // 默认离底部 24dp；键盘弹出时整体上移（带平滑动画）
         val accessoryLp = android.widget.FrameLayout.LayoutParams(
             android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
             dp(52),
             android.view.Gravity.BOTTOM or android.view.Gravity.CENTER_HORIZONTAL,
-        )
+        ).apply {
+            bottomMargin = dp(24)
+        }
         host.addView(accessory, accessoryLp)
 
-        // 实时刷新 EditText 的样式预览
         fun applyPreviewStyle() {
             if (textBgMode) {
                 editText.setTextColor(contrastTextColor(textStyleColor))
@@ -353,8 +394,7 @@ class FilePickerEditDialog(
         }
         fun rebuildAccessory() {
             accessory.removeAllViews()
-            // T 按钮：**默认不选中 = 无背景（字体颜色模式）**；
-            // 选中后显示圆形浅白底 = 圆角背景模式（输入的字体带背景）
+            // T 按钮：默认不选中 = 无背景；选中 = 圆形浅白底 + 背景模式
             val tHit = dp(40)
             val tCircle = dp(32)
             val tSlot = android.widget.FrameLayout(context).apply {
@@ -432,14 +472,18 @@ class FilePickerEditDialog(
         applyPreviewStyle()
         rebuildAccessory()
 
-        // 键盘弹出时把输入框和颜色条顶上去（IME insets）
-        val hostLp = accessory.layoutParams as android.widget.FrameLayout.LayoutParams
+        // 键盘(IME)高度变化：颜色条平滑升降（收起时落回底部上方 24dp）
+        var lastIme = -1
         androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(host) { _, insets ->
             val ime = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.ime()).bottom
-            if (ime > 0) {
-                // 颜色条贴着键盘顶；输入框保持屏幕正中间（默认位置，不随键盘上移）
-                hostLp.bottomMargin = ime + dp(4)
-                accessory.layoutParams = hostLp
+            textKeyboardVisible = ime > 0
+            if (ime != lastIme) {
+                lastIme = ime
+                accessory.animate()
+                    .translationY(-ime.toFloat())
+                    .setDuration(220)
+                    .setInterpolator(android.view.animation.DecelerateInterpolator())
+                    .start()
             }
             insets
         }
@@ -448,11 +492,11 @@ class FilePickerEditDialog(
         toolRow.visibility = View.GONE
         secondaryPanel.visibility = View.GONE
         cropView.setCropMode(false)
-        cropView.setTextEditEnabled(false)
+        cropView.setTextGesturesLocked(true)
 
         contentRoot.addView(host)
         textInputOverlay = host
-        FilePickerLog.d(TAG, "showTextInput: 背景模式=$textBgMode")
+        FilePickerLog.d(TAG, "showTextInput: 编辑下标=$editIndex 背景模式=$textBgMode")
 
         editText.requestFocus()
         editText.post {
@@ -470,19 +514,50 @@ class FilePickerEditDialog(
     }
 
     private fun commitTextInput(text: String) {
-        if (text.isNotBlank()) {
-            if (textBgMode) {
-                cropView.addText(text.trim(), contrastTextColor(textStyleColor), textStyleColor)
+        val content = text.trim()
+        val index = editingTextIndex
+        if (index >= 0) {
+            if (content.isEmpty()) {
+                cropView.removeText(index)
+            } else if (textBgMode) {
+                cropView.updateText(index, content, contrastTextColor(textStyleColor), textStyleColor)
             } else {
-                cropView.addText(text.trim(), textStyleColor, null)
+                cropView.updateText(index, content, textStyleColor, null)
+            }
+            cropView.setTextHidden(index, false)
+        } else if (content.isNotEmpty()) {
+            if (textBgMode) {
+                cropView.addText(content, contrastTextColor(textStyleColor), textStyleColor)
+            } else {
+                cropView.addText(content, textStyleColor, null)
             }
         }
+        editingTextIndex = -1
         hideTextInput()
+        exitTextEditingState()
+    }
+
+    private fun cancelTextInput() {
+        val index = editingTextIndex
+        if (index >= 0) cropView.setTextHidden(index, false)
+        editingTextIndex = -1
+        hideTextInput()
+        exitTextEditingState()
+    }
+
+    /** 退出文字输入后：主菜单回到"什么都没选"的状态，文字仍可拖动/点选 */
+    private fun exitTextEditingState() {
+        currentTool = Tool.NONE
+        updateToolColors()
+        buildSecondaryPanel()
+        cropView.setCropMode(false)
+        cropView.setTextGesturesLocked(false)
     }
 
     private fun hideTextInput() {
         val overlay = textInputOverlay ?: return
         textInputOverlay = null
+        textKeyboardVisible = false
         val imm = context.getSystemService(Context.INPUT_METHOD_SERVICE)
             as? android.view.inputmethod.InputMethodManager
         imm?.hideSoftInputFromWindow(overlay.windowToken, 0)
@@ -490,10 +565,6 @@ class FilePickerEditDialog(
         if (::topBar.isInitialized) topBar.visibility = View.VISIBLE
         if (::toolRow.isInitialized) toolRow.visibility = View.VISIBLE
         if (::secondaryPanel.isInitialized) secondaryPanel.visibility = View.VISIBLE
-        if (::cropView.isInitialized) {
-            cropView.setCropMode(currentTool == Tool.CROP)
-            cropView.setTextEditEnabled(currentTool == Tool.TEXT)
-        }
     }
 
     // ------------------------------------------------------------------
@@ -502,10 +573,17 @@ class FilePickerEditDialog(
 
     private fun switchTool(tool: Tool) {
         currentTool = tool
+        if (tool == Tool.NONE) {
+            cropView.setCropMode(false)
+            cropView.setTextGesturesLocked(false)
+            updateToolColors()
+            buildSecondaryPanel()
+            return
+        }
         // 只有裁剪工具显示裁剪框并允许手势，其他工具先保留画布（笔迹能力后续接入）
         cropView.setCropMode(tool == Tool.CROP)
-        // 文字工具下：单指拖文字、双指缩放文字；其他工具恢复图片手势
-        cropView.setTextEditEnabled(tool == Tool.TEXT)
+        // 文字手势保持可用（点文字可选中/拖动），输入浮层打开时才锁住
+        cropView.setTextGesturesLocked(false)
         updateToolColors()
         buildSecondaryPanel()
     }
@@ -513,6 +591,13 @@ class FilePickerEditDialog(
     private fun updateToolColors() {
         val accent = 0xFF06B10D.toInt()
         val normal = Color.WHITE
+        if (currentTool == Tool.NONE) {
+            toolDoodle.setColorFilter(normal)
+            toolText.setColorFilter(normal)
+            toolCrop.setColorFilter(normal)
+            toolMosaic.setColorFilter(normal)
+            return
+        }
         toolDoodle.setColorFilter(if (currentTool == Tool.DOODLE) accent else normal)
         toolText.setColorFilter(if (currentTool == Tool.TEXT) accent else normal)
         toolCrop.setColorFilter(if (currentTool == Tool.CROP) accent else normal)
@@ -523,6 +608,10 @@ class FilePickerEditDialog(
         if (!::secondaryPanel.isInitialized) return
         secondaryPanel.removeAllViews()
         when (currentTool) {
+            Tool.NONE -> {
+                // 主菜单什么都没选：没有二级面板
+            }
+
             Tool.CROP -> {
                 addIconButton(R.drawable.filepicker_ic_crop_rotate) { cropView.rotate90() }
                 addIconButton(R.drawable.filepicker_ic_crop_mirror) { cropView.mirror() }

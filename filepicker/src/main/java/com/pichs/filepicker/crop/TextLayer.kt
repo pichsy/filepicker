@@ -11,7 +11,7 @@ package com.pichs.filepicker.crop
  * - **字体颜色模式**：[backgroundColor] == null，颜色条选的是字色。
  */
 data class TextLayer(
-    val text: String,
+    var text: String,
     /** 文字中心在图片宽度上的比例（0~1） */
     var fx: Float,
     /** 文字中心在图片高度上的比例（0~1） */
@@ -22,6 +22,8 @@ data class TextLayer(
     var textColor: Int,
     /** 圆角背景颜色；null = 无背景（字体颜色模式） */
     var backgroundColor: Int?,
+    /** 正在被输入框编辑时临时隐藏（避免和输入框里的字重影） */
+    var hidden: Boolean = false,
 ) {
     /** 图片顺时针转 90° 后，文字锚点跟着转：bitmap (x,y) → (1-y, x) */
     fun followRotate90Cw() {
