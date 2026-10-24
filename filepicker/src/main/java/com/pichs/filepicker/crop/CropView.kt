@@ -61,6 +61,9 @@ class CropView @JvmOverloads constructor(
     private var maxScale = 4f
     private var initialized = false
 
+    /** 是否处于"裁剪工具"模式：false 时隐藏裁剪框、忽略手势（画笔/文字/马赛克用画布时切换） */
+    private var cropMode = true
+
     private var draggingHandle = CropGeometry.Handle.NONE
     private var lastTouchX = 0f
     private var lastTouchY = 0f
@@ -119,6 +122,14 @@ class CropView @JvmOverloads constructor(
     }
 
     fun currentRotation(): Int = rotation
+
+    /** 切换裁剪工具模式（编辑页里选其他工具时隐藏裁剪框） */
+    fun setCropMode(enabled: Boolean) {
+        if (cropMode == enabled) return
+        cropMode = enabled
+        draggingHandle = CropGeometry.Handle.NONE
+        invalidate()
+    }
 
     /** 裁剪框在图片中的归一化位置（0~1） */
     fun cropRatio(): CropGeometry.RectF2 =
@@ -355,6 +366,7 @@ class CropView @JvmOverloads constructor(
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
         if (!initialized) return false
+        if (!cropMode) return true
         scaleDetector.onTouchEvent(event)
 
         when (event.actionMasked) {
@@ -505,6 +517,7 @@ class CropView @JvmOverloads constructor(
         val bmp = bitmap ?: return
         if (!initialized) return
         canvas.drawBitmap(bmp, null, imageRect, null)
+        if (!cropMode) return
 
         val w = width.toFloat()
         val h = height.toFloat()

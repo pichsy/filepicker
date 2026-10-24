@@ -265,7 +265,8 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:buttonTint="#FFFFFF"
-                android:text="预览页可编辑（自由裁剪）"
+                android:checked="true"
+                android:text="预览页可编辑（画笔/文字/裁剪/马赛克）"
                 android:textColor="#DDDDDD"
                 android:textSize="14sp" />
 
