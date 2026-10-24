@@ -145,9 +145,11 @@ class CropView @JvmOverloads constructor(
         invalidate()
     }
 
-    /** 水平镜像（左右翻转），和旋转一样累计到导出变换里 */
+    /** 水平镜像：同样**以裁剪框内的内容中心为原点**原地翻转，画面不跳 */
     fun mirror() {
         val src = bitmap ?: return
+        val cropInBitmap = currentCropRectInBitmap()
+        if (cropInBitmap.isEmpty()) return
         val flipped = try {
             Bitmap.createBitmap(
                 src, 0, 0, src.width, src.height,
@@ -155,17 +157,67 @@ class CropView @JvmOverloads constructor(
             )
         } catch (e: Throwable) {
             null
+        } ?: return
+        // 水平镜像：bitmap 坐标 (x,y) → (W-x, y)
+        val w = src.width.toFloat()
+        val contentInNewBitmap = CropGeometry.RectF2(
+            w - cropInBitmap.right,
+            cropInBitmap.top,
+            w - cropInBitmap.left,
+            cropInBitmap.bottom,
+        )
+        replaceBitmap(flipped)
+        bakeMatrix.postConcat(Matrix().apply { postScale(-1f, 1f) })
+        applyInPlace(contentInNewBitmap)
+    }
+
+    /** 当前裁剪框在图片像素坐标里的位置 */
+    private fun currentCropRectInBitmap(): CropGeometry.RectF2 {
+        if (bitmap == null || scale <= 0f) return CropGeometry.RectF2.ZERO
+        val left = (frame.left - imageRect.left) / scale
+        val top = (frame.top - imageRect.top) / scale
+        val right = (frame.right - imageRect.left) / scale
+        val bottom = (frame.bottom - imageRect.top) / scale
+        val bmp = bitmap ?: return CropGeometry.RectF2.ZERO
+        return CropGeometry.RectF2(
+            left.coerceIn(0f, bmp.width.toFloat()),
+            top.coerceIn(0f, bmp.height.toFloat()),
+            right.coerceIn(0f, bmp.width.toFloat()),
+            bottom.coerceIn(0f, bmp.height.toFloat()),
+        )
+    }
+
+    /** 替换当前显示位图（保留原始位图不回收） */
+    private fun replaceBitmap(newBitmap: Bitmap) {
+        val old = bitmap
+        if (old != null && old != newBitmap && old != sourceBitmap && !old.isRecycled) {
+            old.recycle()
         }
-        if (flipped != null) {
-            if (flipped != src) {
-                if (src != sourceBitmap) src.recycle()
-                bitmap = flipped
-            }
-            bakeMatrix.postConcat(Matrix().apply { postScale(-1f, 1f) })
-            initLayout()
-            notifyFrameChanged()
-            invalidate()
-        }
+        bitmap = newBitmap
+    }
+
+    /**
+     * 变换后让"框内那块内容"重新覆盖到框里，内容中心对齐框中心。
+     * 这样旋转/镜像看起来是"框里的画面原地转了/翻了"，而不是整张图跳位置。
+     */
+    private fun applyInPlace(contentInBitmap: CropGeometry.RectF2) {
+        val bmp = bitmap ?: return
+        if (contentInBitmap.width <= 0f || contentInBitmap.height <= 0f) return
+        val newScale = maxOf(
+            frame.width() / contentInBitmap.width,
+            frame.height() / contentInBitmap.height,
+        )
+        minScale = computeMinScale()
+        maxScale = minScale * MAX_ZOOM
+        scale = newScale.coerceIn(minScale, maxScale)
+        val contentCx = (contentInBitmap.left + contentInBitmap.right) / 2f
+        val contentCy = (contentInBitmap.top + contentInBitmap.bottom) / 2f
+        centerX = frame.centerX() - (contentCx - bmp.width / 2f) * scale
+        centerY = frame.centerY() - (contentCy - bmp.height / 2f) * scale
+        updateImageRect()
+        constrain()
+        notifyFrameChanged()
+        invalidate()
     }
 
     /** 导出用的累计变换（旋转 + 镜像），交给 CropEngine 作用在解码后的原图上 */
@@ -181,26 +233,36 @@ class CropView @JvmOverloads constructor(
         sourceBitmap = null
     }
 
-    /** 顺时针旋转 90°（重新初始化） */
+    /**
+     * 顺时针旋转 90°：**以裁剪框内的内容中心为原点原地旋转**。
+     *
+     * 不是"整张图重新 fitCenter"——那样用户缩放/平移到某处后一点旋转，画面会整个跳走。
+     * 这里保持框不动：算出框内那块内容 → 旋转 → 重新覆盖到框里并让内容中心仍对齐框中心。
+     */
     fun rotate90() {
         val src = bitmap ?: return
-        rotation = (rotation + 90) % 360
-        val matrix = Matrix().apply { postRotate(90f) }
+        val cropInBitmap = currentCropRectInBitmap()
+        if (cropInBitmap.isEmpty()) return
         val rotated = try {
-            Bitmap.createBitmap(src, 0, 0, src.width, src.height, matrix, true)
+            Bitmap.createBitmap(
+                src, 0, 0, src.width, src.height,
+                Matrix().apply { postRotate(90f) }, true
+            )
         } catch (e: Throwable) {
             null
-        }
-        if (rotated != null) {
-            if (rotated != src) {
-                if (src != sourceBitmap) src.recycle()
-                bitmap = rotated
-            }
-            bakeMatrix.postConcat(Matrix().apply { postRotate(90f) })
-            initLayout()
-            notifyFrameChanged()
-            invalidate()
-        }
+        } ?: return
+        // 顺时针 90°：bitmap 坐标 (x,y) → (H-y, x)
+        val h = src.height.toFloat()
+        val contentInNewBitmap = CropGeometry.RectF2(
+            h - cropInBitmap.bottom,
+            cropInBitmap.left,
+            h - cropInBitmap.top,
+            cropInBitmap.right,
+        )
+        replaceBitmap(rotated)
+        rotation = (rotation + 90) % 360
+        bakeMatrix.postConcat(Matrix().apply { postRotate(90f) })
+        applyInPlace(contentInNewBitmap)
     }
 
     // ------------------------------------------------------------------

@@ -28,7 +28,7 @@ import com.drake.brv.utils.models
 import com.drake.brv.utils.setup
 import com.pichs.filepicker.SelectTypeUtil
 import com.pichs.filepicker.databinding.FilePickerItemRvAlbumSelectedBinding
-import com.pichs.filepicker.crop.FilePickerCropActivity
+import com.pichs.filepicker.crop.FilePickerCropDialog
 import com.pichs.filepicker.loader.MediaLoader
 import com.pichs.filepicker.utils.FilePickerClickHelper
 import com.pichs.filepicker.utils.FilePickerLog
@@ -521,23 +521,23 @@ class FilePickerPreviewDialog(
         if (!item.isImage()) return
         // 再次编辑从"编辑后的图"开始（完成即生成新图，不回退原图）
         val source = viewModel.displayEntity(item) ?: item
-        FilePickerCropActivity.start(
+        // 和预览界面一样用全屏弹窗，不跳 Activity（关闭后仍停留在预览页）
+        FilePickerCropDialog(
             context = context,
             entity = source,
             aspect = 0f,
             outputMaxSize = viewModel.cropOutputMaxSize.value,
             quality = viewModel.cropQuality.value,
-            title = "编辑",
         ) { editedPath ->
             if (editedPath.isNullOrEmpty()) {
                 FilePickerLog.d("FilePickerPreviewDialog", "编辑已取消")
-                return@start
+                return@FilePickerCropDialog
             }
             viewModel.attachEdit(item, editedPath)
             FilePickerLog.d("FilePickerPreviewDialog", "编辑完成: $editedPath")
             refreshAfterEdit(item)
             onEditApplied(item)
-        }
+        }.showPopupWindow()
     }
 
     /** 编辑完成后：只刷当前页 + 底条对应格，不动列表数据、不动选中状态 */

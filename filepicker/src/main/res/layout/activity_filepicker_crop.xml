@@ -4,6 +4,7 @@
   底部：取消 / 旋转 / 还原 …… 右侧绿色「确定」（和首页的确定按钮同款样式：#04AD0C）。
 -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/crop_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -73,19 +74,23 @@
             android:layout_height="1dp"
             android:layout_weight="1" />
 
-        <TextView
+        <!-- 和首页底部「确定」按钮完全同款：XRoundButton + 8dp 圆角 + 按压反馈 -->
+        <com.pichs.xwidget.roundview.XRoundButton
             android:id="@+id/btn_done"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:background="#04AD0C"
-            android:paddingStart="20dp"
-            android:paddingTop="8dp"
-            android:paddingEnd="20dp"
-            android:paddingBottom="8dp"
+            android:paddingStart="16dp"
+            android:paddingTop="6dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="6dp"
             android:text="确定"
-            android:textColor="#ffffff"
+            android:textColor="#fff"
             android:textSize="15sp"
-            android:textStyle="bold" />
+            app:xp_disabledBackground="#8004AD0C"
+            app:xp_disabledTextColor="#80ffffff"
+            app:xp_pressedAlpha="0.8"
+            app:xp_radius="8dp" />
     </LinearLayout>
 
 </FrameLayout>
