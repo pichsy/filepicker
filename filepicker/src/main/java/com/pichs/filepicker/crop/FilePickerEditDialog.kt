@@ -15,6 +15,7 @@ import com.pichs.filepicker.entity.MediaEntity
 import com.pichs.filepicker.utils.FilePickerLog
 import razerdp.basepopup.BasePopupWindow
 import kotlin.math.max
+import kotlin.math.pow
 
 /**
  * 预览页「编辑」的全屏弹窗（和预览界面一样是 BasePopupWindow）。
