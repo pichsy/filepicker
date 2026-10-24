@@ -115,13 +115,10 @@ class FilePickerEditDialog(
         toolRow = contentView.findViewById(R.id.tool_row)
         progressBar = contentView.findViewById(R.id.progress)
 
-        // 底部工具条：离屏幕底部只留 20dp（不要再顶上去）
+        // 底部工具条：和预览页底部栏完全一致（48dp、贴底），切换时位置不跳
         val toolRow = contentView.findViewById<View>(R.id.tool_row)
-        val bottomGap = dp(20)
-        toolRow.layoutParams = toolRow.layoutParams.apply { height = dp(64) + bottomGap }
-        toolRow.setPadding(
-            toolRow.paddingLeft, toolRow.paddingTop, toolRow.paddingRight, bottomGap
-        )
+        toolRow.layoutParams = toolRow.layoutParams.apply { height = dp(48) }
+        toolRow.setPadding(toolRow.paddingLeft, toolRow.paddingTop, toolRow.paddingRight, 0)
 
         setupCropControls(contentView)
 
