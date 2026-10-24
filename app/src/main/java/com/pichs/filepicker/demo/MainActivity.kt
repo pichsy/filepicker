@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.core.view.isVisible
+import androidx.core.widget.doAfterTextChanged
 import com.drake.brv.utils.divider
 import com.drake.brv.utils.grid
 import com.drake.brv.utils.models
@@ -278,14 +279,15 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
                 add(SelectRule.ofVideo(if (videoForce) videoCount else 0, videoCount))
             }
         }
-        // 合计上限沿用上面「最大选择数量」输入框（setMaxSelectNumber），0 = 不限
-        val totalMax = countOf(binding.etMaxSelectCount)
+        // 关键：规则表为空时新模型不启用（setExclusive 也不生效），数量限制回退到「最大选择数量」
+        val useRules = selectedRuleMode != RuleMode.NONE && rules.isNotEmpty()
         XLog.d(
             "FilePicker",
-            "规则参数：模式=$selectedRuleMode 合计上限=$totalMax " +
-                    "图片=$imageCount(强制=$imageForce) 视频=$videoCount(强制=$videoForce) → $rules"
+            "规则参数：模式=$selectedRuleMode 图片=$imageCount(强制=$imageForce) " +
+                    "视频=$videoCount(强制=$videoForce) → $rules（新模型=$useRules，" +
+                    "最大选择数量=${countOf(binding.etMaxSelectCount)}）"
         )
-        return rules to (selectedRuleMode != RuleMode.NONE)
+        return rules to useRules
     }
 
     /** 类型单选列表 */
@@ -371,6 +373,8 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
             }
         }
         binding.rvRuleMode.models = RuleMode.entries.toList()
+        binding.etImageCount.doAfterTextChanged { applyRuleModeVisibility() }
+        binding.etVideoCount.doAfterTextChanged { applyRuleModeVisibility() }
         applyRuleModeVisibility()
     }
 
@@ -379,14 +383,20 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
      * 共存 / 互斥时反过来：合计上限由规则自动叠加，隐藏「最大选择数量」。
      */
     private fun applyRuleModeVisibility() {
-        val useRules = selectedRuleMode != RuleMode.NONE
+        val modeSelected = selectedRuleMode != RuleMode.NONE
+        // 只有真的填了数量才算"配了规则"；没填时新模型不启用，仍然由「最大选择数量」生效
+        val hasRules = countOf(binding.etImageCount) > 0 || countOf(binding.etVideoCount) > 0
+        val useRules = modeSelected && hasRules
         binding.layoutMaxCount.isVisible = !useRules
-        binding.layoutImageCount.isVisible = useRules
-        binding.layoutVideoCount.isVisible = useRules
+        binding.layoutImageCount.isVisible = modeSelected
+        binding.layoutVideoCount.isVisible = modeSelected
     }
 
     fun selectFile(type: String, maxSelectCount: Int, maxFileSize: Int, showCameraEntry: Boolean) {
         val (rules, useNewModel) = buildSelectRules()
+        if (selectedRuleMode != RuleMode.NONE && !useNewModel) {
+            Toast.makeText(this, "没填图片/视频数量，按「最大选择数量」执行", Toast.LENGTH_SHORT).show()
+        }
         val builder = FilePicker.with(this).setMaxSelectNumber(maxSelectCount)
             .setMaxFileSize(maxFileSize.toLong()).setSelectType(type)
             .setShowCameraEntry(showCameraEntry)

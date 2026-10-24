@@ -46,7 +46,7 @@
 ```kotlin
 dependencies {
     // 基础组件库 （必须）
-    implementation("com.gitee.pichs:filepicker:7.3.1")
+    implementation("com.gitee.pichs:filepicker:7.4.0")
 
     // 基础组件库 （必须）
     implementation("com.gitee.pichs:xwidget:5.8.1")
@@ -89,7 +89,7 @@ dependencies {
 # libs.version.toml中写法
 [versions]
 xwidget="5.8.1"
-filepicker="7.3.1"
+filepicker="7.4.0"
 brv="1.6.1"
 basepopup="3.2.1"
 glide="4.16.0"
@@ -337,6 +337,10 @@ FilePicker.with(this)
 * 两类都配了 `min > 0` → **先点哪类就锁定哪类**，另一类的"必须选"本次作废；
 * 已选类型全部取消后**自动解锁**，可以改选另一类。
 
+**启用条件（重要）**：`setExclusive(...)` 和 `setGifCountsAsImage(...)` **只有在配置了
+`setSelectRules(...)` 之后才生效**。一个规则都不配时，它们会被忽略（打 warn 日志），
+数量限制仍由 `setMaxSelectNumber(n)` 决定 —— 这样"只开互斥、没配规则"不会把你设的最大数量弄丢。
+
 **和 `setMaxSelectNumber` 的关系**：**用了规则，`setMaxSelectNumber` 就不生效了**。
 数量限制始终只有一个来源：
 
@@ -518,8 +522,8 @@ FilePicker.with(this)
 | `setSelectType(type)`           | 设置选择的文件类型                                        |
 | `setMaxSelectNumber(num)`       | 设置最大选择数量（`0`/`Int.MAX_VALUE` = 不限）。**只在不用 `setSelectRules` 时生效**；规则模式下合计上限由规则自动叠加，本方法被忽略 |
 | `setSelectRules(vararg rules)`  | 按类型分别限量，见「[按类型限量](#6-按类型限量图片-n-张--视频-m-个--互斥)」 |
-| `setExclusive(exclusive)`       | 互斥：图片与视频只能选其中一类                                |
-| `setGifCountsAsImage(counts)`   | GIF 是否占用图片额度，默认 `true`                          |
+| `setExclusive(exclusive)`       | 互斥：图片与视频只能选其中一类。**需先配 `setSelectRules`，否则不生效** |
+| `setGifCountsAsImage(counts)`   | GIF 是否占用图片额度，默认 `true`。**需先配 `setSelectRules`，否则不生效** |
 | `setMaxFileSize(size)`          | 设置最大文件大小（字节）                                     |
 | `setMinFileSize(size)`          | 设置最小文件大小（字节）                                     |
 | `setSlideChooseEnable(enable)`  | 是否启用滑动选择，默认 `true`                               |
@@ -604,6 +608,27 @@ val uiConfig = FilePickerUIConfig().apply {
 感谢你们的无私奉献，让开发变得更加高效和有趣！
 
 ## 升级日志
+
+### 7.4.0
+
+> 明确新模型的启用条件：**只有配置了 `setSelectRules(...)`，`setExclusive` / `setGifCountsAsImage`
+> 才生效**；一个规则都不配时，一律回退到 `setMaxSelectNumber`。
+
+#### 变更
+
+* **新模型启用条件收敛为"规则表非空"**：
+  * 配了规则 → 分类型限量 + 互斥 + GIF 归并生效；合计上限由各类型 `max` 自动叠加，
+    `setMaxSelectNumber` 被忽略（打 warn 日志）；
+  * 没配规则 → `setExclusive` / `setGifCountsAsImage` 被忽略（打 warn 日志），
+    数量限制仍由 `setMaxSelectNumber` 决定。
+
+  修掉了一个隐患：以前"只开互斥、不配规则"也会切到新模型，导致用户设的 `maxSelectNumber` 被静默丢掉。
+* 新增 `SelectRulesEngine.createOrNull(...)` 作为启用判定的唯一入口（纯函数，可单测）。
+* demo：规则模式选了但没填图片/视频数量时，「最大选择数量」重新显示并生效，同时 Toast 提示。
+* 单测补 2 条（启用条件 / 规则推导容量），共 30 条。
+
+> 7.3.0 / 7.3.1 中间语义已被本版取代：7.3.0 是"合计上限与规则同时生效"，
+> 7.3.1 是"规则模式忽略 maxSelectNumber"。**请以 7.4.0 为准。**
 
 ### 7.3.1
 

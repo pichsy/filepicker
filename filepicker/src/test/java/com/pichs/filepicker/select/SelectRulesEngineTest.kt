@@ -256,6 +256,27 @@ class SelectRulesEngineTest {
         SelectRulesEngine(rules = listOf(SelectRule.ofImage(9, 9))).checkSatisfiable()
     }
 
+    // ---------------------------------------------------------------- 新模型启用条件
+
+    /** 没配规则 → 新模型不启用（setExclusive / setGifCountsAsImage 不生效，回退 maxSelectNumber） */
+    @Test
+    fun createOrNull_returnsNullWhenRulesEmpty() {
+        assertNull(SelectRulesEngine.createOrNull(emptyList(), exclusive = true, gifCountsAsImage = false))
+    }
+
+    /** 配了规则 → 启用，且合计上限由规则推导（不受外部数字影响） */
+    @Test
+    fun createOrNull_buildsEngineWhenRulesPresent() {
+        val engine = SelectRulesEngine.createOrNull(
+            rules = listOf(SelectRule.ofVideo(1, 1)),
+            exclusive = true,
+        )
+        assertTrue("配了规则应启用", engine != null)
+        assertEquals(0, engine!!.totalMaxCount)
+        assertTrue(engine.exclusive)
+        assertEquals(1, engine.totalCapacity())
+    }
+
     // ---------------------------------------------------------------- 序列化
 
     @Test

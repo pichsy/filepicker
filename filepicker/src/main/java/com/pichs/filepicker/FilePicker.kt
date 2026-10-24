@@ -343,13 +343,19 @@ class FilePicker {
          */
         internal fun buildSelectRulesEngine(): SelectRulesEngine? {
             if (!mSelectRulesUsed) return null
-            val engine = SelectRulesEngine(
+            val engine = SelectRulesEngine.createOrNull(
                 rules = mSelectRules,
                 exclusive = mSelectExclusive,
-                // 合计上限不外部设置：由规则推导，从设计上消除"两个数字打架"
-                totalMaxCount = 0,
                 gifCountsAsImage = mGifCountsAsImage,
             )
+            if (engine == null) {
+                FilePickerLog.w(
+                    "FilePicker",
+                    "没有调用 setSelectRules 配置任何规则：setExclusive / setGifCountsAsImage 不生效，" +
+                            "数量限制仍由 setMaxSelectNumber(${mMaxSelectNumber}) 决定"
+                )
+                return null
+            }
             engine.checkSatisfiable("FilePicker.Builder")
             if (mMaxSelectNumber != 0) {
                 FilePickerLog.w(

@@ -210,6 +210,30 @@ class SelectRulesEngine(
         }
     }
 
+    companion object {
+
+        /**
+         * 规则表为空时返回 **null**：说明调用方没有配置"按类型限量"，
+         * 此时新模型（互斥 / GIF 归并）一律不启用，数量限制回退到 `setMaxSelectNumber`。
+         *
+         * 也就是说：**只有配置了规则，`setExclusive` / `setGifCountsAsImage` 才生效。**
+         */
+        fun createOrNull(
+            rules: List<SelectRule>,
+            exclusive: Boolean = false,
+            gifCountsAsImage: Boolean = true,
+        ): SelectRulesEngine? {
+            if (rules.isEmpty()) return null
+            return SelectRulesEngine(
+                rules = rules,
+                exclusive = exclusive,
+                // 合计上限不外部设置：规则模式下由各类型 max 自动叠加
+                totalMaxCount = 0,
+                gifCountsAsImage = gifCountsAsImage,
+            )
+        }
+    }
+
     fun describe(): String = "SelectRulesEngine(" +
             "rules=${ruleMap.values.joinToString { it.describe() }}, " +
             "exclusive=$exclusive, totalMaxCount=$totalMaxCount, " +
