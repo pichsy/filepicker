@@ -289,15 +289,15 @@ class FilePickerEditDialog(
                 dp(52),
                 android.view.Gravity.START or android.view.Gravity.CENTER_VERTICAL,
             ).apply {
-                leftMargin = dp(16)
+                leftMargin = dp(4)
             }
         }
         fun addCropIcon(iconRes: Int, desc: String, onClick: () -> Unit) {
             tools.addView(ImageView(context).apply {
-                layoutParams = LinearLayout.LayoutParams(dp(52), dp(52)).apply {
-                    setMargins(0, 0, dp(6), 0)
+                layoutParams = LinearLayout.LayoutParams(dp(44), dp(44)).apply {
+                    setMargins(0, 0, dp(2), 0)
                 }
-                setPadding(dp(14), dp(14), dp(14), dp(14))
+                setPadding(dp(10), dp(10), dp(10), dp(10))
                 scaleType = ImageView.ScaleType.FIT_CENTER
                 setImageResource(iconRes)
                 contentDescription = desc
