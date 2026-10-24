@@ -111,6 +111,9 @@ class CropView @JvmOverloads constructor(
     /** 进入裁剪时图片留白比例（图片占屏幕的 90%，四周留出可拖拽空间） */
     private val cropEnterInset = 0.90f
 
+    /** 已确认的裁剪区域（相对当前显示图片的归一化坐标；null = 还没裁剪） */
+    private var pendingCrop: CropGeometry.RectF2? = null
+
     /** 裁剪可用区域的上下内边距（由编辑页把顶栏/工具栏高度传进来，避免框角被挡） */
     private var cropContentTop = 0
     private var cropContentBottom = 0
@@ -298,12 +301,80 @@ class CropView @JvmOverloads constructor(
 
     fun paintStyleSelected(): Int = paintStyle
 
+    /** 已确认的裁剪区域（相对显示图片归一化坐标） */
+    fun confirmedCrop(): CropGeometry.RectF2? = pendingCrop
+
+    /**
+     * 确认裁剪：把当前裁剪框合成到已确认区域里，并把视图缩放到"裁剪后的画面填满可用区域"。
+     * 返回合成后的裁剪区域。
+     */
+    fun confirmCrop(): CropGeometry.RectF2? {
+        val bmp = bitmap ?: return pendingCrop
+        val bar = cropRatio().let {
+            CropGeometry.RectF2(
+                it.left.coerceIn(0f, 1f),
+                it.top.coerceIn(0f, 1f),
+                it.right.coerceIn(0f, 1f),
+                it.bottom.coerceIn(0f, 1f),
+            )
+        }
+        val old = pendingCrop
+        val composed = if (old == null) bar else CropGeometry.RectF2(
+            old.left + bar.left * old.width,
+            old.top + bar.top * old.height,
+            old.left + bar.right * old.width,
+            old.top + bar.bottom * old.height,
+        )
+        pendingCrop = composed
+        // 视图上把"裁剪后的画面"铺满可用区域
+        val availTop = cropContentTop.toFloat()
+        val availBottom = (height - cropContentBottom).toFloat()
+        val availW = width.toFloat()
+        val availH = (availBottom - availTop).coerceAtLeast(1f)
+        val regionW = composed.width * bmp.width
+        val regionH = composed.height * bmp.height
+        if (regionW > 0f && regionH > 0f) {
+            scale = min(availW / regionW, availH / regionH)
+            val regionCx = (composed.left + composed.width / 2f) * bmp.width
+            val regionCy = (composed.top + composed.height / 2f) * bmp.height
+            centerX = availW / 2f - (regionCx - bmp.width / 2f) * scale
+            centerY = availTop + availH / 2f - (regionCy - bmp.height / 2f) * scale
+            minScale = min(scale, computeMinScale())
+            maxScale = minScale * MAX_ZOOM
+            updateImageRect()
+            constrain()
+            notifyFrameChanged()
+            invalidate()
+        }
+        android.util.Log.d(
+            "FilePickerCropView",
+            "确认裁剪: region=[${composed.left},${composed.top},${composed.right},${composed.bottom}] scale=$scale",
+        )
+        return composed
+    }
+
+    /** 取消裁剪：不动已确认区域，框回到图片区域 */
+    fun cancelCrop() {
+        val bmp = bitmap ?: return
+        val fit = min(width.toFloat() / bmp.width, height.toFloat() / bmp.height)
+        scale = fit
+        centerX = width / 2f
+        centerY = height / 2f
+        updateImageRect()
+        frame.set(imageRect)
+        constrain()
+        notifyFrameChanged()
+        invalidate()
+    }
+
     /** 是否处于裁剪工具状态（只有这时导出才按裁剪框，否则导出整张图） */
     fun isCropMode(): Boolean = cropMode
 
-    /** 导出色块：裁剪模式=框，否则整张图 */
-    fun exportRatio(): CropGeometry.RectF2 =
-        if (cropMode) cropRatio() else CropGeometry.RectF2(0f, 0f, 1f, 1f)
+    /** 导出色块：已确认裁剪优先 → 当前裁剪框 → 整张图 */
+    fun exportRatio(): CropGeometry.RectF2 {
+        pendingCrop?.let { return it }
+        return if (cropMode) cropRatio() else CropGeometry.RectF2(0f, 0f, 1f, 1f)
+    }
 
     fun isPaintEraser(): Boolean = paintEraser
 
@@ -383,8 +454,22 @@ class CropView @JvmOverloads constructor(
                 centerX = availW / 2f
                 centerY = availTop + availH / 2f
                 updateImageRect()
-                // 网格框 = 图片区域（框本身离屏幕边缘有留边，四角/四边都能拖）
-                frame.set(imageRect)
+                // 网格框 = 已确认裁剪区域在当前视图里的可见部分；没有裁剪过就用图片区域
+                val pending = pendingCrop
+                if (pending != null) {
+                    val left = imageRect.left + pending.left * imageRect.width()
+                    val top = imageRect.top + pending.top * imageRect.height()
+                    val right = imageRect.left + pending.right * imageRect.width()
+                    val bottom = imageRect.top + pending.bottom * imageRect.height()
+                    frame.set(
+                        max(left, imageRect.left),
+                        max(top, imageRect.top),
+                        min(right, imageRect.right),
+                        min(bottom, imageRect.bottom),
+                    )
+                } else {
+                    frame.set(imageRect)
+                }
                 minScale = min(fit, scale)
                 maxScale = minScale * MAX_ZOOM
                 android.util.Log.d(
@@ -461,6 +546,9 @@ class CropView @JvmOverloads constructor(
         // 文字/笔画跟着图一起镜像
         textLayers.forEach { it.followMirrorHorizontal() }
         strokes.forEach { it.followMirrorHorizontal() }
+        pendingCrop = pendingCrop?.let {
+            CropGeometry.RectF2(1f - it.right, it.top, 1f - it.left, it.bottom)
+        }
         maskDirty = true
         doodleDirty = true
         effectsDirty = true
@@ -562,6 +650,9 @@ class CropView @JvmOverloads constructor(
         // 文字/笔画跟着图一起转
         textLayers.forEach { it.followRotate90Cw() }
         strokes.forEach { it.followRotate90Cw() }
+        pendingCrop = pendingCrop?.let {
+            CropGeometry.RectF2(1f - it.bottom, it.left, 1f - it.top, it.right)
+        }
         maskDirty = true
         doodleDirty = true
         effectsDirty = true

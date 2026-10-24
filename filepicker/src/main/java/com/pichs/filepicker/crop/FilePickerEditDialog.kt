@@ -66,6 +66,8 @@ class FilePickerEditDialog(
     private lateinit var btnDone: TextView
     private lateinit var topBar: View
     private lateinit var toolRow: View
+    /** 裁剪模式专属操作条（旋转/镜像/还原 + ✕ / ✓） */
+    private lateinit var cropControls: android.widget.FrameLayout
     private lateinit var progressBar: View
 
     private var currentTool = Tool.CROP
@@ -132,6 +134,8 @@ class FilePickerEditDialog(
             }
             insets
         }
+
+        setupCropControls(contentView)
 
         // 把顶栏/工具栏占用的高度告诉裁剪画布：裁剪框不会钻到它们下面，四角都能拖
         contentRoot.post {
@@ -264,6 +268,111 @@ class FilePickerEditDialog(
         super.onDismiss()
         FilePickerLog.d(TAG, "onDismiss")
         if (::cropView.isInitialized) cropView.release()
+    }
+
+    // ------------------------------------------------------------------
+    // 裁剪模式：隐藏所有其他菜单，只留「旋转/镜像/还原 + ✕ / ✓」
+    // ------------------------------------------------------------------
+
+    private fun setupCropControls(contentView: View) {
+        val margin = dp(24)
+        val navBarHeight = run {
+            val res = context.resources
+            val id = res.getIdentifier("navigation_bar_height", "dimen", "android")
+            if (id > 0) res.getDimensionPixelSize(id) else dp(48)
+        }
+        val host = android.widget.FrameLayout(context).apply {
+            layoutParams = android.view.ViewGroup.LayoutParams(
+                android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+            )
+            isClickable = false
+            visibility = View.GONE
+        }
+        // 上排：旋转 / 镜像 / 还原
+        val tools = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER
+            layoutParams = android.widget.FrameLayout.LayoutParams(
+                android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
+                dp(52),
+                android.view.Gravity.BOTTOM or android.view.Gravity.CENTER_HORIZONTAL,
+            ).apply {
+                bottomMargin = navBarHeight + dp(64)
+            }
+        }
+        fun addCropIcon(iconRes: Int, desc: String, onClick: () -> Unit) {
+            tools.addView(ImageView(context).apply {
+                layoutParams = LinearLayout.LayoutParams(dp(52), dp(52)).apply {
+                    setMargins(dp(10), 0, dp(10), 0)
+                }
+                setPadding(dp(14), dp(14), dp(14), dp(14))
+                scaleType = ImageView.ScaleType.FIT_CENTER
+                setImageResource(iconRes)
+                contentDescription = desc
+                setOnClickListener { onClick() }
+            })
+        }
+        addCropIcon(R.drawable.filepicker_ic_crop_rotate, "旋转") { cropView.rotate90() }
+        addCropIcon(R.drawable.filepicker_ic_crop_mirror, "镜像") { cropView.mirror() }
+        addCropIcon(R.drawable.filepicker_ic_edit_reset, "还原") { cropView.resetCrop() }
+        host.addView(tools)
+
+        // 下排：左边 ✕（取消裁剪），右边 ✓（确认裁剪）
+        val cancelCrop = TextView(context).apply {
+            text = "✕"
+            setTextColor(Color.WHITE)
+            textSize = 26f
+            gravity = android.view.Gravity.CENTER
+            setPadding(dp(16), dp(8), dp(16), dp(8))
+            contentDescription = "取消裁剪"
+            setOnClickListener {
+                cropView.cancelCrop()
+                switchTool(Tool.NONE)
+            }
+        }
+        host.addView(cancelCrop, android.widget.FrameLayout.LayoutParams(
+            android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
+            android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
+        ).apply {
+            gravity = android.view.Gravity.BOTTOM or android.view.Gravity.START
+            bottomMargin = navBarHeight + dp(8)
+            leftMargin = margin
+        })
+
+        val confirmCrop = TextView(context).apply {
+            text = "✓"
+            setTextColor(Color.WHITE)
+            textSize = 30f
+            gravity = android.view.Gravity.CENTER
+            setPadding(dp(16), dp(8), dp(16), dp(8))
+            contentDescription = "确认裁剪"
+            setOnClickListener {
+                cropView.confirmCrop()
+                switchTool(Tool.NONE)
+            }
+        }
+        host.addView(confirmCrop, android.widget.FrameLayout.LayoutParams(
+            android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
+            android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
+        ).apply {
+            gravity = android.view.Gravity.BOTTOM or android.view.Gravity.END
+            bottomMargin = navBarHeight + dp(8)
+            rightMargin = margin
+        })
+
+        (contentRoot as? android.view.ViewGroup)?.addView(host)
+        cropControls = host
+        FilePickerLog.d(TAG, "setupCropControls: 裁剪专属操作条已创建")
+    }
+
+    private fun showCropControls(show: Boolean) {
+        if (!::cropControls.isInitialized) return
+        cropControls.visibility = if (show) View.VISIBLE else View.GONE
+        val others = if (show) View.GONE else View.VISIBLE
+        topBar.visibility = others
+        toolRow.visibility = others
+        secondaryPanel.visibility = others
     }
 
     // ------------------------------------------------------------------
@@ -586,6 +695,7 @@ class FilePickerEditDialog(
             cropView.setCropMode(false)
             cropView.setTextGesturesLocked(false)
             cropView.setPaintEnabled(false)
+            showCropControls(false)
             updateToolColors()
             buildSecondaryPanel()
             return
@@ -604,6 +714,7 @@ class FilePickerEditDialog(
             cropView.setPaintStyle(2)
             cropView.setBrushColor(selectedColor ?: Color.WHITE)
         }
+        showCropControls(tool == Tool.CROP)
         updateToolColors()
         buildSecondaryPanel()
     }
