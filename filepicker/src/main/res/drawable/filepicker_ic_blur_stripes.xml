@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 毛刷：3 条 45° 斜条（放在圆形 XCardImageView 里） -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="48" android:viewportHeight="48">
+    <path android:fillColor="#FFFFFF"
+        android:pathData="M10,32l6,-6l16,0l-6,6zM16,24l6,-6l16,0l-6,6zM22,16l6,-6l16,0l-6,6z" />
+</vector>
