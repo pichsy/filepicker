@@ -61,8 +61,8 @@ class CropView @JvmOverloads constructor(
     private var doodleDirty = true
     /** 是否橡皮（擦掉涂抹效果） */
     private var paintEraser = false
-    /** 笔刷半径 = 图片短边 * 该比例 */
-    private var brushRadiusFrac = 0.05f
+    /** 笔刷半径 = 图片短边 * 该比例（默认细一点） */
+    private var brushRadiusFrac = 0.02f
     /** 涂抹遮罩/效果图缓存 */
     private var maskBitmap: Bitmap? = null
     private var maskDirty = true
@@ -112,7 +112,7 @@ class CropView @JvmOverloads constructor(
     private val cropEnterInset = 0.90f
 
     /** 裁剪框离屏幕左右边缘的固定间距（横图竖图都不能拖到屏幕边缘） */
-    private val cropSideMargin = 16f * resources.displayMetrics.density
+    private val cropSideMargin = 22f * resources.displayMetrics.density
 
     /** 已确认的裁剪区域（相对当前显示图片的归一化坐标；null = 还没裁剪） */
     private var pendingCrop: CropGeometry.RectF2? = null
@@ -296,6 +296,13 @@ class CropView @JvmOverloads constructor(
     fun setBrushColor(color: Int) {
         brushColor = color
     }
+
+    /** 画笔/马赛克笔刷粗细（图片短边比例，0.008~0.10） */
+    fun setBrushRadiusFrac(frac: Float) {
+        brushRadiusFrac = frac.coerceIn(0.006f, 0.10f)
+    }
+
+    fun brushRadiusFracValue(): Float = brushRadiusFrac
 
     /** 橡皮：擦掉涂抹效果 */
     fun setPaintEraser(erb: Boolean) {
@@ -778,7 +785,7 @@ class CropView @JvmOverloads constructor(
         cancelIdleAutoFit()
         val runnable = Runnable { autoFitCropFrame() }
         idleAutoFit = runnable
-        idleHandler.postDelayed(runnable, 3000)
+        idleHandler.postDelayed(runnable, 2000)
     }
 
     private fun cancelIdleAutoFit() {

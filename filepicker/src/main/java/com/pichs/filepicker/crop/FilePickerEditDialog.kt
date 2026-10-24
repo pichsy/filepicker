@@ -762,6 +762,7 @@ class FilePickerEditDialog(
     private fun buildSecondaryPanel() {
         if (!::secondaryPanel.isInitialized) return
         secondaryPanel.removeAllViews()
+        panelRow = null
         when (currentTool) {
             Tool.NONE -> {
                 // 主菜单什么都没选：没有二级面板
@@ -774,7 +775,35 @@ class FilePickerEditDialog(
             }
 
             Tool.DOODLE -> {
-                // 橡皮是"模式"：选中时浅白圆角底 + 所有颜色点取消选中
+                // 第一行：画笔图标 + 竖线 + 锥形粗细滑条
+                newRow()
+                row().addView(ImageView(context).apply {
+                    layoutParams = LinearLayout.LayoutParams(dp(32), dp(32)).apply {
+                        setMargins(dp(4), 0, dp(6), 0)
+                    }
+                    setPadding(dp(5), dp(5), dp(5), dp(5))
+                    scaleType = ImageView.ScaleType.FIT_CENTER
+                    setImageResource(R.drawable.filepicker_ic_brush_size)
+                })
+                row().addView(View(context).apply {
+                    setBackgroundColor(0x40FFFFFF)
+                    layoutParams = LinearLayout.LayoutParams(dp(1), dp(20)).apply {
+                        setMargins(dp(6), 0, dp(10), 0)
+                    }
+                })
+                val slider = BrushSizeSliderView(context).apply {
+                    layoutParams = LinearLayout.LayoutParams(0, dp(36), 1f)
+                    contentDescription = "画笔粗细"
+                    val minFrac = 0.008f
+                    val maxFrac = 0.10f
+                    setValue(((cropView.brushRadiusFracValue() - minFrac) / (maxFrac - minFrac)).coerceIn(0f, 1f))
+                    onValueChanged = { v ->
+                        cropView.setBrushRadiusFrac(minFrac + v * (maxFrac - minFrac))
+                    }
+                }
+                row().addView(slider)
+                // 第二行：橡皮 + 颜色
+                newRow()
                 addEraserButton(active = cropView.isPaintEraser()) {
                     cropView.setPaintEraser(true)
                     doodleEraserActive = true
@@ -824,6 +853,25 @@ class FilePickerEditDialog(
         }
     }
 
+    /** 当前面板行（面板是竖向的，每个工具可以有 1~2 行） */
+    private var panelRow: LinearLayout? = null
+
+    private fun newRow(): LinearLayout {
+        val row = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                dp(52),
+            )
+        }
+        secondaryPanel.addView(row)
+        panelRow = row
+        return row
+    }
+
+    private fun row(): LinearLayout = panelRow ?: newRow()
+
     /** 大号图标按钮（44dp 热区 / 22dp 视觉，马赛克的两种效果用） */
     private fun addBigIconButton(iconRes: Int, selected: Boolean = false, onClick: () -> Unit) {
         val size = dp(44)
@@ -837,7 +885,7 @@ class FilePickerEditDialog(
             setColorFilter(if (selected) 0xFF06B10D.toInt() else Color.WHITE)
             setOnClickListener { onClick() }
         }
-        secondaryPanel.addView(image)
+        row().addView(image)
     }
 
     /** 图标按钮（36dp 热区，选中用绿色 tint） */
@@ -853,7 +901,7 @@ class FilePickerEditDialog(
             setColorFilter(if (selected) 0xFF06B10D.toInt() else Color.WHITE)
             setOnClickListener { onClick() }
         }
-        secondaryPanel.addView(image)
+        row().addView(image)
     }
 
     /**
@@ -888,7 +936,7 @@ class FilePickerEditDialog(
             }
         }
         slot.addView(image)
-        secondaryPanel.addView(slot)
+        row().addView(slot)
     }
 
     private fun addDivider() {
@@ -898,7 +946,7 @@ class FilePickerEditDialog(
                 setMargins(dp(8), 0, dp(8), 0)
             }
         }
-        secondaryPanel.addView(divider)
+        row().addView(divider)
     }
 
     /**
@@ -943,7 +991,7 @@ class FilePickerEditDialog(
             }
         }
         slot.addView(dot)
-        secondaryPanel.addView(slot)
+        row().addView(slot)
     }
 
     private fun dp(value: Int): Int = (value * context.resources.displayMetrics.density).toInt()
