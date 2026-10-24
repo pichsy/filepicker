@@ -87,6 +87,9 @@ class FilePickerEditDialog(
 
         cropView = contentView.findViewById(R.id.crop_view)
         secondaryPanel = contentView.findViewById(R.id.secondary_panel)
+        // 选中色点会原地放大 1.2 倍，允许子 View 超出自身槽位绘制，避免被裁
+        secondaryPanel.clipChildren = false
+        secondaryPanel.clipToPadding = false
         toolDoodle = contentView.findViewById(R.id.tool_doodle)
         toolText = contentView.findViewById(R.id.tool_text)
         toolCrop = contentView.findViewById(R.id.tool_crop)
@@ -299,13 +302,16 @@ class FilePickerEditDialog(
         secondaryPanel.addView(divider)
     }
 
-    /** 颜色小圆点：未选中 18dp，选中的放大到 24dp（和微信一样，选中有放大反馈） */
+    /**
+     * 颜色小圆点：**槽位固定 18dp，位置不动**；选中时只在原地放大 1.2 倍（scale），
+     * 不改变布局尺寸，所以不会把后面的圆点挤走。
+     */
     private fun addColorDot(color: Int) {
         val selected = color == selectedColor
-        val size = dp(if (selected) 24 else 18)
+        val size = dp(18)
         val dot = View(context).apply {
             layoutParams = LinearLayout.LayoutParams(size, size).apply {
-                setMargins(dp(4), 0, dp(4), 0)
+                setMargins(dp(6), 0, dp(6), 0)
             }
             background = GradientDrawable().apply {
                 shape = GradientDrawable.OVAL
@@ -316,6 +322,10 @@ class FilePickerEditDialog(
                     // 给每个点一圈淡描边：黑色点在深色背景上也看得见
                     setStroke(dp(1), 0x99FFFFFF.toInt())
                 }
+            }
+            if (selected) {
+                scaleX = 1.2f
+                scaleY = 1.2f
             }
             setOnClickListener {
                 selectedColor = color
