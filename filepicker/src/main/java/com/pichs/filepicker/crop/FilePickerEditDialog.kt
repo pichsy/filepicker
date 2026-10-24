@@ -455,13 +455,10 @@ class FilePickerEditDialog(
         }
     }
 
-    /** 背景模式下文字颜色：浅色/白色背景用黑字，深色背景用白字 */
+    /** 背景模式下文字颜色：**只有纯白背景用黑字**，其他背景一律白字 */
     private fun contrastTextColor(background: Int): Int {
-        val r = android.graphics.Color.red(background) / 255f
-        val g = android.graphics.Color.green(background) / 255f
-        val b = android.graphics.Color.blue(background) / 255f
-        val luminance = 0.299f * r + 0.587f * g + 0.114f * b
-        return if (luminance > 0.6f) Color.BLACK else Color.WHITE
+        val rgb = background and 0x00FFFFFF
+        return if (rgb == 0x00FFFFFF) Color.BLACK else Color.WHITE
     }
 
     private fun commitTextInput(text: String) {
