@@ -6,6 +6,9 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import com.pichs.filepicker.empty.CallbackFragment
 import com.pichs.filepicker.entity.MediaEntity
+import com.pichs.filepicker.select.SelectRule
+import com.pichs.filepicker.select.SelectRulesEngine
+import com.pichs.filepicker.utils.FilePickerLog
 import kotlinx.coroutines.flow.update
 import kotlin.collections.toMutableList
 
@@ -271,6 +274,103 @@ class FilePicker {
             return this
         }
 
+        // ---------------------------------------------------------------- 按类型限量（新模型）
+
+        private var mSelectRules: MutableList<SelectRule> = mutableListOf()
+        private var mSelectExclusive: Boolean = false
+        private var mSelectTotalMaxCount: Int = -1
+        private var mGifCountsAsImage: Boolean = true
+        private var mSelectRulesUsed: Boolean = false
+
+        /**
+         * 按类型分别限量（新模型）。一旦调用，[setMaxSelectNumber] 传入的合计上限会被**忽略** ——
+         * 数量限制只保留一个数据源，避免两个数字互相打架。
+         *
+         * ```
+         * .setSelectRules(SelectRule.ofImage(0, 9), SelectRule.ofVideo(0, 1))  // 图片≤9、视频≤1，可混选
+         * .setSelectRules(SelectRule.ofVideo(1, 1))                            // 必须正好 1 个视频
+         * ```
+         *
+         * 不调用则完全不启用新模型，行为与旧版本 1:1 一致。
+         */
+        fun setSelectRules(vararg rules: SelectRule): Builder {
+            this.mSelectRules = rules.toMutableList()
+            this.mSelectRulesUsed = true
+            return this
+        }
+
+        /**
+         * 互斥选择：图片和视频只能选其中一类。
+         *
+         * - 只有一类配了 `min > 0` → 直接锁定那一类，另一类点了会被拦下（等于"只能选图片 / 只能选视频"）；
+         * - 两类都配了 `min > 0` → 先点哪类就锁定哪类，另一类的 `min` 本次作废；
+         * - 已选类型全部取消后自动解锁，可以改选另一类。
+         */
+        fun setExclusive(exclusive: Boolean): Builder {
+            this.mSelectExclusive = exclusive
+            this.mSelectRulesUsed = true
+            return this
+        }
+
+        /** 合计上限（属于新模型，0 = 不限）。不传时按各类型 max 之和自动推导。 */
+        fun setTotalMaxCount(count: Int): Builder {
+            this.mSelectTotalMaxCount = count
+            this.mSelectRulesUsed = true
+            return this
+        }
+
+        /**
+         * GIF 是否占用"图片"的额度，默认 true（用户视角里 GIF 就是图片）。
+         * 单独给 GIF 配了 [SelectRule.ofGif] 时，GIF 用自己的规则，此项不生效。
+         */
+        fun setGifCountsAsImage(countsAsImage: Boolean): Builder {
+            this.mGifCountsAsImage = countsAsImage
+            this.mSelectRulesUsed = true
+            return this
+        }
+
+        /** 是否启用了新模型 */
+        internal fun isSelectRulesUsed(): Boolean = mSelectRulesUsed
+
+        /**
+         * 构造规则引擎并做配置自检。
+         * 矛盾配置（合计容量装不下必选数量）在这里直接抛异常：开发期就炸，别留到用户点不动。
+         */
+        internal fun buildSelectRulesEngine(): SelectRulesEngine? {
+            if (!mSelectRulesUsed) return null
+            val engine = SelectRulesEngine(
+                rules = mSelectRules,
+                exclusive = mSelectExclusive,
+                totalMaxCount = if (mSelectTotalMaxCount < 0) 0 else mSelectTotalMaxCount,
+                gifCountsAsImage = mGifCountsAsImage,
+            )
+            engine.checkSatisfiable("FilePicker.Builder")
+            if (mMaxSelectNumber != 0) {
+                FilePickerLog.w(
+                    "FilePicker",
+                    "setMaxSelectNumber(${mMaxSelectNumber}) 已失效：调用了 setSelectRules/setExclusive/setTotalMaxCount 后，" +
+                            "数量限制只由规则决定。${engine.describe()}"
+                )
+            }
+            if (mSingleClickEnable && engine.totalCapacity() != 1) {
+                FilePickerLog.w(
+                    "FilePicker",
+                    "setSingleClickEnable(true) 需要总容量为 1，当前总容量=${engine.totalCapacity()}（0=不限），单击即返回不会生效。"
+                )
+            }
+            return engine
+        }
+
+        /** 把新模型参数写进 intent；engine 为 null 时什么都不做（旧路径完全不变） */
+        internal fun applySelectRuleExtras(intent: Intent, engine: SelectRulesEngine?) {
+            if (engine == null) return
+            intent.putExtra("useSelectRules", true)
+            intent.putStringArrayListExtra("selectRules", ArrayList(engine.rules.map { SelectRule.encode(it) }))
+            intent.putExtra("selectExclusive", engine.exclusive)
+            intent.putExtra("selectTotalMaxCount", engine.totalMaxCount)
+            intent.putExtra("gifCountsAsImage", engine.gifCountsAsImage)
+        }
+
         var mMaxFileSize = Long.MAX_VALUE
             private set
 
@@ -308,6 +408,8 @@ class FilePicker {
 
     private fun doStart(clazz: Class<out FragmentActivity>) {
         builder?.let { bd ->
+            // 新模型：配置自检在这里做，矛盾配置当场抛异常
+            val selectRulesEngine = bd.buildSelectRulesEngine()
             if (bd.getFragment() != null) {
                 bd.getFragment()?.apply {
                     context?.let { ctx ->
@@ -342,6 +444,7 @@ class FilePicker {
                             intent.putExtra("singleClickEnable", bd.mSingleClickEnable)
                             intent.putExtra("slideChooseEnable", bd.mSlideChooseEnable)
                             intent.putExtra("showCameraEntry", bd.mShowCameraEntry)
+                            bd.applySelectRuleExtras(intent, selectRulesEngine)
                             FilePickerViewModel.userUseSelectDataList.clear()
                             FilePickerViewModel.userUseSelectDataList.addAll(bd.mSelectedList)
                             launch(intent)
@@ -381,6 +484,7 @@ class FilePicker {
                         intent.putExtra("singleClickEnable", bd.mSingleClickEnable)
                         intent.putExtra("slideChooseEnable", bd.mSlideChooseEnable)
                         intent.putExtra("showCameraEntry", bd.mShowCameraEntry)
+                        bd.applySelectRuleExtras(intent, selectRulesEngine)
                         FilePickerViewModel.userUseSelectDataList.clear()
                         FilePickerViewModel.userUseSelectDataList.addAll(bd.mSelectedList)
                         launch(intent)

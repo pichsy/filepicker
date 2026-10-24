@@ -10,6 +10,10 @@ import com.pichs.filepicker.entity.MediaEntity
 import com.pichs.filepicker.entity.MediaFolder
 import com.pichs.filepicker.query.FileQueryHelper
 import com.pichs.filepicker.query.QueryType
+import com.pichs.filepicker.select.QuotaType
+import com.pichs.filepicker.select.SelectCheck
+import com.pichs.filepicker.select.SelectMessages
+import com.pichs.filepicker.select.SelectRulesEngine
 import com.pichs.filepicker.utils.FilePickerFileUtils
 import com.pichs.filepicker.utils.FilePickerLog
 import kotlinx.coroutines.Job
@@ -104,8 +108,151 @@ class FilePickerViewModel : ViewModel() {
     private var _currentFolder = MutableStateFlow<MediaFolder?>(null)
     val currentFolder = _currentFolder.asStateFlow()
 
+    // ---------------------------------------------------------------- 选择规则（新模型）
+
+    /**
+     * 按类型分别限量的规则引擎。
+     *
+     * null = 走旧的 [maxSelectNumber] 单一合计上限，行为和以前 1:1 一致；
+     * 非 null = 调用方用了 setSelectRules / setExclusive / setTotalMaxCount，
+     * 此时 maxSelectNumber **完全不参与判定**（单一数据源，避免两个数字打架）。
+     */
+    var selectRulesEngine: SelectRulesEngine? = null
+        private set
+
+    fun setSelectRulesEngine(engine: SelectRulesEngine?) {
+        selectRulesEngine = engine
+    }
+
+    /** 是否启用了按类型限量的新模型 */
+    fun isSelectRulesActive(): Boolean = selectRulesEngine != null
+
+    /** 规则的文字描述（排查用） */
+    fun describeSelectRules(): String =
+        selectRulesEngine?.describe() ?: "maxSelectNumber=${maxSelectNumber.value}（旧模型）"
+
+    /** 实体属于哪个配额类型；音频/文档等返回 null（只受合计上限约束） */
+    fun quotaTypeOf(entity: MediaEntity?): String? {
+        if (entity == null) return null
+        return when {
+            entity.isGif() -> QuotaType.GIF
+            entity.isVideo() -> QuotaType.VIDEO
+            entity.isImage() -> QuotaType.IMAGE
+            else -> null
+        }
+    }
+
+    /** 已选 + 临时选择的合计数量（旧代码到处写 getSelectedCount() + tempSelectData.size） */
+    fun getMergedSelectedCount(): Int = selectedData.size + tempSelectData.size
+
+    /**
+     * 已选数量快照（key 为归一化后的配额类型）。
+     * 只遍历已选列表，与图库总数无关。
+     */
+    fun quotaTypeCounts(): Map<String, Int> {
+        val engine = selectRulesEngine ?: return emptyMap()
+        if (selectedData.isEmpty() && tempSelectData.isEmpty()) return emptyMap()
+        val counts = HashMap<String, Int>()
+        fun add(entity: MediaEntity) {
+            val type = engine.normalize(quotaTypeOf(entity)) ?: return
+            counts[type] = (counts[type] ?: 0) + 1
+        }
+        selectedData.forEach(::add)
+        tempSelectData.forEach(::add)
+        return counts
+    }
+
+    /**
+     * 统一的选择判定入口：新模型走规则引擎，旧模型沿用 maxSelectNumber。
+     * 所有"能不能勾这一项"的地方都应该走这里。
+     */
+    fun canSelect(entity: MediaEntity): SelectCheck {
+        val engine = selectRulesEngine
+        val merged = getMergedSelectedCount()
+        if (engine == null) {
+            return if (isOverMaxSelectNumber(merged)) {
+                SelectCheck.Rejected(SelectCheck.Rejected.Reason.TOTAL_MAX, "")
+            } else {
+                SelectCheck.Allowed
+            }
+        }
+        return engine.canSelect(quotaTypeOf(entity), quotaTypeCounts(), merged)
+    }
+
+    /** 已选是否满足全部"必选"条件（确定按钮可用性） */
+    fun selectRulesSatisfied(): Boolean {
+        val engine = selectRulesEngine ?: return getMergedSelectedCount() > 0
+        return engine.satisfied(quotaTypeCounts(), getMergedSelectedCount())
+    }
+
+    /** 还差多少才满足必选：类型 to 还差数量（用于提示文案） */
+    fun selectRulesMissing(): List<Pair<String, Int>> {
+        val engine = selectRulesEngine ?: return emptyList()
+        return engine.missing(quotaTypeCounts(), getMergedSelectedCount())
+    }
+
+    /**
+     * "必选"未满足时的提示文案；满足（或旧模型）时返回 null。
+     *
+     * @param candidate 将要提交的结果列表。传 null 表示用当前已选状态；
+     *                  预览弹窗里"一个都没选、直接确定当前页"时，要把这一项传进来校验。
+     */
+    fun selectRulesNotSatisfiedMessage(candidate: List<MediaEntity>? = null): String? {
+        val engine = selectRulesEngine ?: return null
+        val list = candidate ?: (selectedData + tempSelectData)
+        val counts = HashMap<String, Int>()
+        list.forEach { entity ->
+            val type = engine.normalize(quotaTypeOf(entity)) ?: return@forEach
+            counts[type] = (counts[type] ?: 0) + 1
+        }
+        if (engine.satisfied(counts, list.size)) return null
+        val missing = engine.missing(counts, list.size)
+        if (missing.isEmpty()) return uiConfig.atLeastSelectOneToastContent
+        return SelectMessages.forNotSatisfied(
+            missing = missing,
+            requiredMin = missing.associate { (type, _) -> type to (engine.ruleOf(type)?.min ?: 0) },
+            template = uiConfig.selectRuleNotSatisfiedToastContent,
+        )
+    }
+
+    /**
+     * 把"不能选"的原因翻译成给用户的提示；Allowed 返回 null。
+     *
+     * 分类型上限会报出具体类型的额度（"图片最多选择3个"）；
+     * 只有合计上限/旧模型才用笼统的"已达到最大选择数量"。
+     */
+    fun selectRejectedMessage(check: SelectCheck): String? {
+        val rejected = check as? SelectCheck.Rejected ?: return null
+        return SelectMessages.forRejected(
+            rejected = rejected,
+            typeMaxTemplate = uiConfig.selectTypeMaxToastContent,
+            conflictTemplate = uiConfig.selectExclusiveConflictToastContent,
+            genericMaxTemplate = uiConfig.selectMaxNumberOverToastContent,
+            typeMax = selectRulesEngine?.ruleOf(rejected.quotaType)?.max ?: 0,
+        )
+    }
+
+    /**
+     * 滑动连选：按顺序贪心筛出可被选中的下标。
+     * 新模型按类型配额逐项推进；旧模型不筛选（返回全部，仍走原来的 dx 截断逻辑）。
+     */
+    fun filterSelectableIndices(candidates: List<MediaEntity>): List<Int> {
+        val engine = selectRulesEngine ?: return candidates.indices.toList()
+        return engine.filterSelectable(
+            candidates.map { quotaTypeOf(it) },
+            quotaTypeCounts(),
+            getMergedSelectedCount(),
+        )
+    }
+
+    /** 总容量：0 = 不限。新模型由规则推导，旧模型就是 maxSelectNumber */
+    fun totalSelectCapacity(): Int = selectRulesEngine?.totalCapacity() ?: maxSelectNumber.value
+
+    // ---------------------------------------------------------------- 旧模型判定
+
     fun isCanSingleClickSelect(): Boolean {
-        return maxSelectNumber.value == 1 && singleClickEnable.value
+        // 绑定"总容量 == 1"而不是硬绑 maxSelectNumber，这样 VIDEO(min=1,max=1) 这类规则也能触发单击返回
+        return totalSelectCapacity() == 1 && singleClickEnable.value
     }
 
     /**
@@ -362,12 +509,19 @@ class FilePickerViewModel : ViewModel() {
             return
         }
         val allData = folders.flatMap { it.mediaEntityList }.toMutableList()
-        userUseSelectDataList.forEach { item ->
-            val entity = allData.find { item.path == it.path }
-            if (entity != null) {
-                // addSelectedData 内部有 contains 去重，并同步 selectedIndexMap
-                addSelectedData(entity)
+        val candidates = userUseSelectDataList.mapNotNull { item -> allData.find { item.path == it.path } }
+        if (selectRulesEngine != null) {
+            // 新模型：预选列表可能违反规则（超上限/互斥），按规则逐项过滤，超出的丢弃并记日志
+            val accepted = filterSelectableIndices(candidates).map { candidates[it] }
+            if (accepted.size < candidates.size) {
+                FilePickerLog.w(
+                    "FilePickerViewModel",
+                    "预选列表(${candidates.size})不符合选择规则，已丢弃 ${candidates.size - accepted.size} 项：${describeSelectRules()}"
+                )
             }
+            accepted.forEach { addSelectedData(it) }
+        } else {
+            candidates.forEach { addSelectedData(it) }
         }
         if (isAllDataLoaded.value) {
             userUseSelectDataList.clear()

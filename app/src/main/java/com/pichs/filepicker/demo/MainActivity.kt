@@ -11,6 +11,7 @@ import android.util.Log
 import androidx.activity.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.core.view.isVisible
 import com.drake.brv.utils.divider
@@ -39,6 +40,7 @@ import com.pichs.xwidget.utils.XDisplayHelper
 import com.pichs.filepicker.common.VideoPreviewDialog
 import com.pichs.filepicker.query.FileQueryHelper
 import com.pichs.filepicker.query.QueryType
+import com.pichs.filepicker.select.SelectRule
 import com.pichs.xbase.binding.BindingActivity
 import com.pichs.xbase.kotlinext.fastClick
 import com.pichs.xbase.xlog.XLog
@@ -101,6 +103,7 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
         }
         initRecyclerView()
         initTypeList()
+        initRuleModeList()
     }
 
     /**
@@ -237,6 +240,52 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
 
     private var selectedDataList = mutableListOf<MediaEntity>()
 
+    /**
+     * 规则模式。
+     * - [NONE]：不启用新模型，完全走旧的 `setMaxSelectNumber`；
+     * - [COEXIST]：图片和视频可以一起选，各自受数量约束；
+     * - [EXCLUSIVE]：图片和视频只能选其中一类。
+     */
+    private enum class RuleMode(val label: String) {
+        NONE("无"),
+        COEXIST("共存"),
+        EXCLUSIVE("互斥"),
+    }
+
+    private var selectedRuleMode: RuleMode = RuleMode.NONE
+
+    /** 读取数量输入框：空 / 非法 / <=0 一律视为"不限" */
+    private fun countOf(editText: android.widget.EditText): Int =
+        editText.text.toString().trim().toIntOrNull()?.takeIf { it > 0 } ?: 0
+
+    /**
+     * 三个参数 → 选择规则：
+     * - 模式：无 → 不调 setSelectRules；共存/互斥 → 启用新模型（互斥额外 setExclusive(true)）；
+     * - 图片数量 + 强制：强制 = 必须正好这么多（min=max=数量）；不强制 = 只作为上限（0..数量）；
+     * - 视频数量 + 强制：同上。
+     * 数量留空 = 该类型不限，不生成规则。
+     */
+    private fun buildSelectRules(): Pair<List<SelectRule>, Boolean> {
+        val imageCount = countOf(binding.etImageCount)
+        val videoCount = countOf(binding.etVideoCount)
+        val imageForce = binding.cbImageForce.isChecked
+        val videoForce = binding.cbVideoForce.isChecked
+        val rules = buildList {
+            if (imageCount > 0) {
+                add(SelectRule.ofImage(if (imageForce) imageCount else 0, imageCount))
+            }
+            if (videoCount > 0) {
+                add(SelectRule.ofVideo(if (videoForce) videoCount else 0, videoCount))
+            }
+        }
+        XLog.d(
+            "FilePicker",
+            "规则参数：模式=$selectedRuleMode 图片=$imageCount(强制=$imageForce) " +
+                    "视频=$videoCount(强制=$videoForce) → $rules"
+        )
+        return rules to (selectedRuleMode != RuleMode.NONE)
+    }
+
     /** 类型单选列表 */
     private data class PickerType(val label: String, val type: String)
 
@@ -296,11 +345,48 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
         binding.rvType.models = types
     }
 
+    /** 规则模式 chips：无 / 共存 / 互斥，单选，横向一行排列 */
+    private fun initRuleModeList() {
+        binding.rvRuleMode.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
+        binding.rvRuleMode.divider {
+            setDivider(8, true)
+        }.setup {
+            addType<RuleMode>(R.layout.item_type_chip)
+            onBind {
+                val item = getModel<RuleMode>()
+                val itemBinding = getBinding<ItemTypeChipBinding>()
+                itemBinding.tvTypeName.text = item.label
+                val selected = item == selectedRuleMode
+                itemBinding.tvTypeName.isChecked = selected
+                itemBinding.tvTypeName.paint.isFakeBoldText = selected
+                itemBinding.tvTypeName.setOnClickListener {
+                    if (selectedRuleMode != item) {
+                        selectedRuleMode = item
+                        binding.rvRuleMode.adapter?.notifyDataSetChanged()
+                        applyRuleModeVisibility()
+                    }
+                }
+            }
+        }
+        binding.rvRuleMode.models = RuleMode.entries.toList()
+        applyRuleModeVisibility()
+    }
+
+    /** 规则模式为「无」时数量与强制不参与规则，直接隐藏；只有共存 / 互斥才展示。 */
+    private fun applyRuleModeVisibility() {
+        val showLimits = selectedRuleMode != RuleMode.NONE
+        binding.layoutImageCount.isVisible = showLimits
+        binding.layoutVideoCount.isVisible = showLimits
+    }
+
     fun selectFile(type: String, maxSelectCount: Int, maxFileSize: Int, showCameraEntry: Boolean) {
-        FilePicker.with(this).setMaxSelectNumber(maxSelectCount)
+        val (rules, useNewModel) = buildSelectRules()
+        val builder = FilePicker.with(this).setMaxSelectNumber(maxSelectCount)
             .setMaxFileSize(maxFileSize.toLong()).setSelectType(type)
             .setShowCameraEntry(showCameraEntry)
-            .setSingleClickEnable(true)
+            // 新模型下总容量=1 会自动启用单击返回；为了让规则测试能看到勾选过程，
+            // 这里只在旧模型（不限）时打开，和原来 maxSelectNumber!=1 时无效的行为一致
+            .setSingleClickEnable(!useNewModel)
             .setSelectedList(selectedDataList).setOnSelectCallback { isUseOriginal, list ->
                 XLog.d("FilePicker", "Selected files: ${list.size}")
                 selectedDataList = list
@@ -317,7 +403,16 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
                         "DCIM" to "相册", "Download" to "下载"
                     )
                 )
-            ).start()
+            )
+
+        // 选用新模型：分类型限量 + 互斥；模式为"无"时完全走旧逻辑
+        if (useNewModel) {
+            builder.setSelectRules(*rules.toTypedArray())
+            if (selectedRuleMode == RuleMode.EXCLUSIVE) {
+                builder.setExclusive(true)
+            }
+        }
+        builder.start()
     }
 
 }

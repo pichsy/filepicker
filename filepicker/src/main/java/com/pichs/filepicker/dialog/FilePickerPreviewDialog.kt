@@ -3,7 +3,6 @@ package com.pichs.filepicker.dialog
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Color
-import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
@@ -22,7 +21,7 @@ import com.pichs.filepicker.video.FilePickerVideoPlayerView
 import razerdp.basepopup.BasePopupWindow
 import androidx.lifecycle.viewModelScope
 import androidx.recyclerview.widget.ItemTouchHelper
-import androidx.recyclerview.widget.LinearLayoutManager
+import com.drake.brv.BindingAdapter
 import com.drake.brv.utils.bindingAdapter
 import com.drake.brv.utils.linear
 import com.drake.brv.utils.models
@@ -34,6 +33,9 @@ import com.pichs.filepicker.utils.FilePickerClickHelper
 import com.pichs.filepicker.utils.FilePickerLog
 import com.pichs.filepicker.utils.FilePickerTimeFormatUtils
 import com.pichs.filepicker.widget.OnFilePickerDragItemTouchHelperCallback
+import com.pichs.filepicker.widget.SelectedThumbnailStrip
+import com.pichs.filepicker.select.QuotaType
+import com.pichs.filepicker.select.SelectCheck
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -239,13 +241,11 @@ class FilePickerPreviewDialog(
                         return@setOnClickListener
                     }
                     if (indexOfList != mCurrentIndex) {
+                        // 高亮、页码、缩略图跟随全部交给 onPageSelected 统一处理，
+                        // 避免这里和翻页回调各做一遍，滚动被触发两次。
                         binding.viewPager2.setCurrentItem(indexOfList, false)
-                        mCurrentIndex = indexOfList
-                        mCurrentItem = item
-                        notifyItemRangeChanged(0, binding.rvSelected.adapter?.itemCount ?: 0)
-                        updateIndexUI(item)
-                        scrollItemToCenter(binding.rvSelected, modelPosition)
-                        onSelectListScrollChanged(modelPosition, 1, 0)
+                    } else {
+                        SelectedThumbnailStrip.scrollToCurrent(binding.rvSelected, modelPosition)
                     }
                 }
             }
@@ -259,22 +259,20 @@ class FilePickerPreviewDialog(
         }
 
         binding.rvSelected.post {
-            var indexOfSelected = viewModel.indexOfSelected(mCurrentItem)
-            if (indexOfSelected < 0) {
-                indexOfSelected = 0
+            val indexOfSelected = viewModel.getSelectedDataList().indexOf(mCurrentItem)
+            if (indexOfSelected >= 0) {
+                SelectedThumbnailStrip.scrollToCurrent(binding.rvSelected, indexOfSelected)
             }
-            if (indexOfSelected > viewModel.getSelectedCount()) {
-                indexOfSelected = viewModel.getSelectedCount() - 1
-            }
-            scrollItemToCenter(binding.rvSelected, indexOfSelected)
         }
 
         binding.rvSelected.addOnScrollListener(object : RecyclerView.OnScrollListener() {
             override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                 super.onScrolled(recyclerView, dx, dy)
-                // 这里可以监听到滚动事件
-                FilePickerLog.d("FilePickerPreviewDialog999", "onScrolled: dx=$dx")
-                onSelectListScrollChanged(mCurrentIndex, 2, dx)
+                // 只镜像用户手动拖动的位移。程序化平滑滚动已经通过 type=1 通知过目标下标，
+                // 再逐帧镜像 dx 会让底部条被滚两次，看起来"越跑越偏"。
+                if (recyclerView.scrollState == RecyclerView.SCROLL_STATE_DRAGGING) {
+                    onSelectListScrollChanged(mCurrentIndex, 2, dx)
+                }
             }
         })
 
@@ -323,11 +321,19 @@ class FilePickerPreviewDialog(
         }
 
         FilePickerClickHelper.clicks(binding.btnConfirm) {
-//            这里可以回调到选择器，通知选择完成。
-//            if (viewModel.getSelectedCount() <= 0 && viewModel.tempSelectData.isEmpty()) {
-//                Toast.makeText(context, "至少选择一个", Toast.LENGTH_SHORT).show()
-//                return@clicks
-//            }
+            // 必选条件没满足时拦住：预览页的"确定"不能绕过规则。
+            // 一个都没选时外层会拿"当前页"当结果，所以要把当前项作为候选一起校验。
+            val candidate = if (viewModel.getMergedSelectedCount() > 0) {
+                null
+            } else {
+                listOfNotNull(viewModel.getCurrentFolderDataList().getOrNull(mCurrentIndex))
+            }
+            val notSatisfiedMessage = viewModel.selectRulesNotSatisfiedMessage(candidate)
+            if (notSatisfiedMessage != null) {
+                Toast.makeText(context, notSatisfiedMessage, Toast.LENGTH_SHORT).show()
+                FilePickerLog.d("FilePickerPreviewDialog", "必选未满足：$notSatisfiedMessage")
+                return@clicks
+            }
             onConfirm(mCurrentIndex)
         }
 
@@ -339,9 +345,11 @@ class FilePickerPreviewDialog(
 
             if (indexOfSelect == -1) {
                 // 未选中，添加到选中列表
-                val listSize = viewModel.getSelectedCount() + viewModel.tempSelectData.size
-                if (viewModel.isOverMaxSelectNumber(listSize)) {
-                    Toast.makeText(context, "已达到最大选择数量", Toast.LENGTH_SHORT).show()
+                val selectCheck = viewModel.canSelect(item)
+                if (selectCheck is SelectCheck.Rejected) {
+                    val message = viewModel.selectRejectedMessage(selectCheck)
+                        ?: viewModel.uiConfig.selectMaxNumberOverToastContent
+                    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                     updateBottomMenuSelectNumberUI()
                     return@clicks
                 }
@@ -367,15 +375,7 @@ class FilePickerPreviewDialog(
     }
 
     fun scrollItemToCenter(recyclerView: RecyclerView, position: Int) {
-        if (position == -1) return
-        val layoutManager = recyclerView.layoutManager as? LinearLayoutManager ?: return
-        val itemView = layoutManager.findViewByPosition(position)
-        val recyclerViewWidth = recyclerView.width
-
-        val itemWidth = itemView?.width ?: 0
-        val offset = (recyclerViewWidth - itemWidth) / 2
-
-        layoutManager.scrollToPositionWithOffset(position, offset)
+        SelectedThumbnailStrip.scrollToCurrent(recyclerView, position)
     }
 
     override fun onDismiss() {
@@ -421,16 +421,18 @@ class FilePickerPreviewDialog(
                     }
                 }
                 FilePickerLog.d("FilePickerPreviewDialog", "onPageSelected: position=$position, mCurrentIndex=$mCurrentIndex")
+                val previousItem = mCurrentItem
                 val item = viewModel.getCurrentFolderDataByPosition(position) ?: return
                 mCurrentItem = item
                 updateIndexUI(item)
                 mCurrentIndex = position
+                // 只切换两张缩略图的高亮边框，绝不重新绑定整条列表：
+                // notifyItemRangeChanged 会让每张缩略图重新走 Glide 并触发交叉淡入淡出，就是闪烁的来源。
+                updateThumbnailHighlight(previousItem, item)
 
                 binding.rvSelected.post {
-                    // refresh select rv
-                    binding.rvSelected.adapter?.notifyItemRangeChanged(0, binding.rvSelected.adapter?.itemCount ?: 0)
-                    val indexOfSelect = viewModel.indexOfSelected(item)
-                    scrollItemToCenter(binding.rvSelected, indexOfSelect)
+                    val indexOfSelect = viewModel.getSelectedDataList().indexOf(item)
+                    SelectedThumbnailStrip.scrollToCurrent(binding.rvSelected, indexOfSelect)
                     onSelectListScrollChanged(indexOfSelect, 1, 0)
                 }
             }
@@ -469,19 +471,52 @@ class FilePickerPreviewDialog(
     }
 
 
+    /**
+     * 只切换新旧两张缩略图的选中边框，不重新绑定整个列表。
+     * 离屏的缩略图不用管，真正显示时会由 onBind 用 mCurrentItem 算出正确状态。
+     */
+    private fun updateThumbnailHighlight(previous: MediaEntity?, current: MediaEntity?) {
+        if (previous == current) return
+        setThumbnailSelected(previous, false)
+        setThumbnailSelected(current, true)
+    }
+
+    private fun setThumbnailSelected(item: MediaEntity?, selected: Boolean) {
+        // 按 Holder 实际绑定的数据找，而不是按 models 下标找：
+        // 长按拖动只移动了 ViewHolder、没有重排 adapter 数据，用下标会标错格子。
+        val holder = findThumbnailHolder(item) ?: return
+        holder.itemView.findViewById<View>(R.id.iv_cover_image)?.isSelected = selected
+    }
+
+    private fun findThumbnailHolder(item: MediaEntity?): RecyclerView.ViewHolder? {
+        if (item == null) return null
+        val recyclerView = binding.rvSelected
+        for (index in 0 until recyclerView.childCount) {
+            val holder = recyclerView.getChildViewHolder(recyclerView.getChildAt(index))
+            val model = (holder as? BindingAdapter.BindingViewHolder)?.getModel<MediaEntity>()
+            if (model == item) return holder
+        }
+        return null
+    }
+
     @SuppressLint("SetTextI18n")
     private fun updateBottomMenuSelectNumberUI() {
         val selectedMergeSize = viewModel.getSelectedCount() + viewModel.tempSelectData.size
-        Log.e("FilePickerPreviewDialog", "updateBottomMenuSelectNumberUI: selectedMergeSize=${selectedMergeSize}")
         if (selectedMergeSize > 0) {
             binding.rvSelected.isVisible = true
             binding.btnConfirm.isEnabled = true
+            // 强制数量没选够时不高亮（仍可点击，点了给提示）
+            binding.btnConfirm.alpha = if (viewModel.selectRulesSatisfied()) 1f else 0.4f
             binding.btnConfirm.text = "${viewModel.uiConfig.confirmBtnText}(${selectedMergeSize})"
-            binding.rvSelected.models = viewModel.getSelectedDataList()
-            scrollItemToCenter(binding.rvSelected, viewModel.indexOfSelected(mCurrentItem))
+            // 内容没变就不重置 models（重置会整条重新绑定 + 跳回最左）；
+            // 真变了也先保留原来的滚动锚点，再让当前缩略图平滑跟进。
+            if (SelectedThumbnailStrip.syncModels(binding.rvSelected, viewModel.getSelectedDataList())) {
+                val index = viewModel.getSelectedDataList().indexOf(mCurrentItem)
+                SelectedThumbnailStrip.scrollToCurrent(binding.rvSelected, index)
+            }
         } else {
             binding.rvSelected.isVisible = false
-            binding.rvSelected.models = viewModel.getSelectedDataList()
+            SelectedThumbnailStrip.syncModels(binding.rvSelected, emptyList())
 //            binding.btnConfirm.isEnabled = false
             binding.btnConfirm.text = viewModel.uiConfig.confirmBtnText
         }

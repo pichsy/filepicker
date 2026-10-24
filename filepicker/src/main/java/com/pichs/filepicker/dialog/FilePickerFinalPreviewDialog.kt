@@ -3,7 +3,6 @@ package com.pichs.filepicker.dialog
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Color
-import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
@@ -22,7 +21,7 @@ import com.pichs.filepicker.video.FilePickerVideoPlayerView
 import razerdp.basepopup.BasePopupWindow
 import androidx.lifecycle.viewModelScope
 import androidx.recyclerview.widget.ItemTouchHelper
-import androidx.recyclerview.widget.LinearLayoutManager
+import com.drake.brv.BindingAdapter
 import com.drake.brv.utils.bindingAdapter
 import com.drake.brv.utils.linear
 import com.drake.brv.utils.setup
@@ -35,6 +34,7 @@ import com.pichs.filepicker.utils.FilePickerClickHelper
 import com.pichs.filepicker.utils.FilePickerLog
 import com.pichs.filepicker.utils.FilePickerTimeFormatUtils
 import com.pichs.filepicker.widget.OnFilePickerDragItemTouchHelperCallback
+import com.pichs.filepicker.widget.SelectedThumbnailStrip
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -220,21 +220,23 @@ class FilePickerFinalPreviewDialog(
                     binding.tvSelectIndex.text = ""
                     binding.tvSelectIndex.isChecked = false
                     binding.ivSelectState.isChecked = false
-                    notifyItemChanged(modelPosition)
-//                    onSelect(item, false, itemIndexOfList(itemEntity))
+                    // 只给这一格贴遮罩，不 notifyItemChanged：
+                    // 变更动画会把整张缩略图淡出再淡入，用户看到的就是闪一下。
+                    applyDeleteMask(item, true)
                     updateBottomMenuSelectNumberUI()
                 }
 
                 itemBinding.root.setOnClickListener {
                     // 需要切换是当前 的viewpager2 的位置。
                     val indexOfList = itemIndexOfList(item)
+                    if (indexOfList < 0) {
+                        return@setOnClickListener
+                    }
                     if (indexOfList != mCurrentIndex) {
+                        // 高亮、页码、缩略图跟随统一交给 onPageSelected 处理，避免重复刷新。
                         binding.viewPager2.setCurrentItem(indexOfList, false)
-                        mCurrentIndex = indexOfList
-                        mCurrentItem = item
-                        notifyItemRangeChanged(0, binding.rvSelected.adapter?.itemCount ?: 0)
-                        updateIndexUI(item)
-                        scrollItemToCenter(binding.rvSelected, modelPosition)
+                    } else {
+                        SelectedThumbnailStrip.scrollToCurrent(binding.rvSelected, modelPosition)
                     }
                 }
             }
@@ -284,6 +286,8 @@ class FilePickerFinalPreviewDialog(
             if (item == null) return@clicks
 
             item.isDelete = item.isDelete.not()
+            // 遮罩直接贴到当前这一格，不走 notify 全量刷新
+            applyDeleteMask(item, item.isDelete)
 
             if (item.isDelete.not()) {
                 // 进行选中
@@ -302,15 +306,47 @@ class FilePickerFinalPreviewDialog(
     }
 
     fun scrollItemToCenter(recyclerView: RecyclerView, position: Int) {
-        if (position == -1) return
-        val layoutManager = recyclerView.layoutManager as? LinearLayoutManager ?: return
-        val itemView = layoutManager.findViewByPosition(position)
-        val recyclerViewWidth = recyclerView.width
+        SelectedThumbnailStrip.scrollToCurrent(recyclerView, position)
+    }
 
-        val itemWidth = itemView?.width ?: 0
-        val offset = (recyclerViewWidth - itemWidth) / 2
+    /**
+     * 只切换新旧两张缩略图的选中边框，不重新绑定整条列表（重新绑定会触发 Glide 重载 + 变更动画闪烁）。
+     */
+    private fun updateThumbnailHighlight(previous: FilePickerTempSelected?, current: FilePickerTempSelected?) {
+        if (previous === current) return
+        setThumbnailSelected(previous?.mediaEntity, false)
+        setThumbnailSelected(current?.mediaEntity, true)
+    }
 
-        layoutManager.scrollToPositionWithOffset(position, offset)
+    private fun setThumbnailSelected(entity: MediaEntity?, selected: Boolean) {
+        val holder = findThumbnailHolder(entity) ?: return
+        holder.itemView.findViewById<View>(R.id.iv_cover_image)?.isSelected = selected
+    }
+
+    /** 直接更新某一格的"移出最终选择"遮罩，避免 notifyItemChanged 的交叉淡入淡出。 */
+    private fun applyDeleteMask(item: FilePickerTempSelected, deleted: Boolean) {
+        val holder = findThumbnailHolder(item.mediaEntity) ?: return
+        val cover = holder.itemView.findViewById<View>(R.id.iv_cover_image) ?: return
+        cover.foreground = if (deleted) {
+            ContextCompat.getDrawable(context, R.drawable.item_filepicker_delete_preview_select_mask)
+        } else {
+            null
+        }
+    }
+
+    /**
+     * 按 Holder 实际绑定的数据找格子，而不是按 models 下标：
+     * 长按拖动只移动 ViewHolder、没有重排 adapter 数据，用下标会标错。
+     */
+    private fun findThumbnailHolder(entity: MediaEntity?): RecyclerView.ViewHolder? {
+        if (entity == null) return null
+        val recyclerView = binding.rvSelected
+        for (index in 0 until recyclerView.childCount) {
+            val holder = recyclerView.getChildViewHolder(recyclerView.getChildAt(index))
+            val model = (holder as? BindingAdapter.BindingViewHolder)?.getModel<FilePickerTempSelected>()
+            if (model?.mediaEntity == entity) return holder
+        }
+        return null
     }
 
     override fun onBeforeDismiss(): Boolean {
@@ -363,16 +399,16 @@ class FilePickerFinalPreviewDialog(
                     }
                 }
                 FilePickerLog.d("FilePickerPreviewDialog", "onPageSelected: position=$position, mCurrentIndex=$mCurrentIndex")
+                val previousItem = mCurrentItem
                 val item = tempSelectDataList.getOrNull(position) ?: return
                 mCurrentItem = item
                 updateIndexUI(item)
                 mCurrentIndex = position
+                // 只改动两张缩略图的高亮，整条列表不重新绑定（否则会闪）。
+                updateThumbnailHighlight(previousItem, item)
 
                 binding.rvSelected.post {
-                    // refresh select rv
-                    binding.rvSelected.adapter?.notifyItemRangeChanged(0, binding.rvSelected.adapter?.itemCount ?: 0)
-                    val indexOfSelect = tempSelectDataList.indexOf(item)
-                    scrollItemToCenter(binding.rvSelected, indexOfSelect)
+                    SelectedThumbnailStrip.scrollToCurrent(binding.rvSelected, position)
                 }
             }
         })
@@ -411,21 +447,13 @@ class FilePickerFinalPreviewDialog(
 
     @SuppressLint("SetTextI18n")
     private fun updateBottomMenuSelectNumberUI() {
+        // 只更新按钮文案/数量。缩略图条的数据和状态在变化的当格就地更新，
+        // 不再用 notifyItemRangeChanged 全量刷新（那是缩略图闪烁的直接原因）。
         val selectedMergeSize = tempSelectDataList.filter { !it.isDelete }.size
-        Log.e("FilePickerPreviewDialog", "updateBottomMenuSelectNumberUI: selectedMergeSize=${selectedMergeSize}")
         if (selectedMergeSize > 0) {
-//            binding.rvSelected.isVisible = true
             binding.btnConfirm.isEnabled = true
             binding.btnConfirm.text = "${viewModel.uiConfig.confirmBtnText}(${selectedMergeSize})"
-//            binding.rvSelected.models = tempSelectDataList
-            // 重新刷新列表
-            binding.rvSelected.adapter?.notifyItemRangeChanged(0, binding.rvSelected.adapter?.itemCount ?: 0)
-            scrollItemToCenter(binding.rvSelected, itemIndexOfList(mCurrentItem))
         } else {
-//            binding.rvSelected.isVisible = false
-//            binding.rvSelected.models = tempSelectDataList
-//            binding.btnConfirm.isEnabled = false
-            binding.rvSelected.adapter?.notifyItemRangeChanged(0, binding.rvSelected.adapter?.itemCount ?: 0)
             binding.btnConfirm.text = viewModel.uiConfig.confirmBtnText
         }
     }

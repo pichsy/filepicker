@@ -122,6 +122,115 @@
                 android:layout_marginTop="6dp"
                 android:overScrollMode="never" />
 
+            <com.pichs.xwidget.view.XTextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:text="规则模式"
+                android:textColor="#9E9E9E"
+                android:textSize="13sp" />
+
+            <!-- 模式 chips：无 / 共存 / 互斥，由 MainActivity 的 initRuleModeList() 填充 -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rv_rule_mode"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:overScrollMode="never" />
+
+            <!-- 图片数量 + 勾选"强制"：勾上 = 必须正好选这么多（min=max），不勾 = 只当上限 -->
+            <!-- 仅规则模式为共存 / 互斥时展示，模式为「无」时由 MainActivity 隐藏 -->
+            <LinearLayout
+                android:id="@+id/layout_image_count"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:visibility="gone">
+
+                <com.pichs.xwidget.view.XTextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="图片数量"
+                    android:textColor="#DDDDDD"
+                    android:textSize="14sp" />
+
+                <androidx.appcompat.widget.AppCompatEditText
+                    android:id="@+id/et_image_count"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_marginStart="10dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/demo_input_bg"
+                    android:gravity="center_vertical"
+                    android:hint="空=不限"
+                    android:importantForAutofill="no"
+                    android:inputType="number"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:singleLine="true"
+                    android:textColor="#fff"
+                    android:textColorHint="#666666"
+                    android:textSize="15sp" />
+
+                <androidx.appcompat.widget.AppCompatCheckBox
+                    android:id="@+id/cb_image_force"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:buttonTint="#FFFFFF"
+                    android:text="强制"
+                    android:textColor="#DDDDDD"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
+            <!-- 视频数量 + 勾选"强制" -->
+            <LinearLayout
+                android:id="@+id/layout_video_count"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:visibility="gone">
+
+                <com.pichs.xwidget.view.XTextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="视频数量"
+                    android:textColor="#DDDDDD"
+                    android:textSize="14sp" />
+
+                <androidx.appcompat.widget.AppCompatEditText
+                    android:id="@+id/et_video_count"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_marginStart="10dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/demo_input_bg"
+                    android:gravity="center_vertical"
+                    android:hint="空=不限"
+                    android:importantForAutofill="no"
+                    android:inputType="number"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:singleLine="true"
+                    android:textColor="#fff"
+                    android:textColorHint="#666666"
+                    android:textSize="15sp" />
+
+                <androidx.appcompat.widget.AppCompatCheckBox
+                    android:id="@+id/cb_video_force"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:buttonTint="#FFFFFF"
+                    android:text="强制"
+                    android:textColor="#DDDDDD"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
             <androidx.appcompat.widget.AppCompatCheckBox
                 android:id="@+id/cb_show_camera"
                 android:layout_width="wrap_content"

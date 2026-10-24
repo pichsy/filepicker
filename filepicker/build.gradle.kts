@@ -60,6 +60,8 @@ dependencies {
     // 图片加载
     implementation(libs.glide)
 
+    // 纯逻辑单测（选择规则引擎等，不依赖 Android 运行时）
+    testImplementation(libs.junit)
 }
 
 tasks.register<Javadoc>("javadoc") {

@@ -96,6 +96,25 @@ public data class FilePickerUIConfig(
     var selectMaxNumberOverToastContent: String = "已达到最大选择数量",
 
     /**
+     * 互斥模式下点了另一类时的提示。`%1\$s` 会被替换成"当前只能选"的类型名（图片 / 视频）。
+     * 对应 [FilePicker.Builder.setExclusive]。
+     */
+    var selectExclusiveConflictToastContent: String = "当前只能选择%1\$s",
+
+    /**
+     * 命中**分类型上限**时的提示。`%1\$s` = 类型名，`%2\$d` = 该类型的上限。
+     * 例："图片最多选择3个"。配了 [com.pichs.filepicker.select.SelectRule] 时用它，
+     * 避免"视频还有额度"的情况下误报"已达到最大选择数量"。
+     */
+    var selectTypeMaxToastContent: String = "%1\$s最多选择%2\$d个",
+
+    /**
+     * "必选"条件还没满足时的提示。`%1\$s` = 类型名，`%2\$d` = 要求的数量（即 rule.min）。
+     * 对应 [com.pichs.filepicker.select.SelectRule] 的 min。
+     */
+    var selectRuleNotSatisfiedToastContent: String = "%1\$s必须选%2\$d个",
+
+    /**
      * 网格第一格"拍照 / 录像"入口的图标。0 表示使用库内默认图标。
      * 注意：**是否显示**这个入口由 [FilePicker.Builder.setShowCameraEntry] 控制，不在这里；
      * 这里只管它长什么样。
@@ -166,6 +185,9 @@ public data class FilePickerUIConfig(
         putInt("selectedListDeleteIconBackgroundColor", selectedListDeleteIconBackgroundColor)
         putString("atLeastSelectOneToastContent", atLeastSelectOneToastContent)
         putString("selectMaxNumberOverToastContent", selectMaxNumberOverToastContent)
+        putString("selectExclusiveConflictToastContent", selectExclusiveConflictToastContent)
+        putString("selectTypeMaxToastContent", selectTypeMaxToastContent)
+        putString("selectRuleNotSatisfiedToastContent", selectRuleNotSatisfiedToastContent)
         putInt("cameraEntryIconResId", cameraEntryIconResId)
         putInt("cameraEntryVideoIconResId", cameraEntryVideoIconResId)
         putString("cameraEntryFailedToastContent", cameraEntryFailedToastContent)
@@ -209,6 +231,15 @@ public data class FilePickerUIConfig(
                 selectedListDeleteIconBackgroundColor = bundle.getInt("selectedListDeleteIconBackgroundColor", Color.TRANSPARENT),
                 atLeastSelectOneToastContent = bundle.getString("atLeastSelectOneToastContent", "至少选择一个"),
                 selectMaxNumberOverToastContent = bundle.getString("selectMaxNumberOverToastContent", "已达到最大选择数量"),
+                selectExclusiveConflictToastContent = bundle.getString(
+                    "selectExclusiveConflictToastContent", "当前只能选择%1\$s"
+                ),
+                selectTypeMaxToastContent = bundle.getString(
+                    "selectTypeMaxToastContent", "%1\$s最多选择%2\$d个"
+                ),
+                selectRuleNotSatisfiedToastContent = bundle.getString(
+                    "selectRuleNotSatisfiedToastContent", "%1\$s必须选%2\$d个"
+                ),
                 cameraEntryIconResId = bundle.getInt("cameraEntryIconResId", 0),
                 cameraEntryVideoIconResId = bundle.getInt("cameraEntryVideoIconResId", 0),
                 cameraEntryFailedToastContent = bundle.getString("cameraEntryFailedToastContent", "无法启动相机"),

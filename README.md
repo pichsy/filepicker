@@ -43,7 +43,7 @@
 ```kotlin
 dependencies {
     // 基础组件库 （必须）
-    implementation("com.gitee.pichs:filepicker:7.1.0")
+    implementation("com.gitee.pichs:filepicker:7.2.0")
 
     // 基础组件库 （必须）
     implementation("com.gitee.pichs:xwidget:5.8.1")
@@ -86,7 +86,7 @@ dependencies {
 # libs.version.toml中写法
 [versions]
 xwidget="5.8.1"
-filepicker="7.1.0"
+filepicker="7.2.0"
 brv="1.6.1"
 basepopup="3.2.1"
 glide="4.16.0"
@@ -297,6 +297,55 @@ GIF / 音频 / 文档不显示；有 tab 的类型里入口**跟着当前 tab �
 
 ***
 
+### 6. 按类型限量（图片 N 张 / 视频 M 个 / 互斥）
+
+`setMaxSelectNumber` 只能管一个总数。7.2.0 起新增**按类型分别限量**：图片、视频各自设上限，
+可以要求"必须选够"，也可以要求"图片和视频只能选其中一类"。
+
+```kotlin
+FilePicker.with(this)
+    .setSelectType(FilePickerSelectType.ofAll())
+    .setSelectRules(
+        SelectRule.ofImage(0, 9),   // 图片最多 9 张（min = 0 表示不强制）
+        SelectRule.ofVideo(0, 1),   // 视频最多 1 个
+    )
+    .start()
+```
+
+`SelectRule.ofImage(min, max)` / `ofVideo(min, max)` / `ofGif(min, max)`：
+
+* `max`：该类型的**硬上限**，到顶后勾不上，提示"图片最多选择2个"；
+* `min > 0`：**必须选**。提交时数量必须落在 `min..max` 内；不满足时确定按钮**不高亮**，
+  点击提示"图片必须选3个"，且不会返回；
+* 没配规则的类型**不受限制**。
+
+| 需求 | 写法 |
+| --- | --- |
+| 图片 ≤ 9、视频 ≤ 1，可混选 | `setSelectRules(SelectRule.ofImage(0, 9), SelectRule.ofVideo(0, 1))` |
+| 图片必须正好 9 张 | `setSelectRules(SelectRule.ofImage(9, 9))` |
+| 视频必须 1 个、图片最多 9 张 | `setSelectRules(SelectRule.ofVideo(1, 1), SelectRule.ofImage(0, 9))` |
+| 图片和视频**只能选其中一类** | 上面的规则 + `.setExclusive(true)` |
+| 合计最多 5 个（不分类） | `.setTotalMaxCount(5)` |
+| GIF 不占图片额度 | `.setGifCountsAsImage(false)` |
+
+**互斥（`setExclusive(true)`）的锁定规则**：
+
+* 只有一类配了 `min > 0` → 直接锁定那一类，另一类点了会被拦下（等于"只能选图片 / 只能选视频"）；
+* 两类都配了 `min > 0` → **先点哪类就锁定哪类**，另一类的"必须选"本次作废；
+* 已选类型全部取消后**自动解锁**，可以改选另一类。
+
+**和 `setMaxSelectNumber` 的关系（重要）**：调用 `setSelectRules` / `setExclusive` /
+`setTotalMaxCount` 中**任意一个**就进入"按类型限量"模型，此时 `setMaxSelectNumber` **完全不生效**
+（数量限制只保留一个数据源，库会打一条 warn 日志）。不调用这些新方法时，行为与 7.1.0 **完全一致**。
+
+三个提示文案都可以在 `FilePickerUIConfig` 里改：`selectTypeMaxToastContent`（"图片最多选择2个"）、
+`selectExclusiveConflictToastContent`（"当前只能选择视频"）、`selectRuleNotSatisfiedToastContent`
+（"图片必须选3个"）。
+
+> 预选列表（`setSelectedList`）超出规则时会**按规则截断**并打 warn 日志，不会静默吞掉。
+
+***
+
 ## API 文档
 
 ### FilePicker
@@ -459,7 +508,11 @@ FilePicker.with(this)
 | 方法名                             | 描述                                               |
 | ------------------------------- | ------------------------------------------------ |
 | `setSelectType(type)`           | 设置选择的文件类型                                        |
-| `setMaxSelectNumber(num)`       | 设置最大选择数量                                         |
+| `setMaxSelectNumber(num)`       | 设置最大选择数量（合计上限；启用「按类型限量」后被忽略）                    |
+| `setSelectRules(vararg rules)`  | 按类型分别限量，见「[按类型限量](#6-按类型限量图片-n-张--视频-m-个--互斥)」 |
+| `setExclusive(exclusive)`       | 互斥：图片与视频只能选其中一类                                |
+| `setTotalMaxCount(count)`       | 合计上限（0 = 不限）；不传则由各类型 max 之和推导                  |
+| `setGifCountsAsImage(counts)`   | GIF 是否占用图片额度，默认 `true`                          |
 | `setMaxFileSize(size)`          | 设置最大文件大小（字节）                                     |
 | `setMinFileSize(size)`          | 设置最小文件大小（字节）                                     |
 | `setSlideChooseEnable(enable)`  | 是否启用滑动选择，默认 `true`                               |
@@ -502,6 +555,9 @@ val uiConfig = FilePickerUIConfig().apply {
 | `selectedListDeleteIconBackgroundColor`  | `Int`                     | 已选列表项删除按钮的背景色     | `Color.TRANSPARENT` |
 | `atLeastSelectOneToastContent`           | `String`                  | 未选择任何文件时的提示       | `"至少选择一个"`          |
 | `selectMaxNumberOverToastContent`        | `String`                  | 超出最大选择数量时的提示      | `"已达到最大选择数量"`       |
+| `selectTypeMaxToastContent`              | `String`                  | 命中分类型上限时的提示（`%1$s`=类型名，`%2$d`=上限） | `"%1$s最多选择%2$d个"` |
+| `selectExclusiveConflictToastContent`    | `String`                  | 互斥下点了另一类时的提示（`%1$s`=当前只能选的类型） | `"当前只能选择%1$s"` |
+| `selectRuleNotSatisfiedToastContent`     | `String`                  | 必选未满足时的提示（`%1$s`=类型名，`%2$d`=要求数量） | `"%1$s必须选%2$d个"` |
 | `cameraEntryIconResId`                   | `Int`                     | 拍照入口的图标（0 = 库内默认）      | `0`                 |
 | `cameraEntryVideoIconResId`              | `Int`                     | 录像入口的图标（0 = 库内默认）      | `0`                 |
 | `cameraEntryPhotoText`                   | `String`                  | 「拍照」半边下面的文字         | `"拍照"`             |
@@ -541,6 +597,52 @@ val uiConfig = FilePickerUIConfig().apply {
 感谢你们的无私奉献，让开发变得更加高效和有趣！
 
 ## 升级日志
+
+### 7.2.0
+
+> **没有破坏性 API 变更**：未删除方法、未修改签名。不调用新增的 `setSelectRules` / `setExclusive` /
+> `setTotalMaxCount` / `setGifCountsAsImage` 时，行为与 7.1.0 完全一致。
+
+#### 新增
+
+* **按类型分别限量**：`setSelectRules(SelectRule...)`，图片 / 视频 / GIF 各自设置 `min` / `max`。
+  `max` 是硬上限，`min > 0` 表示"必须选"。命中上限时提示的是**具体类型**的额度
+  （"图片最多选择2个"），不再笼统地报"已达到最大选择数量" —— 此时视频可能还有额度，
+  笼统文案会让用户误以为整体已满。
+* **新类型 `SelectRule`**：`ofImage(min, max)` / `ofVideo(min, max)` / `ofGif(min, max)`；
+  带 `encode` / `decode`（intent 传递用），配置非法（如 `min > max`）在构造时就报错。
+* **互斥选择**：`setExclusive(true)`，图片和视频只能选其中一类。只有一类配了 `min > 0` 时直接锁它
+  （等于只能选图片 / 只能选视频）；两类都配了 `min > 0` 时先点先锁、另一类的必选本次作废；
+  选中的类型全部取消后自动解锁。
+* **合计上限**：`setTotalMaxCount(count)`，属于新模型的一部分（不传则由各类型 `max` 之和推导）。
+* **GIF 额度归属**：默认 GIF 占用"图片"额度；单独配了 `SelectRule.ofGif` 时用自己的规则；
+  可用 `setGifCountsAsImage(false)` 关掉归并。
+* **`FilePickerUIConfig` 新增 3 个提示文案**：`selectTypeMaxToastContent`、
+  `selectExclusiveConflictToastContent`、`selectRuleNotSatisfiedToastContent`，可自定义 / 多语言。
+* **必选不满足时确定按钮不高亮**：按钮置灰（alpha 0.4）但仍可点击，点击吐司"图片必须选3个"，
+  不会返回 —— 既不让用户误以为能提交，也不会出现"按钮点不动又不知道为什么"。
+* **滑动连选按类型配额筛选**：一次划过很多格时按顺序贪心填充，不会先超再回退。
+* **配置矛盾在开发期就报错**：合计容量装不下必选数量（如合计 1 却要求图片必须 9 个）时，
+  `start()` 直接抛 `IllegalArgumentException`，不留到运行期让用户卡在"确定永远点不了"。
+* **`FilePickerLog.w()`**：新增 warn 级别日志，排查配置冲突用。
+* **demo 新增"规则模式"入口**：首页可选 `无 / 共存 / 互斥`，再填图片数量、视频数量并勾选"强制"，
+  demo 会按这三个参数自动拼出对应的 `SelectRule`。
+
+#### 行为变更（仅在新模型下生效）
+
+* 同时调用 `setMaxSelectNumber` 和新模型方法时，`setMaxSelectNumber` **被忽略**并打 warn 日志：
+  数量限制只保留一个数据源，避免两个数字互相打架。
+* 预选列表（`setSelectedList`）超出规则时按规则**截断**并打 warn 日志。
+* `setSingleClickEnable` 的生效条件从"`maxSelectNumber == 1`"改为"**总容量 == 1**"
+  （总容量 = `setTotalMaxCount`，未设置时由各类型 `max` 之和推导），
+  因此 `SelectRule.ofVideo(1, 1)` 也能触发"点一下就返回"。不启用新模型时二者等价，行为不变。
+
+#### 测试
+
+* 26 条 JVM 单测：`SelectRulesEngineTest`（18 条：共存 / 互斥 / 必选 / 上限 / GIF 归并 / 批量筛选 /
+  矛盾配置 / 序列化）+ `SelectMessagesTest`（8 条：提示文案映射）。
+* 真机验证（华为 BRE-AL80 / Android 12）：互斥锁定、分类型上限、必选拦截、文案、老 API 行为不变、
+  两套参数并存时让位。
 
 ### 7.1.0
 

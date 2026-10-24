@@ -53,6 +53,9 @@ import com.pichs.filepicker.utils.FilePickerLog
 import com.pichs.filepicker.utils.FilePickerTimeFormatUtils
 import com.pichs.filepicker.widget.OnFilePickerDragItemTouchHelperCallback
 import com.pichs.filepicker.widget.OnFilePickerItemSelectionChangedListener
+import com.pichs.filepicker.widget.SelectedThumbnailStrip
+import com.pichs.filepicker.select.QuotaType
+import com.pichs.filepicker.select.SelectCheck
 import com.pichs.xwidget.utils.XDisplayHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
@@ -238,10 +241,13 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
             binding.btnConfirm.text = viewModel.uiConfig.confirmBtnText
             binding.tvPreview.text = viewModel.uiConfig.previewText
             binding.btnConfirm.isEnabled = false
+            binding.btnConfirm.alpha = 0.4f
             binding.llPreview.isEnabled = false
             binding.tvPreview.isEnabled = false
         } else {
             binding.btnConfirm.isEnabled = true
+            // 强制数量没选够时不高亮（但仍可点击，点了给"必须选 N 个"的提示）
+            binding.btnConfirm.alpha = if (viewModel.selectRulesSatisfied()) 1f else 0.4f
             binding.llPreview.isEnabled = true
             binding.tvPreview.isEnabled = true
             binding.btnConfirm.text = "${viewModel.uiConfig.confirmBtnText}(${viewModel.getSelectedCount()})"
@@ -298,6 +304,13 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
 
         binding.btnConfirm.setOnClickListener {
             FilePickerLog.d("FilePickerFragment", "selectedData:${viewModel.getSelectedDataList().size},selectType:${viewModel.selectType.value}")
+            // 必选条件没满足时拦住，并明确告诉用户还差什么
+            val notSatisfiedMessage = viewModel.selectRulesNotSatisfiedMessage()
+            if (notSatisfiedMessage != null) {
+                Toast.makeText(requireContext(), notSatisfiedMessage, Toast.LENGTH_SHORT).show()
+                FilePickerLog.d("FilePickerFragment", "必选未满足：$notSatisfiedMessage")
+                return@setOnClickListener
+            }
             callbackToChooser(ArrayList(viewModel.getSelectedDataList()))
         }
 
@@ -488,7 +501,17 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                     viewModel.clearTempSelectData()
                     val list = tempList.filter { it !in viewModel.getSelectedDataList() }
 
-                    if (viewModel.maxSelectNumber.value == 0 || viewModel.maxSelectNumber.value == Int.MAX_VALUE) {
+                    if (viewModel.isSelectRulesActive()) {
+                        // 新模型：按类型配额逐项贪心筛选（图片/视频各自额度、互斥锁定）
+                        val accepted = viewModel.filterSelectableIndices(list).map { list[it] }
+                        if (accepted.size < list.size) {
+                            FilePickerLog.d(
+                                "FilePickerFragment",
+                                "滑动连选被规则截断：accepted=${accepted.size}, total=${list.size}, 规则=${viewModel.describeSelectRules()}"
+                            )
+                        }
+                        viewModel.addAllTempSelectData(accepted)
+                    } else if (viewModel.maxSelectNumber.value == 0 || viewModel.maxSelectNumber.value == Int.MAX_VALUE) {
                         // 如果没有限制选择数量，那么直接添加到临时选择数据中。
                         viewModel.addAllTempSelectData(list)
                     } else {
@@ -629,8 +652,9 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                             viewModel.getSelectedCount() + viewModel.tempSelectData.size == 0
                         )
                     } else {
-                        if (isOverMaxSelectNumber(viewModel.getSelectedDataList().size + viewModel.tempSelectData.size)) {
-                            Toast.makeText(requireContext(), viewModel.uiConfig.selectMaxNumberOverToastContent, Toast.LENGTH_SHORT).show()
+                        val selectCheck = viewModel.canSelect(item)
+                        if (selectCheck !is SelectCheck.Allowed) {
+                            toastSelectCheck(selectCheck)
                             return@setOnClickListener
                         }
                         viewModel.addSelectedData(item)
@@ -808,8 +832,9 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                             viewModel.getSelectedCount() + viewModel.tempSelectData.size == 0
                         )
                     } else {
-                        if (isOverMaxSelectNumber(viewModel.getSelectedDataList().size + viewModel.tempSelectData.size)) {
-                            Toast.makeText(requireContext(), viewModel.uiConfig.selectMaxNumberOverToastContent, Toast.LENGTH_SHORT).show()
+                        val selectCheck = viewModel.canSelect(item)
+                        if (selectCheck !is SelectCheck.Allowed) {
+                            toastSelectCheck(selectCheck)
                             return@setOnClickListener
                         }
                         viewModel.addSelectedData(item)
@@ -836,7 +861,10 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
             }
         }
 
-        binding.recyclerView.maxSelectNumber = viewModel.maxSelectNumber.value
+        // 新模型：滑动连选的上限由逐项按类型筛选（filterSelectableIndices）负责，
+        // 这里传一个大值，避免 RecyclerView 在合计层面提前截断
+        binding.recyclerView.maxSelectNumber =
+            if (viewModel.isSelectRulesActive()) Int.MAX_VALUE else viewModel.maxSelectNumber.value
         binding.recyclerView.currentSelectedCountProvider = { viewModel.getSelectedCount() + viewModel.tempSelectData.size }
     }
 
@@ -892,15 +920,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
     }
 
     fun scrollItemToCenter(recyclerView: RecyclerView, position: Int) {
-        if (position == -1) return
-        val layoutManager = recyclerView.layoutManager as? LinearLayoutManager ?: return
-        val itemView = layoutManager.findViewByPosition(position)
-        val recyclerViewWidth = recyclerView.width
-
-        val itemWidth = itemView?.width ?: 0
-        val offset = (recyclerViewWidth - itemWidth) / 2
-
-        layoutManager.scrollToPositionWithOffset(position, offset)
+        SelectedThumbnailStrip.scrollToCurrent(recyclerView, position)
     }
 
     /**
@@ -993,6 +1013,14 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
         return viewModel.isOverMaxSelectNumber(listSize)
     }
 
+    /** 把"不能选"的原因翻译成给用户的提示 */
+    private fun toastSelectCheck(check: SelectCheck) {
+        val message = viewModel.selectRejectedMessage(check) ?: return
+        val ctx = context ?: return
+        Toast.makeText(ctx, message, Toast.LENGTH_SHORT).show()
+        FilePickerLog.d("FilePickerFragment", "选择被拦下：$message（$check），规则=${viewModel.describeSelectRules()}")
+    }
+
     @SuppressLint("SetTextI18n")
     private fun updateBottomMenuSelectNumberUI() {
         val selectedMergeSize = viewModel.getSelectedCount() + viewModel.tempSelectData.size
@@ -1001,6 +1029,8 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
             binding.tvPreview.isEnabled = true
 
             binding.btnConfirm.isEnabled = true
+            // 强制数量没选够时不高亮（仍可点击，点了给提示）
+            binding.btnConfirm.alpha = if (viewModel.selectRulesSatisfied()) 1f else 0.4f
 
             binding.btnConfirm.text = "${viewModel.uiConfig.confirmBtnText}(${selectedMergeSize})"
             binding.tvPreview.text = "${viewModel.uiConfig.previewText}(${selectedMergeSize})"
@@ -1010,17 +1040,23 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
             if (viewModel.isCanShowBottomSelectRecyclerView()) {
                 binding.rvSelected.isVisible = true
             }
-            binding.rvSelected.models = viewModel.getSelectedDataList() + viewModel.tempSelectData
+            // 内容没变不要重置 models：BRV 的赋值是 notifyDataSetChanged，
+            // 会把整条缩略图重新 bind 一遍（Glide 重新请求），表现为闪烁。
+            SelectedThumbnailStrip.syncModels(
+                binding.rvSelected,
+                viewModel.getSelectedDataList() + viewModel.tempSelectData
+            )
         } else {
             binding.llPreview.isEnabled = false
             binding.tvPreview.isEnabled = false
             binding.btnConfirm.isEnabled = false
+            binding.btnConfirm.alpha = 0.4f
 
             binding.btnConfirm.text = viewModel.uiConfig.confirmBtnText
             binding.tvPreview.text = viewModel.uiConfig.previewText
 
             // 底部选择列表
-            binding.rvSelected.models = mutableListOf<MediaEntity>()
+            SelectedThumbnailStrip.syncModels(binding.rvSelected, emptyList())
             binding.rvSelected.isVisible = false
         }
     }
@@ -1242,8 +1278,9 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
             // 普通模式：插进来之后默认"这张就是要用的"，顺手勾上；
             // 但**已经到上限时不能勾** —— 否则会超出 maxSelectNumber
             val countBefore = viewModel.getSelectedCount() + viewModel.tempSelectData.size
-            if (viewModel.isOverMaxSelectNumber(countBefore)) {
-                Toast.makeText(ctx, viewModel.uiConfig.selectMaxNumberOverToastContent, Toast.LENGTH_SHORT).show()
+            val captureCheck = viewModel.canSelect(entity)
+            if (captureCheck !is SelectCheck.Allowed) {
+                toastSelectCheck(captureCheck)
                 return@launch
             }
             viewModel.takeSelectionSnapshot()

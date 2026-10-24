@@ -13,6 +13,8 @@ import androidx.core.view.updateLayoutParams
 import androidx.lifecycle.Lifecycle
 import com.pichs.filepicker.databinding.ActivityFilepickerMainBinding
 import com.pichs.filepicker.entity.MediaEntity
+import com.pichs.filepicker.select.SelectRule
+import com.pichs.filepicker.select.SelectRulesEngine
 import com.pichs.filepicker.utils.FilePickerLog
 import com.pichs.filepicker.utils.FilePickerPadUtils
 import com.pichs.xwidget.utils.XNavigationBarUtils
@@ -104,6 +106,33 @@ class FilePickerActivity : AppCompatActivity() {
         viewModel.singleClickEnable.value = singleClickEnable
         viewModel.slideChooseEnable.value = slideChooseEnable
         viewModel.showCameraEntry.value = showCameraEntry
+
+        // 新的按类型限量模型：一旦开启，maxSelectNumber 完全不参与判定（单一数据源）
+        if (intent.getBooleanExtra("useSelectRules", false)) {
+            val rules = intent.getStringArrayListExtra("selectRules")
+                ?.mapNotNull { SelectRule.decode(it) }
+                ?: emptyList()
+            val engine = SelectRulesEngine(
+                rules = rules,
+                exclusive = intent.getBooleanExtra("selectExclusive", false),
+                totalMaxCount = intent.getIntExtra("selectTotalMaxCount", 0),
+                gifCountsAsImage = intent.getBooleanExtra("gifCountsAsImage", true),
+            )
+            viewModel.setSelectRulesEngine(engine)
+            FilePickerLog.d("FilePickerActivity", "启用按类型限量规则：${engine.describe()}")
+            if (maxSelectNumber != 0) {
+                FilePickerLog.w(
+                    "FilePickerActivity",
+                    "setMaxSelectNumber($maxSelectNumber) 已失效：已启用按类型限量的选择规则，数量限制只由规则决定"
+                )
+            }
+            if (singleClickEnable && engine.totalCapacity() != 1) {
+                FilePickerLog.w(
+                    "FilePickerActivity",
+                    "singleClickEnable=true 但总容量=${engine.totalCapacity()}（0=不限），单击即返回不会生效"
+                )
+            }
+        }
 
         // 如果有传入已选数据，则添加到已选列表中
 //        if (FilePickerViewModel.userUseSelectDataList.value.isNotEmpty()) {
