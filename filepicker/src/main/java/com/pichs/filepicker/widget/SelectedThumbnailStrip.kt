@@ -1,30 +1,26 @@
 package com.pichs.filepicker.widget
 
-import android.content.Context
 import android.view.View
-import androidx.core.view.doOnNextLayout
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.LinearSmoothScroller
+import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.drake.brv.utils.bindingAdapter
+import com.pichs.filepicker.R
 
 /**
- * 底部已选缩略图横条（相册页 / 预览页）的公共操作：数据同步 + 平滑跟随。
+ * 底部"已选缩略图"横条（相册页 / 预览页）的公共操作。
  *
- * 旧实现的两个问题：
- * 1. 每次翻页都 `notifyItemRangeChanged(0, itemCount)`。全量刷新会让所有可见缩略图重新走一遍
- *    Glide 请求，DefaultItemAnimator 还会对新旧 View 做一次交叉淡入淡出 —— 表现就是缩略图"闪一下"。
- * 2. 居中用 `scrollToPositionWithOffset(position, (rvWidth - itemWidth) / 2)` 瞬移；
- *    而目标在屏幕外时 `findViewByPosition` 返回 null，itemWidth 退化成 0，
- *    落点变成"item 左边贴着屏幕中线"，看起来就是列表毫无规律地乱跳。
+ * 三条约定：
+ * 1. **数据**：内容没变就不重新赋值 models（BRV 的赋值是 notifyDataSetChanged，会整条重绑 + 缩略图闪一下）；
+ * 2. **间距**：格子尺寸保持布局原样，只按 [StripMetrics] 调格子间距，让最右边露出半格；
+ * 3. **高亮**：当前页对应的那一格用绿框，靠 [paintCurrent] 按 **adapter position** 整条重绘 ——
+ *    不再用"记住上一项再清它的边框"那种增量做法，避免 ViewHolder 复用后绿框残留在别的格子上。
  *
- * 现在的策略：
- * - 数据没变就不重新赋值 models（BRV 的赋值是 notifyDataSetChanged，会整条重绑）；
- *   真变了也先记住第一个可见项的偏移，赋值后恢复，列表不会跳回最左边；
- * - 当前缩略图已完整可见时不动（相邻翻页列表保持静止）；需要滚动时用居中对齐的
- *   [LinearSmoothScroller] 平滑滑过去，不再瞬移。
+ * 滚动统一用 RecyclerView 自带的 `smoothScrollToPosition`，不再自己算居中坐标。
  */
 object SelectedThumbnailStrip {
+
+    /** 允许的最大间距：就是 item 布局里原有的左右各 3dp 边距 */
+    const val MAX_SPACING_DP = 6
 
     /**
      * 同步缩略图数据。
@@ -41,80 +37,48 @@ object SelectedThumbnailStrip {
             else -> current.indices.any { current[it] != models[it] }
         }
         if (!changed) return false
-
-        // 记录第一个可见项及其偏移：models 重新赋值后数据一般只是增删，
-        // 恢复这个锚点比"滚回 0"自然得多。
-        val layoutManager = recyclerView.layoutManager as? LinearLayoutManager
-        val anchorPosition = layoutManager?.findFirstVisibleItemPosition() ?: RecyclerView.NO_POSITION
-        val anchorItem = current?.getOrNull(anchorPosition)
-        val anchorView = if (anchorPosition != RecyclerView.NO_POSITION) {
-            layoutManager?.findViewByPosition(anchorPosition)
-        } else {
-            null
-        }
-        val anchorOffset = anchorView?.let { it.left - recyclerView.paddingLeft } ?: 0
-
         adapter.models = models
-
-        if (layoutManager != null && anchorItem != null && models != null) {
-            val newPosition = models.indexOf(anchorItem)
-            if (newPosition >= 0) {
-                layoutManager.scrollToPositionWithOffset(newPosition, anchorOffset)
-            }
-        }
         return true
     }
 
     /**
-     * 让 [position] 处的缩略图进入可视区。
+     * 按当前可视宽度和格子宽度，算出"一屏 5 个半"的间距。
      *
-     * - 已完整可见：什么都不做（连续翻页时这条缩略图条不会跟着晃）；
-     * - 只露出一部分 / 完全离屏：平滑滚动到中间；
-     * - 还没布局完：等下一次 layout 再算，避免用旧坐标算出错误落点。
+     * @param itemWidthPx 格子宽度（含右上角删除按钮区域，不含外边距）；<= 0 表示还没测量出来
+     * @return 布局（含间距，可能为负表示轻微相贴）；null 表示还没测量出来
      */
-    fun scrollToCurrent(recyclerView: RecyclerView, position: Int) {
-        if (position < 0) return
-        val layoutManager = recyclerView.layoutManager as? LinearLayoutManager ?: return
-        if (recyclerView.width <= 0 || recyclerView.isLayoutRequested) {
-            recyclerView.doOnNextLayout { scrollToCurrent(recyclerView, position) }
-            return
-        }
-
-        val view = layoutManager.findViewByPosition(position)
-        if (view != null) {
-            val startPadding = recyclerView.paddingLeft
-            val endPadding = recyclerView.paddingRight
-            val fullyVisible = view.left >= startPadding &&
-                view.right <= recyclerView.width - endPadding
-            if (fullyVisible) return
-
-            val viewCenter = (view.left + view.right) / 2
-            val containerCenter = (recyclerView.width - startPadding - endPadding) / 2 + startPadding
-            recyclerView.stopScroll()
-            recyclerView.smoothScrollBy(viewCenter - containerCenter, 0)
-            return
-        }
-
-        // 目标离屏：交给 LinearSmoothScroller 自己找人，不用我们估 itemWidth / offset。
-        val scroller = CenterSmoothScroller(recyclerView.context)
-        scroller.targetPosition = position
-        recyclerView.stopScroll()
-        layoutManager.startSmoothScroll(scroller)
+    fun resolveLayout(recyclerView: RecyclerView, itemWidthPx: Int): StripMetrics.Layout? {
+        if (itemWidthPx <= 0) return null
+        val available = recyclerView.width - recyclerView.paddingLeft - recyclerView.paddingRight
+        val maxSpacing = (MAX_SPACING_DP * recyclerView.resources.displayMetrics.density).toInt()
+        return StripMetrics.resolveLayout(available, itemWidthPx, maxSpacing)
     }
 
     /**
-     * 居中对齐的平滑滚动器。
-     *
-     * LinearSmoothScroller 默认按"贴边"对齐，这里改写到屏幕中线；
-     * 列表两端滚不过去时 RecyclerView 会自然停在边界，不会出现空白。
+     * 把算出来的间距写到格子上：**只改左右边距**，图片尺寸、右上角删除按钮都不动。
      */
-    private class CenterSmoothScroller(context: Context) : LinearSmoothScroller(context) {
-        override fun calculateDxToMakeVisible(view: View, snapPreference: Int): Int {
-            val layoutManager = layoutManager ?: return 0
-            val viewCenter = (layoutManager.getDecoratedLeft(view) + layoutManager.getDecoratedRight(view)) / 2
-            val containerCenter = (layoutManager.width - layoutManager.paddingLeft - layoutManager.paddingRight) / 2 +
-                layoutManager.paddingLeft
-            return viewCenter - containerCenter
+    fun applyLayout(itemView: View, layout: StripMetrics.Layout?) {
+        if (layout == null) return
+        val params = itemView.layoutParams as? ViewGroup.MarginLayoutParams ?: return
+        if (params.marginStart == 0 && params.marginEnd == layout.spacingPx) return
+        params.marginStart = 0
+        params.marginEnd = layout.spacingPx
+        itemView.layoutParams = params
+    }
+
+    /**
+     * 整条重绘"当前页"高亮：只有 adapter position == [position] 的那格显示绿框。
+     *
+     * 按 position 而不是按数据对象比对，且**每次都把可见格子全刷一遍** ——
+     * ViewHolder 被复用、数据被移动时都不会留下旧绿框。
+     *
+     * @param position 当前页在**已选列表**里的下标；< 0 表示当前页不在已选里，全部取消高亮
+     */
+    fun paintCurrent(recyclerView: RecyclerView, position: Int) {
+        for (i in 0 until recyclerView.childCount) {
+            val child: ViewGroup = recyclerView.getChildAt(i) as? ViewGroup ?: continue
+            val childPosition = recyclerView.getChildAdapterPosition(child)
+            child.findViewById<View>(R.id.iv_cover_image)?.isSelected = childPosition == position
         }
     }
 }

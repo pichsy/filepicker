@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.core.view.isVisible
+import androidx.core.view.doOnLayout
 import androidx.lifecycle.Lifecycle
 import androidx.media3.common.util.UnstableApi
 import androidx.recyclerview.widget.RecyclerView
@@ -21,7 +22,6 @@ import com.pichs.filepicker.video.FilePickerVideoPlayerView
 import razerdp.basepopup.BasePopupWindow
 import androidx.lifecycle.viewModelScope
 import androidx.recyclerview.widget.ItemTouchHelper
-import com.drake.brv.BindingAdapter
 import com.drake.brv.utils.bindingAdapter
 import com.drake.brv.utils.linear
 import com.drake.brv.utils.models
@@ -34,6 +34,7 @@ import com.pichs.filepicker.utils.FilePickerLog
 import com.pichs.filepicker.utils.FilePickerTimeFormatUtils
 import com.pichs.filepicker.widget.OnFilePickerDragItemTouchHelperCallback
 import com.pichs.filepicker.widget.SelectedThumbnailStrip
+import com.pichs.filepicker.widget.StripMetrics
 import com.pichs.filepicker.select.QuotaType
 import com.pichs.filepicker.select.SelectCheck
 import kotlinx.coroutines.Job
@@ -60,6 +61,9 @@ class FilePickerPreviewDialog(
 
     private var mCurrentItem: MediaEntity? = null
     private var mCurrentIndex: Int = 0
+
+    /** 底部缩略图间距（按"一屏 5 个半"算出来），null = 还没测量/保持原样 */
+    private var stripLayout: StripMetrics.Layout? = null
 
     init {
         setContentView(R.layout.dialog_file_picker_preview)
@@ -204,11 +208,10 @@ class FilePickerPreviewDialog(
                 itemBinding.ivDelete.setImageResource(if (viewModel.uiConfig.selectedListDeleteIconResId != 0) viewModel.uiConfig.selectedListDeleteIconResId else R.drawable.filepicker_ic_delete_item)
                 itemBinding.ivDelete.setBackgroundColor(viewModel.uiConfig.selectedListDeleteIconBackgroundColor)
 
-                if (mCurrentItem == item) {
-                    itemBinding.ivCoverImage.isSelected = true
-                } else {
-                    itemBinding.ivCoverImage.isSelected = false
-                }
+                // 高亮按"当前页在已选列表里的下标"算，和整条重绘用同一口径
+                itemBinding.ivCoverImage.isSelected = modelPosition == currentStripIndex()
+                // 只改间距（格子尺寸和删除按钮都不动），让一屏露出 5 个半
+                SelectedThumbnailStrip.applyLayout(itemBinding.root, stripLayout)
 
                 if (item.isVideo()) {
                     itemBinding.tvDuration.visibility = View.VISIBLE
@@ -245,7 +248,7 @@ class FilePickerPreviewDialog(
                         // 避免这里和翻页回调各做一遍，滚动被触发两次。
                         binding.viewPager2.setCurrentItem(indexOfList, false)
                     } else {
-                        SelectedThumbnailStrip.scrollToCurrent(binding.rvSelected, modelPosition)
+                        binding.rvSelected.smoothScrollToPosition(modelPosition)
                     }
                 }
             }
@@ -258,16 +261,23 @@ class FilePickerPreviewDialog(
             ItemTouchHelper(callback).attachToRecyclerView(binding.rvSelected)
         }
 
+        // 算间距（格子尺寸不动）：等 rv 测量完、子项绑出来之后再算，算不出就隔 80ms 重试
+        binding.rvSelected.post { applyStripSpacing() }
+
         binding.rvSelected.post {
             val indexOfSelected = viewModel.getSelectedDataList().indexOf(mCurrentItem)
             if (indexOfSelected >= 0) {
-                SelectedThumbnailStrip.scrollToCurrent(binding.rvSelected, indexOfSelected)
+                // 首帧直接到位，避免打开弹窗时先看到列表从头滚一遍
+                binding.rvSelected.scrollToPosition(indexOfSelected)
             }
+            refreshStripSelection()
         }
 
         binding.rvSelected.addOnScrollListener(object : RecyclerView.OnScrollListener() {
             override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                 super.onScrolled(recyclerView, dx, dy)
+                // 滚动过程中新挂载/复用的格子立刻按当前位置重绘绿框
+                refreshStripSelection()
                 // 只镜像用户手动拖动的位移。程序化平滑滚动已经通过 type=1 通知过目标下标，
                 // 再逐帧镜像 dx 会让底部条被滚两次，看起来"越跑越偏"。
                 if (recyclerView.scrollState == RecyclerView.SCROLL_STATE_DRAGGING) {
@@ -374,8 +384,10 @@ class FilePickerPreviewDialog(
         }
     }
 
+    /** 最普通的平滑滚动：交给 RecyclerView 自己算，不手动计算坐标 */
     fun scrollItemToCenter(recyclerView: RecyclerView, position: Int) {
-        SelectedThumbnailStrip.scrollToCurrent(recyclerView, position)
+        if (position < 0) return
+        recyclerView.smoothScrollToPosition(position)
     }
 
     override fun onDismiss() {
@@ -421,18 +433,18 @@ class FilePickerPreviewDialog(
                     }
                 }
                 FilePickerLog.d("FilePickerPreviewDialog", "onPageSelected: position=$position, mCurrentIndex=$mCurrentIndex")
-                val previousItem = mCurrentItem
                 val item = viewModel.getCurrentFolderDataByPosition(position) ?: return
                 mCurrentItem = item
+                // updateIndexUI 内部会整条重绘底部缩略图的绿框
                 updateIndexUI(item)
                 mCurrentIndex = position
-                // 只切换两张缩略图的高亮边框，绝不重新绑定整条列表：
-                // notifyItemRangeChanged 会让每张缩略图重新走 Glide 并触发交叉淡入淡出，就是闪烁的来源。
-                updateThumbnailHighlight(previousItem, item)
 
                 binding.rvSelected.post {
                     val indexOfSelect = viewModel.getSelectedDataList().indexOf(item)
-                    SelectedThumbnailStrip.scrollToCurrent(binding.rvSelected, indexOfSelect)
+                    if (indexOfSelect >= 0) {
+                        // 最普通的做法：交给 RecyclerView 自己平滑滚到对应位置
+                        binding.rvSelected.smoothScrollToPosition(indexOfSelect)
+                    }
                     onSelectListScrollChanged(indexOfSelect, 1, 0)
                 }
             }
@@ -468,35 +480,46 @@ class FilePickerPreviewDialog(
             binding.tvSelectIndex.isChecked = true
             binding.ivSelectState.isChecked = true
         }
+        // 整条重绘底部缩略图的"当前页"绿框
+        refreshStripSelection()
     }
 
 
     /**
-     * 只切换新旧两张缩略图的选中边框，不重新绑定整个列表。
-     * 离屏的缩略图不用管，真正显示时会由 onBind 用 mCurrentItem 算出正确状态。
+     * 按"边缘露出半格"算一次底部条间距并应用。
+     * 只改间距、不改格子尺寸；间距没变就不重绑，避免缩略图闪烁。
      */
-    private fun updateThumbnailHighlight(previous: MediaEntity?, current: MediaEntity?) {
-        if (previous == current) return
-        setThumbnailSelected(previous, false)
-        setThumbnailSelected(current, true)
-    }
-
-    private fun setThumbnailSelected(item: MediaEntity?, selected: Boolean) {
-        // 按 Holder 实际绑定的数据找，而不是按 models 下标找：
-        // 长按拖动只移动了 ViewHolder、没有重排 adapter 数据，用下标会标错格子。
-        val holder = findThumbnailHolder(item) ?: return
-        holder.itemView.findViewById<View>(R.id.iv_cover_image)?.isSelected = selected
-    }
-
-    private fun findThumbnailHolder(item: MediaEntity?): RecyclerView.ViewHolder? {
-        if (item == null) return null
-        val recyclerView = binding.rvSelected
-        for (index in 0 until recyclerView.childCount) {
-            val holder = recyclerView.getChildViewHolder(recyclerView.getChildAt(index))
-            val model = (holder as? BindingAdapter.BindingViewHolder)?.getModel<MediaEntity>()
-            if (model == item) return holder
+    private fun applyStripSpacing(attempt: Int = 0) {
+        if (!::binding.isInitialized) return
+        val rv = binding.rvSelected
+        val itemWidth = rv.getChildAt(0)?.width ?: 0
+        if (rv.width <= 0 || itemWidth <= 0) {
+            if (attempt < 10) rv.postDelayed({ applyStripSpacing(attempt + 1) }, 80)
+            return
         }
-        return null
+        val layout = SelectedThumbnailStrip.resolveLayout(rv, itemWidth)
+        FilePickerLog.d(
+            "FilePickerPreviewDialog",
+            "缩略图条：可视宽=${rv.width} 格子宽=$itemWidth 算出=$layout 当前=$stripLayout"
+        )
+        if (layout != null && layout != stripLayout) {
+            stripLayout = layout
+            rv.bindingAdapter?.notifyDataSetChanged()
+        }
+    }
+
+    /** 当前预览项在"已选列表"里的下标；不在已选里返回 -1 */
+    private fun currentStripIndex(): Int = viewModel.getSelectedDataList().indexOf(mCurrentItem)
+
+    /**
+     * 整条重绘底部缩略图的"当前页"绿框：只有下标对得上的那格亮。
+     *
+     * 以前是"记住上一项、只清它一个"，一旦 ViewHolder 被复用就会把绿框留在别的格子上；
+     * 现在每次按 adapter position 全量刷可见格子，值没变时 XCardImageView 内部直接 return，开销可忽略。
+     */
+    private fun refreshStripSelection() {
+        if (!::binding.isInitialized) return
+        SelectedThumbnailStrip.paintCurrent(binding.rvSelected, currentStripIndex())
     }
 
     @SuppressLint("SetTextI18n")
@@ -512,11 +535,15 @@ class FilePickerPreviewDialog(
             // 真变了也先保留原来的滚动锚点，再让当前缩略图平滑跟进。
             if (SelectedThumbnailStrip.syncModels(binding.rvSelected, viewModel.getSelectedDataList())) {
                 val index = viewModel.getSelectedDataList().indexOf(mCurrentItem)
-                SelectedThumbnailStrip.scrollToCurrent(binding.rvSelected, index)
+                if (index >= 0) {
+                    binding.rvSelected.post { binding.rvSelected.smoothScrollToPosition(index) }
+                }
+                refreshStripSelection()
             }
         } else {
             binding.rvSelected.isVisible = false
             SelectedThumbnailStrip.syncModels(binding.rvSelected, emptyList())
+            SelectedThumbnailStrip.paintCurrent(binding.rvSelected, -1)
 //            binding.btnConfirm.isEnabled = false
             binding.btnConfirm.text = viewModel.uiConfig.confirmBtnText
         }

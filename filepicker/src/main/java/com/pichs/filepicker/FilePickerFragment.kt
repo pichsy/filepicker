@@ -919,8 +919,10 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
 
     }
 
+    /** 最普通的平滑滚动：交给 RecyclerView 自己算，不手动计算坐标 */
     fun scrollItemToCenter(recyclerView: RecyclerView, position: Int) {
-        SelectedThumbnailStrip.scrollToCurrent(recyclerView, position)
+        if (position < 0) return
+        recyclerView.smoothScrollToPosition(position)
     }
 
     /**
