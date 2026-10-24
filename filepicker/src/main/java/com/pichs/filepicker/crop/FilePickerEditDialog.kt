@@ -67,7 +67,12 @@ class FilePickerEditDialog(
     private lateinit var progressBar: View
 
     private var currentTool = Tool.CROP
-    private var selectedColor = Color.WHITE
+    /** 选中的画笔颜色；null 表示处于"橡皮模式"（所有颜色点都不选中） */
+    private var selectedColor: Int? = DOODLE_COLORS.first()
+    /** 画笔面板：橡皮是否被选中（选中时色点全部取消） */
+    private var doodleEraserActive = false
+    /** 马赛克面板：橡皮是否被选中 */
+    private var mosaicEraserActive = false
     private var mosaicStyle = 0 // 0 = 像素马赛克，1 = 模糊
     private var bitmapLoaded = false
     private var exporting = false
@@ -244,8 +249,11 @@ class FilePickerEditDialog(
             }
 
             Tool.DOODLE -> {
-                addIconButton(R.drawable.filepicker_ic_edit_eraser) {
-                    Toast.makeText(context, "橡皮下一步接入", Toast.LENGTH_SHORT).show()
+                // 橡皮是"模式"：选中时浅白圆角底 + 所有颜色点取消选中
+                addEraserButton(active = doodleEraserActive) {
+                    doodleEraserActive = true
+                    selectedColor = null
+                    buildSecondaryPanel()
                 }
                 addDivider()
                 for (color in DOODLE_COLORS) {
@@ -260,15 +268,24 @@ class FilePickerEditDialog(
             }
 
             Tool.MOSAIC -> {
-                addIconButton(R.drawable.filepicker_ic_edit_eraser) {
-                    Toast.makeText(context, "橡皮下一步接入", Toast.LENGTH_SHORT).show()
+                addEraserButton(active = mosaicEraserActive) {
+                    mosaicEraserActive = true
+                    buildSecondaryPanel()
                 }
                 addDivider()
-                addIconButton(R.drawable.filepicker_ic_edit_mosaic, selected = mosaicStyle == 0) {
+                addIconButton(
+                    R.drawable.filepicker_ic_edit_mosaic,
+                    selected = !mosaicEraserActive && mosaicStyle == 0,
+                ) {
+                    mosaicEraserActive = false
                     mosaicStyle = 0
                     buildSecondaryPanel()
                 }
-                addIconButton(R.drawable.filepicker_ic_edit_blur, selected = mosaicStyle == 1) {
+                addIconButton(
+                    R.drawable.filepicker_ic_edit_blur,
+                    selected = !mosaicEraserActive && mosaicStyle == 1,
+                ) {
+                    mosaicEraserActive = false
                     mosaicStyle = 1
                     buildSecondaryPanel()
                 }
@@ -292,6 +309,41 @@ class FilePickerEditDialog(
         secondaryPanel.addView(image)
     }
 
+    /**
+     * 橡皮按钮：未选中透明背景；选中时**浅白圆形底**（不要太大，32dp 圆形）。
+     */
+    private fun addEraserButton(active: Boolean, onClick: () -> Unit) {
+        val hitSize = dp(40)
+        val bgSize = dp(32)
+        val slot = android.widget.FrameLayout(context).apply {
+            layoutParams = LinearLayout.LayoutParams(hitSize, dp(48)).apply {
+                setMargins(dp(2), 0, dp(2), 0)
+            }
+            isClickable = true
+            isFocusable = true
+            setOnClickListener { onClick() }
+        }
+        val image = ImageView(context).apply {
+            layoutParams = android.widget.FrameLayout.LayoutParams(bgSize, bgSize).apply {
+                gravity = android.view.Gravity.CENTER
+            }
+            setPadding(dp(7), dp(7), dp(7), dp(7))
+            scaleType = ImageView.ScaleType.FIT_CENTER
+            setImageResource(R.drawable.filepicker_ic_edit_eraser)
+            setColorFilter(if (active) 0xFF06B10D.toInt() else Color.WHITE)
+            background = if (active) {
+                GradientDrawable().apply {
+                    shape = GradientDrawable.OVAL
+                    setColor(0x40FFFFFF)
+                }
+            } else {
+                null
+            }
+        }
+        slot.addView(image)
+        secondaryPanel.addView(slot)
+    }
+
     private fun addDivider() {
         val divider = View(context).apply {
             setBackgroundColor(0x40FFFFFF)
@@ -308,15 +360,16 @@ class FilePickerEditDialog(
      * - 未选中 14dp，选中原地放大 1.4 倍（≈20dp），槽位不变、不挤动其他点。
      */
     private fun addColorDot(color: Int) {
-        val selected = color == selectedColor
+        val selected = selectedColor == color
         val slotSize = dp(34)
-        val dotSize = dp(14)
+        val dotSize = dp(16)
         val slot = android.widget.FrameLayout(context).apply {
             layoutParams = LinearLayout.LayoutParams(slotSize, dp(48))
             isClickable = true
             isFocusable = true
             setOnClickListener {
                 selectedColor = color
+                doodleEraserActive = false
                 buildSecondaryPanel()
             }
         }
@@ -328,10 +381,10 @@ class FilePickerEditDialog(
                 shape = GradientDrawable.OVAL
                 setColor(color)
                 if (selected) {
-                    setStroke(dp(2), Color.WHITE)
+                    setStroke(dp(2.5f), Color.WHITE)
                 } else {
-                    // 给每个点一圈淡描边：黑色点在深色图片上也看得见
-                    setStroke(dp(1), 0x99FFFFFF.toInt())
+                    // 每个圆点都有白色描边（1.5dp），黑色点在深色图片上也清楚
+                    setStroke(dp(1.5f), Color.WHITE)
                 }
             }
             if (selected) {
@@ -344,4 +397,6 @@ class FilePickerEditDialog(
     }
 
     private fun dp(value: Int): Int = (value * context.resources.displayMetrics.density).toInt()
+
+    private fun dp(value: Float): Int = (value * context.resources.displayMetrics.density).toInt()
 }
