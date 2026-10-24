@@ -123,14 +123,16 @@ class FilePickerCropActivity : Activity() {
         btnDone = findViewById(R.id.btn_done)
         btnReset = findViewById(R.id.btn_reset)
         bottomBar = findViewById(R.id.bottom_bar)
-        findViewById<TextView>(R.id.tv_title).text = title
-        // 固定比例（头像）模式没有"框可改"的概念，隐藏旋转/还原
-        bottomBar.visibility = if (aspect > 0f) View.GONE else View.VISIBLE
+        bottomBar.visibility = View.VISIBLE
 
         findViewById<View>(R.id.btn_cancel).setOnClickListener { cancel() }
         btnDone.setOnClickListener { export() }
         findViewById<View>(R.id.btn_rotate).setOnClickListener {
             cropView.rotate90()
+            updateResetState()
+        }
+        findViewById<View>(R.id.btn_mirror).setOnClickListener {
+            cropView.mirror()
             updateResetState()
         }
         btnReset.setOnClickListener {
@@ -143,17 +145,13 @@ class FilePickerCropActivity : Activity() {
         loadBitmapAsync()
     }
 
-    /** 内容铺满全屏，顶栏/底栏按状态栏、导航栏高度让位 */
+    /** 内容铺满全屏，底部操作栏按导航栏高度让位（否则"确定"会被导航条压住） */
     private fun applySystemBarInsets() {
-        val topBar = findViewById<View>(R.id.top_bar)
         val bottomBarView = findViewById<View>(R.id.bottom_bar)
         androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(
             window.decorView
         ) { _, insets ->
             val bars = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars())
-            topBar.setPadding(
-                topBar.paddingLeft, bars.top, topBar.paddingRight, topBar.paddingBottom
-            )
             bottomBarView.setPadding(
                 bottomBarView.paddingLeft, bottomBarView.paddingTop,
                 bottomBarView.paddingRight, bars.bottom
@@ -216,11 +214,11 @@ class FilePickerCropActivity : Activity() {
         btnDone.isEnabled = false
 
         val ratio = cropView.cropRatio()
-        val rotation = cropView.currentRotation()
+        val transform = cropView.exportTransform()
         val uri = sourceUri
         val path = sourcePath
         Thread {
-            val file = CropEngine.export(this, uri, path, ratio, rotation, outputMaxSize, quality)
+            val file = CropEngine.export(this, uri, path, ratio, transform, outputMaxSize, quality)
             handler.post {
                 exporting = false
                 progressBar.visibility = View.GONE
@@ -263,7 +261,8 @@ class FilePickerCropActivity : Activity() {
     override fun onDestroy() {
         super.onDestroy()
         running = false
-        bitmap?.let { if (!it.isRecycled) it.recycle() }
+        // 位图统一由 CropView 释放（它同时持有原始位图与旋转/镜像产生的中间位图）
+        if (::cropView.isInitialized) cropView.release()
         bitmap = null
     }
 

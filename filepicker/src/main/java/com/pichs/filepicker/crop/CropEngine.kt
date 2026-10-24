@@ -92,7 +92,7 @@ object CropEngine {
      * 按裁剪框导出文件。
      *
      * @param ratio 裁剪框在图片中的归一化位置（0~1，坐标基于「已按 EXIF 摆正 + 用户旋转后」的图片）
-     * @param rotation 用户旋转角度（0/90/180/270，顺时针）
+     * @param transform 用户旋转/镜像的累计变换（作用在 EXIF 摆正后的原图上，再裁剪）
      * @param outputMaxSize 输出最长边上限；<=0 表示不缩放（仍受 decodeMax 限制）
      * @return 生成的临时文件；失败返回 null
      */
@@ -101,7 +101,7 @@ object CropEngine {
         uri: Uri?,
         path: String?,
         ratio: CropGeometry.RectF2,
-        rotation: Int,
+        transform: android.graphics.Matrix?,
         outputMaxSize: Int,
         quality: Int,
     ): File? {
@@ -112,9 +112,8 @@ object CropEngine {
                 4096
             }
             var bitmap = openDisplayBitmap(context, uri, path, decodeMax) ?: return null
-            val normalizedRotation = CropGeometry.normalizeRotation(rotation)
-            if (normalizedRotation != 0) {
-                bitmap = rotateBitmap(bitmap, normalizedRotation)
+            if (transform != null && !transform.isIdentity) {
+                bitmap = applyTransform(bitmap, transform) ?: return null
             }
             val cropped = cropBitmap(bitmap, ratio) ?: return null
             val output = scaleDown(cropped, outputMaxSize)
@@ -126,7 +125,8 @@ object CropEngine {
             FilePickerLog.d(
                 TAG,
                 "导出裁剪图: ${file.absolutePath} ${output.width}x${output.height} " +
-                    "ratio=[${ratio.left}, ${ratio.top}, ${ratio.right}, ${ratio.bottom}] rot=$normalizedRotation"
+                    "ratio=[${ratio.left}, ${ratio.top}, ${ratio.right}, ${ratio.bottom}] " +
+                    "transform=${if (transform == null || transform.isIdentity) "identity" else "custom"}"
             )
             file
         } catch (e: Throwable) {
@@ -225,14 +225,14 @@ object CropEngine {
     // 变换 / 输出
     // ------------------------------------------------------------------
 
-    private fun rotateBitmap(bitmap: Bitmap, degrees: Int): Bitmap {
-        val matrix = Matrix().apply { postRotate(degrees.toFloat()) }
+    private fun applyTransform(bitmap: Bitmap, transform: android.graphics.Matrix): Bitmap? {
         return try {
-            val result = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+            val result = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, transform, true)
             if (result != bitmap) bitmap.recycle()
             result
         } catch (e: Throwable) {
-            bitmap
+            FilePickerLog.e(TAG, "应用旋转/镜像失败: ${e.message}")
+            null
         }
     }
 

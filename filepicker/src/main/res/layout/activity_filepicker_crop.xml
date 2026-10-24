@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  裁剪页：全屏黑底 + 画布 + 底部一条操作栏。
+  底部：取消 / 旋转 / 还原 …… 右侧绿色「确定」（和首页的确定按钮同款样式：#04AD0C）。
+-->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/crop_root"
     android:layout_width="match_parent"
@@ -10,85 +14,6 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <!-- 顶部：取消 / 标题 / 完成 -->
-    <LinearLayout
-        android:id="@+id/top_bar"
-        android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:layout_gravity="top"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingStart="8dp"
-        android:paddingEnd="8dp">
-
-        <TextView
-            android:id="@+id/btn_cancel"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:paddingStart="8dp"
-            android:paddingTop="8dp"
-            android:paddingEnd="16dp"
-            android:paddingBottom="8dp"
-            android:text="取消"
-            android:textColor="#ffffff"
-            android:textSize="16sp" />
-
-        <TextView
-            android:id="@+id/tv_title"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:text="裁剪"
-            android:textColor="#ffffff"
-            android:textSize="16sp" />
-
-        <TextView
-            android:id="@+id/btn_done"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:paddingStart="16dp"
-            android:paddingTop="8dp"
-            android:paddingEnd="8dp"
-            android:paddingBottom="8dp"
-            android:text="完成"
-            android:textColor="#06B10D"
-            android:textSize="16sp"
-            android:textStyle="bold" />
-    </LinearLayout>
-
-    <!-- 底部：旋转 / 还原（自由裁剪时显示） -->
-    <LinearLayout
-        android:id="@+id/bottom_bar"
-        android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:layout_gravity="bottom"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp">
-
-        <TextView
-            android:id="@+id/btn_rotate"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:padding="8dp"
-            android:text="↻ 旋转"
-            android:textColor="#ffffff"
-            android:textSize="15sp" />
-
-        <TextView
-            android:id="@+id/btn_reset"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:gravity="end"
-            android:padding="8dp"
-            android:text="还原"
-            android:textColor="#ffffff"
-            android:textSize="15sp" />
-    </LinearLayout>
-
     <ProgressBar
         android:id="@+id/progress"
         android:layout_width="48dp"
@@ -96,5 +21,71 @@
         android:layout_gravity="center"
         android:indeterminateTint="#ffffff"
         android:visibility="gone" />
+
+    <LinearLayout
+        android:id="@+id/bottom_bar"
+        android:layout_width="match_parent"
+        android:layout_height="72dp"
+        android:layout_gravity="bottom"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="8dp"
+        android:paddingEnd="12dp">
+
+        <TextView
+            android:id="@+id/btn_cancel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="12dp"
+            android:text="取消"
+            android:textColor="#ffffff"
+            android:textSize="16sp" />
+
+        <ImageView
+            android:id="@+id/btn_rotate"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:contentDescription="旋转"
+            android:padding="10dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/filepicker_ic_crop_rotate" />
+
+        <ImageView
+            android:id="@+id/btn_mirror"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:contentDescription="镜像"
+            android:padding="10dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/filepicker_ic_crop_mirror" />
+
+        <TextView
+            android:id="@+id/btn_reset"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="12dp"
+            android:text="还原"
+            android:textColor="#ffffff"
+            android:textSize="15sp" />
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <TextView
+            android:id="@+id/btn_done"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="#04AD0C"
+            android:paddingStart="20dp"
+            android:paddingTop="8dp"
+            android:paddingEnd="20dp"
+            android:paddingBottom="8dp"
+            android:text="确定"
+            android:textColor="#ffffff"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+    </LinearLayout>
 
 </FrameLayout>
