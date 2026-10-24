@@ -111,6 +111,9 @@ class CropView @JvmOverloads constructor(
     /** 进入裁剪时图片留白比例（图片占屏幕的 90%，四周留出可拖拽空间） */
     private val cropEnterInset = 0.90f
 
+    /** 裁剪框离屏幕左右边缘的固定间距（横图竖图都不能拖到屏幕边缘） */
+    private val cropSideMargin = 16f * resources.displayMetrics.density
+
     /** 已确认的裁剪区域（相对当前显示图片的归一化坐标；null = 还没裁剪） */
     private var pendingCrop: CropGeometry.RectF2? = null
 
@@ -367,6 +370,29 @@ class CropView @JvmOverloads constructor(
         invalidate()
     }
 
+    /**
+     * 裁剪框可活动的安全区域：左右各留 [cropSideMargin]，顶部到状态栏下方一点，
+     * 底部到裁剪专属菜单上方；图片比安全区小时取交集。
+     */
+    private fun cropSafeBounds(): RectF {
+        val safe = RectF(
+            cropSideMargin,
+            cropContentTop.toFloat(),
+            width - cropSideMargin,
+            height - cropContentBottom.toFloat(),
+        )
+        val bounds = RectF(
+            max(imageRect.left, safe.left),
+            max(imageRect.top, safe.top),
+            min(imageRect.right, safe.right),
+            min(imageRect.bottom, safe.bottom),
+        )
+        if (bounds.width() < 48f * density || bounds.height() < 48f * density) {
+            return RectF(safe)
+        }
+        return bounds
+    }
+
     /** 进入裁剪时的视图状态：图片缩到可用区域 90% 居中、框 = 图片区域 */
     fun enterCropViewState() {
         val bmp = bitmap ?: return
@@ -381,6 +407,11 @@ class CropView @JvmOverloads constructor(
         frame.set(0f, 0f, 0f, 0f)
         updateImageRect()
         frame.set(imageRect)
+        val safe = cropSafeBounds()
+        if (frame.left < safe.left) frame.left = safe.left
+        if (frame.right > safe.right) frame.right = safe.right
+        if (frame.top < safe.top) frame.top = safe.top
+        if (frame.bottom > safe.bottom) frame.bottom = safe.bottom
         constrain()
         notifyFrameChanged()
         scheduleIdleAutoFit()
@@ -494,6 +525,12 @@ class CropView @JvmOverloads constructor(
                 } else {
                     frame.set(imageRect)
                 }
+                // 框不能超出安全区域（左右固定间距、顶部状态栏下、底部菜单上）
+                val safe = cropSafeBounds()
+                if (frame.left < safe.left) frame.left = safe.left
+                if (frame.right > safe.right) frame.right = safe.right
+                if (frame.top < safe.top) frame.top = safe.top
+                if (frame.bottom > safe.bottom) frame.bottom = safe.bottom
                 minScale = min(fit, scale)
                 maxScale = minScale * MAX_ZOOM
                 android.util.Log.d(
@@ -757,11 +794,13 @@ class CropView @JvmOverloads constructor(
         if (!cropMode || !initialized) return
         val bmp = bitmap ?: return
         if (frame.width() <= 1f || frame.height() <= 1f) return
-        val margin = 24f * density
-        val availTop = cropContentTop.toFloat()
-        val availBottom = (height - cropContentBottom).toFloat()
-        val maxW = width - margin * 2
-        val maxH = (availBottom - availTop) - margin * 2
+        val safe = cropSafeBounds()
+        val availTop = safe.top
+        val availBottom = safe.bottom
+        val availCxSafe = safe.centerX()
+        val availCySafe = safe.centerY()
+        val maxW = safe.width()
+        val maxH = safe.height()
         val factor = min(maxW / frame.width(), maxH / frame.height())
         if (factor <= 1.02f) return
 
@@ -777,8 +816,8 @@ class CropView @JvmOverloads constructor(
         // 目标框：保持宽高比、居中到屏幕中心
         val targetW = frame.width() * factor
         val targetH = frame.height() * factor
-        val availCx = width / 2f
-        val availCy = availTop + (availBottom - availTop) / 2f
+        val availCx = availCxSafe
+        val availCy = availCySafe
         val targetFrame = RectF(
             availCx - targetW / 2f,
             availCy - targetH / 2f,
@@ -1356,7 +1395,7 @@ class CropView @JvmOverloads constructor(
     }
 
     private fun resizeFrame(dx: Float, dy: Float) {
-        val bounds = imageRect.toGeometry()
+        val bounds = cropSafeBounds().toGeometry()
         val minSize = 48f * density
         val resized = CropGeometry.resizeFrame(
             frame = frame.toGeometry(),
