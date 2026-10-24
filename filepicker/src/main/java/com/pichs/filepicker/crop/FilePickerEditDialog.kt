@@ -273,14 +273,14 @@ class FilePickerEditDialog(
         }
     }
 
-    /** 图标按钮（40dp 热区，选中用绿色 tint） */
+    /** 图标按钮（36dp 热区，选中用绿色 tint） */
     private fun addIconButton(iconRes: Int, selected: Boolean = false, onClick: () -> Unit) {
-        val size = dp(40)
+        val size = dp(36)
         val image = ImageView(context).apply {
             layoutParams = LinearLayout.LayoutParams(size, size).apply {
                 setMargins(dp(2), 0, dp(2), 0)
             }
-            setPadding(dp(8), dp(8), dp(8), dp(8))
+            setPadding(dp(9), dp(9), dp(9), dp(9))
             scaleType = ImageView.ScaleType.FIT_CENTER
             setImageResource(iconRes)
             setColorFilter(if (selected) 0xFF06B10D.toInt() else Color.WHITE)
@@ -299,18 +299,21 @@ class FilePickerEditDialog(
         secondaryPanel.addView(divider)
     }
 
-    /** 颜色小圆点：22dp，全部塞在一行里（和微信一样） */
+    /** 颜色小圆点：18dp，全部塞在一行里（和微信一样） */
     private fun addColorDot(color: Int) {
-        val size = dp(22)
+        val size = dp(18)
         val dot = View(context).apply {
             layoutParams = LinearLayout.LayoutParams(size, size).apply {
-                setMargins(dp(6), 0, dp(6), 0)
+                setMargins(dp(5), 0, dp(5), 0)
             }
             background = GradientDrawable().apply {
                 shape = GradientDrawable.OVAL
                 setColor(color)
                 if (color == selectedColor) {
                     setStroke(dp(2), Color.WHITE)
+                } else {
+                    // 给每个点一圈淡描边：黑色点在深色背景上也看得见
+                    setStroke(dp(1), 0x99FFFFFF.toInt())
                 }
             }
             setOnClickListener {

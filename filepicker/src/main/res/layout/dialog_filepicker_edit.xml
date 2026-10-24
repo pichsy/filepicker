@@ -74,7 +74,7 @@
             android:layout_height="44dp"
             android:alpha="0.35"
             android:contentDescription="撤销"
-            android:padding="11dp"
+            android:padding="13dp"
             android:scaleType="fitCenter"
             android:src="@drawable/filepicker_ic_edit_undo" />
 
@@ -84,7 +84,7 @@
             android:layout_height="44dp"
             android:alpha="0.35"
             android:contentDescription="重做"
-            android:padding="11dp"
+            android:padding="13dp"
             android:scaleType="fitCenter"
             android:src="@drawable/filepicker_ic_edit_redo" />
     </LinearLayout>
@@ -126,37 +126,37 @@
 
         <ImageView
             android:id="@+id/tool_doodle"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
             android:contentDescription="画笔"
-            android:padding="12dp"
+            android:padding="13dp"
             android:scaleType="fitCenter"
             android:src="@drawable/filepicker_ic_edit_brush" />
 
         <ImageView
             android:id="@+id/tool_text"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
             android:contentDescription="文字"
-            android:padding="12dp"
+            android:padding="13dp"
             android:scaleType="fitCenter"
             android:src="@drawable/filepicker_ic_edit_text" />
 
         <ImageView
             android:id="@+id/tool_crop"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
             android:contentDescription="裁剪"
-            android:padding="12dp"
+            android:padding="13dp"
             android:scaleType="fitCenter"
             android:src="@drawable/filepicker_ic_edit_crop" />
 
         <ImageView
             android:id="@+id/tool_mosaic"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
             android:contentDescription="马赛克"
-            android:padding="12dp"
+            android:padding="13dp"
             android:scaleType="fitCenter"
             android:src="@drawable/filepicker_ic_edit_mosaic" />
 
