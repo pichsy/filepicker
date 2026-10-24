@@ -776,11 +776,9 @@ class FilePickerEditDialog(
                         rightMargin = dp(34)
                     }
                     contentDescription = "画笔粗细"
-                    val minFrac = 0.0015f
-                    val maxFrac = 0.020f
-                    setValue(((cropView.brushRadiusFracValue() - minFrac) / (maxFrac - minFrac)).coerceIn(0f, 1f))
+                    setValue(sliderFromBrushFrac(cropView.brushRadiusFracValue()))
                     onValueChanged = { v ->
-                        cropView.setBrushRadiusFrac(minFrac + v * (maxFrac - minFrac))
+                        cropView.setBrushRadiusFrac(brushFracFromSlider(v))
                     }
                 }
                 row().addView(slider)
@@ -853,6 +851,37 @@ class FilePickerEditDialog(
     }
 
     private fun row(): LinearLayout = panelRow ?: newRow()
+
+    /**
+     * 滑条进度 → 笔刷粗细（占图片短边比例）。
+     * 0~25% 保持原来的线性比例；25% 之后用 1.9 次幂加速，越往右变粗越快。
+     */
+    private fun brushFracFromSlider(v0: Float): Float {
+        val v = v0.coerceIn(0f, 1f)
+        val minF = 0.0015f
+        val maxF = 0.020f
+        val pivot = 0.25f
+        val atPivot = minF + pivot * (maxF - minF)
+        return if (v <= pivot) {
+            minF + v * (maxF - minF)
+        } else {
+            atPivot + (maxF - atPivot) * ((v - pivot) / (1f - pivot)).pow(1.9f)
+        }
+    }
+
+    /** 笔刷粗细 → 滑条进度（上面映射的逆函数） */
+    private fun sliderFromBrushFrac(frac: Float): Float {
+        val minF = 0.0015f
+        val maxF = 0.020f
+        val pivot = 0.25f
+        val atPivot = minF + pivot * (maxF - minF)
+        val f = frac.coerceIn(minF, maxF)
+        return if (f <= atPivot) {
+            (f - minF) / (maxF - minF)
+        } else {
+            pivot + (1f - pivot) * ((f - atPivot) / (maxF - atPivot)).pow(1f / 1.9f)
+        }
+    }
 
     /** 大号图标按钮（44dp 热区 / 22dp 视觉，马赛克的两种效果用） */
     private fun addBigIconButton(iconRes: Int, selected: Boolean = false, onClick: () -> Unit) {
