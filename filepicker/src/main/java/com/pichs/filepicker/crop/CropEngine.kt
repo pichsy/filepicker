@@ -105,6 +105,7 @@ object CropEngine {
         outputMaxSize: Int,
         quality: Int,
         textLayers: List<TextLayer> = emptyList(),
+        strokes: List<BrushStroke> = emptyList(),
     ): File? {
         return try {
             val decodeMax = if (outputMaxSize > 0) {
@@ -117,6 +118,9 @@ object CropEngine {
                 bitmap = applyTransform(bitmap, transform) ?: return null
             }
             var cropped = cropBitmap(bitmap, ratio) ?: return null
+            if (strokes.isNotEmpty()) {
+                cropped = applyBrushStrokes(cropped, ratio, strokes) ?: cropped
+            }
             if (textLayers.isNotEmpty()) {
                 cropped = drawTextLayersOnCrop(cropped, ratio, textLayers) ?: cropped
             }
@@ -238,6 +242,131 @@ object CropEngine {
             FilePickerLog.e(TAG, "应用旋转/镜像失败: ${e.message}")
             null
         }
+    }
+
+    /**
+     * 把马赛克/毛刷涂抹效果拼到裁剪结果上。
+     *
+     * 笔画坐标是「显示图片」的归一化坐标（= 变换后原图的归一化坐标），
+     * 用 ratio 反算到裁剪块像素坐标；笔刷半径按原图短边比例放大，导出不会糊。
+     */
+    private fun applyBrushStrokes(
+        cropped: Bitmap,
+        ratio: CropGeometry.RectF2,
+        strokes: List<BrushStroke>,
+    ): Bitmap? {
+        return try {
+            val w = cropped.width
+            val h = cropped.height
+            if (w <= 0 || h <= 0 || ratio.width <= 0f || ratio.height <= 0f) return null
+            val fullW = w / ratio.width
+            val fullH = h / ratio.height
+            val shortSide = minOf(fullW, fullH)
+            // 效果图：像素马赛克 + 毛刷模糊（都是缩放再拉回来，便宜且观感够用）
+            val mosaicBlock = (shortSide * 0.035f).toInt().coerceAtLeast(4)
+            val mosaicDown = Bitmap.createScaledBitmap(
+                cropped, maxOf(1, w / mosaicBlock), maxOf(1, h / mosaicBlock), true
+            )
+            val mosaic = Bitmap.createScaledBitmap(mosaicDown, w, h, false)
+            val smudgeDown = Bitmap.createScaledBitmap(cropped, maxOf(1, w / 14), maxOf(1, h / 14), true)
+            val smudge = Bitmap.createScaledBitmap(smudgeDown, w, h, true)
+
+            val pixelMask = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+            val smudgeMask = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+            val strokePaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+                style = android.graphics.Paint.Style.STROKE
+                strokeCap = android.graphics.Paint.Cap.ROUND
+                strokeJoin = android.graphics.Paint.Join.ROUND
+                color = android.graphics.Color.WHITE
+            }
+            val clearPaint = android.graphics.Paint(strokePaint).apply {
+                xfermode = android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.CLEAR)
+            }
+            val pixelCanvas = android.graphics.Canvas(pixelMask)
+            val smudgeCanvas = android.graphics.Canvas(smudgeMask)
+            for (stroke in strokes) {
+                if (stroke.points.isEmpty()) continue
+                strokePaint.strokeWidth = stroke.radiusFrac * shortSide * 2f
+                clearPaint.strokeWidth = strokePaint.strokeWidth
+                if (stroke.erase) {
+                    drawStroke(pixelCanvas, stroke, ratio, w, h, clearPaint)
+                    drawStroke(smudgeCanvas, stroke, ratio, w, h, clearPaint)
+                } else if (stroke.mode == 1) {
+                    drawStroke(smudgeCanvas, stroke, ratio, w, h, strokePaint)
+                } else if (stroke.mode == 0) {
+                    drawStroke(pixelCanvas, stroke, ratio, w, h, strokePaint)
+                }
+            }
+
+            val mutable = if (cropped.isMutable && cropped.config == Bitmap.Config.ARGB_8888) {
+                cropped
+            } else {
+                cropped.copy(Bitmap.Config.ARGB_8888, true) ?: return null
+            }
+            val canvas = android.graphics.Canvas(mutable)
+            val maskPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+                xfermode = android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.DST_IN)
+            }
+            val effectPaint = android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG)
+            for ((effect, mask) in listOf(mosaic to pixelMask, smudge to smudgeMask)) {
+                val save = canvas.saveLayer(0f, 0f, w.toFloat(), h.toFloat(), null)
+                canvas.drawBitmap(effect, 0f, 0f, effectPaint)
+                canvas.drawBitmap(mask, 0f, 0f, maskPaint)
+                canvas.restoreToCount(save)
+            }
+            // 彩色画笔涂鸦层
+            val doodleStrokes = strokes.filter { it.mode == 2 && it.points.isNotEmpty() }
+            if (doodleStrokes.isNotEmpty()) {
+                val doodleLayer = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+                val doodleCanvas = android.graphics.Canvas(doodleLayer)
+                val doodlePaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+                    style = android.graphics.Paint.Style.STROKE
+                    strokeCap = android.graphics.Paint.Cap.ROUND
+                    strokeJoin = android.graphics.Paint.Join.ROUND
+                }
+                val doodleClear = android.graphics.Paint(doodlePaint).apply {
+                    xfermode = android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.CLEAR)
+                }
+                for (stroke in doodleStrokes) {
+                    doodlePaint.color = stroke.color
+                    doodlePaint.strokeWidth = stroke.radiusFrac * shortSide * 2f
+                    doodleClear.strokeWidth = doodlePaint.strokeWidth
+                    drawStroke(
+                        doodleCanvas, stroke, ratio, w, h,
+                        if (stroke.erase) doodleClear else doodlePaint,
+                    )
+                }
+                canvas.drawBitmap(doodleLayer, 0f, 0f, effectPaint)
+            }
+            FilePickerLog.d(TAG, "拼接涂抹: ${strokes.size} 笔, 画布=${w}x${h}")
+            mutable
+        } catch (e: Throwable) {
+            FilePickerLog.e(TAG, "拼接涂抹失败: ${e.message}")
+            null
+        }
+    }
+
+    private fun drawStroke(
+        canvas: android.graphics.Canvas,
+        stroke: BrushStroke,
+        ratio: CropGeometry.RectF2,
+        w: Int,
+        h: Int,
+        paint: android.graphics.Paint,
+    ) {
+        val points = stroke.points
+        fun px(p: FloatArray) = (p[0] - ratio.left) / ratio.width * w
+        fun py(p: FloatArray) = (p[1] - ratio.top) / ratio.height * h
+        if (points.size == 1) {
+            canvas.drawPoint(px(points[0]), py(points[0]), paint)
+            return
+        }
+        val path = android.graphics.Path()
+        path.moveTo(px(points[0]), py(points[0]))
+        for (i in 1 until points.size) {
+            path.lineTo(px(points[i]), py(points[i]))
+        }
+        canvas.drawPath(path, paint)
     }
 
     /**

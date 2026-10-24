@@ -197,14 +197,16 @@ class FilePickerEditDialog(
         progressBar.visibility = View.VISIBLE
         btnDone.isEnabled = false
 
-        val ratio = cropView.cropRatio()
+        val ratio = cropView.exportRatio()
         val transform = cropView.exportTransform()
         val textLayers = cropView.textLayersSnapshot()
+        val strokes = cropView.strokesSnapshot()
+        FilePickerLog.d(TAG, "导出: 文字=${textLayers.size} 笔画=${strokes.size}")
         val uri = entity.uri
         val path = entity.path
         Thread {
             val file = CropEngine.export(
-                context, uri, path, ratio, transform, outputMaxSize, quality, textLayers
+                context, uri, path, ratio, transform, outputMaxSize, quality, textLayers, strokes
             )
             handler.post {
                 exporting = false
@@ -576,6 +578,7 @@ class FilePickerEditDialog(
         if (tool == Tool.NONE) {
             cropView.setCropMode(false)
             cropView.setTextGesturesLocked(false)
+            cropView.setPaintEnabled(false)
             updateToolColors()
             buildSecondaryPanel()
             return
@@ -584,6 +587,16 @@ class FilePickerEditDialog(
         cropView.setCropMode(tool == Tool.CROP)
         // 文字手势保持可用（点文字可选中/拖动），输入浮层打开时才锁住
         cropView.setTextGesturesLocked(false)
+        // 画笔 / 马赛克 工具都会开启"涂抹"
+        cropView.setPaintEnabled(tool == Tool.MOSAIC || tool == Tool.DOODLE)
+        if (tool == Tool.MOSAIC) {
+            cropView.setPaintEraser(false)
+            cropView.setPaintStyle(mosaicStyle)
+        } else if (tool == Tool.DOODLE) {
+            cropView.setPaintEraser(false)
+            cropView.setPaintStyle(2)
+            cropView.setBrushColor(selectedColor ?: Color.WHITE)
+        }
         updateToolColors()
         buildSecondaryPanel()
     }
@@ -620,7 +633,8 @@ class FilePickerEditDialog(
 
             Tool.DOODLE -> {
                 // 橡皮是"模式"：选中时浅白圆角底 + 所有颜色点取消选中
-                addEraserButton(active = doodleEraserActive) {
+                addEraserButton(active = cropView.isPaintEraser()) {
+                    cropView.setPaintEraser(true)
                     doodleEraserActive = true
                     selectedColor = null
                     buildSecondaryPanel()
@@ -636,29 +650,52 @@ class FilePickerEditDialog(
             }
 
             Tool.MOSAIC -> {
-                addEraserButton(active = mosaicEraserActive) {
+                val eraser = cropView.isPaintEraser()
+                addEraserButton(active = eraser) {
+                    cropView.setPaintEraser(true)
                     mosaicEraserActive = true
                     buildSecondaryPanel()
                 }
                 addDivider()
-                addIconButton(
+                // 两种马赛克：像素马赛克 / 毛刷模糊（图标放大到 22dp）
+                addBigIconButton(
                     R.drawable.filepicker_ic_edit_mosaic,
-                    selected = !mosaicEraserActive && mosaicStyle == 0,
+                    selected = !eraser && mosaicStyle == 0,
                 ) {
-                    mosaicEraserActive = false
                     mosaicStyle = 0
+                    mosaicEraserActive = false
+                    cropView.setPaintEraser(false)
+                    cropView.setPaintStyle(0)
                     buildSecondaryPanel()
                 }
-                addIconButton(
+                addBigIconButton(
                     R.drawable.filepicker_ic_edit_blur,
-                    selected = !mosaicEraserActive && mosaicStyle == 1,
+                    selected = !eraser && mosaicStyle == 1,
                 ) {
-                    mosaicEraserActive = false
                     mosaicStyle = 1
+                    mosaicEraserActive = false
+                    cropView.setPaintEraser(false)
+                    cropView.setPaintStyle(1)
                     buildSecondaryPanel()
                 }
             }
         }
+    }
+
+    /** 大号图标按钮（44dp 热区 / 22dp 视觉，马赛克的两种效果用） */
+    private fun addBigIconButton(iconRes: Int, selected: Boolean = false, onClick: () -> Unit) {
+        val size = dp(44)
+        val image = ImageView(context).apply {
+            layoutParams = LinearLayout.LayoutParams(size, size).apply {
+                setMargins(dp(2), 0, dp(2), 0)
+            }
+            setPadding(dp(11), dp(11), dp(11), dp(11))
+            scaleType = ImageView.ScaleType.FIT_CENTER
+            setImageResource(iconRes)
+            setColorFilter(if (selected) 0xFF06B10D.toInt() else Color.WHITE)
+            setOnClickListener { onClick() }
+        }
+        secondaryPanel.addView(image)
     }
 
     /** 图标按钮（36dp 热区，选中用绿色 tint） */
@@ -738,6 +775,9 @@ class FilePickerEditDialog(
             setOnClickListener {
                 selectedColor = color
                 doodleEraserActive = false
+                cropView.setPaintEraser(false)
+                cropView.setPaintStyle(2)
+                cropView.setBrushColor(color)
                 buildSecondaryPanel()
             }
         }

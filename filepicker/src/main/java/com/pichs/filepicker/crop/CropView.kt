@@ -47,6 +47,39 @@ class CropView @JvmOverloads constructor(
     /** 文字默认字号：图片短边的 7% */
     private val defaultTextSizeFrac = 0.07f
 
+    /** 马赛克/画笔的笔画 */
+    private val strokes = mutableListOf<BrushStroke>()
+    private var activeStroke: BrushStroke? = null
+    /** 是否处于"涂抹"模式（马赛克工具） */
+    private var paintEnabled = false
+    /** 0 = 像素马赛克，1 = 毛刷模糊，2 = 彩色画笔 */
+    private var paintStyle = 0
+    /** 画笔颜色 */
+    private var brushColor = Color.WHITE
+    /** 彩色涂鸦层（画笔） */
+    private var doodleLayer: Bitmap? = null
+    private var doodleDirty = true
+    /** 是否橡皮（擦掉涂抹效果） */
+    private var paintEraser = false
+    /** 笔刷半径 = 图片短边 * 该比例 */
+    private var brushRadiusFrac = 0.05f
+    /** 涂抹遮罩/效果图缓存 */
+    private var maskBitmap: Bitmap? = null
+    private var maskDirty = true
+    private var mosaicBitmap: Bitmap? = null
+    private var smudgeBitmap: Bitmap? = null
+    private var effectsDirty = true
+    private val paintStrokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        strokeCap = Paint.Cap.ROUND
+        strokeJoin = Paint.Join.ROUND
+        color = Color.WHITE
+    }
+    private val effectPaint = Paint(Paint.FILTER_BITMAP_FLAG)
+    private val maskPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        xfermode = android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.DST_IN)
+    }
+
     /** 用户旋转/镜像的累计变换（只含 90° 旋转和水平镜像，导出时作用在解码后的原图上） */
     private val bakeMatrix = Matrix()
 
@@ -157,6 +190,10 @@ class CropView @JvmOverloads constructor(
         rotation = 0
         bakeMatrix.reset()
         textLayers.clear()
+        strokes.clear()
+        activeStroke = null
+        maskDirty = true
+        effectsDirty = true
         initialized = false
         initLayout()
         invalidate()
@@ -201,6 +238,52 @@ class CropView @JvmOverloads constructor(
 
     /** 当前文字图层快照（导出时用） */
     fun textLayersSnapshot(): List<TextLayer> = textLayers.toList()
+
+    /** 笔画快照（导出时用） */
+    fun strokesSnapshot(): List<BrushStroke> =
+        strokes.filter { it.points.isNotEmpty() }.map { stroke ->
+            BrushStroke(
+                points = stroke.points.map { it.copyOf() }.toMutableList(),
+                radiusFrac = stroke.radiusFrac,
+                mode = stroke.mode,
+                erase = stroke.erase,
+                color = stroke.color,
+            )
+        }
+
+    /** 是否处于涂抹模式（马赛克工具） */
+    fun setPaintEnabled(enabled: Boolean) {
+        if (paintEnabled == enabled) return
+        paintEnabled = enabled
+        activeStroke = null
+        invalidate()
+    }
+
+    /** 涂抹样式：0 = 像素马赛克，1 = 毛刷模糊，2 = 彩色画笔 */
+    fun setPaintStyle(style: Int) {
+        paintStyle = style
+    }
+
+    /** 画笔颜色（彩色画笔用） */
+    fun setBrushColor(color: Int) {
+        brushColor = color
+    }
+
+    /** 橡皮：擦掉涂抹效果 */
+    fun setPaintEraser(erb: Boolean) {
+        paintEraser = erb
+    }
+
+    fun paintStyleSelected(): Int = paintStyle
+
+    /** 是否处于裁剪工具状态（只有这时导出才按裁剪框，否则导出整张图） */
+    fun isCropMode(): Boolean = cropMode
+
+    /** 导出色块：裁剪模式=框，否则整张图 */
+    fun exportRatio(): CropGeometry.RectF2 =
+        if (cropMode) cropRatio() else CropGeometry.RectF2(0f, 0f, 1f, 1f)
+
+    fun isPaintEraser(): Boolean = paintEraser
 
     /** 点"已选中的文字"时回调（进入该文字的编辑状态） */
     var onTextEditRequested: ((Int) -> Unit)? = null
@@ -304,6 +387,10 @@ class CropView @JvmOverloads constructor(
         rotation = 0
         bakeMatrix.reset()
         textLayers.clear()
+        strokes.clear()
+        activeStroke = null
+        maskDirty = true
+        effectsDirty = true
         bitmap = sourceBitmap
         initLayout()
         notifyFrameChanged()
@@ -334,8 +421,12 @@ class CropView @JvmOverloads constructor(
         replaceBitmap(flipped)
         bakeMatrix.postConcat(Matrix().apply { postScale(-1f, 1f) })
         applyInPlace(contentInNewBitmap)
-        // 文字锚点跟着图一起镜像
+        // 文字/笔画跟着图一起镜像
         textLayers.forEach { it.followMirrorHorizontal() }
+        strokes.forEach { it.followMirrorHorizontal() }
+        maskDirty = true
+        doodleDirty = true
+        effectsDirty = true
         invalidate()
     }
 
@@ -431,8 +522,12 @@ class CropView @JvmOverloads constructor(
         rotation = (rotation + 90) % 360
         bakeMatrix.postConcat(Matrix().apply { postRotate(90f) })
         applyInPlace(contentInNewBitmap)
-        // 文字锚点跟着图一起转
+        // 文字/笔画跟着图一起转
         textLayers.forEach { it.followRotate90Cw() }
+        strokes.forEach { it.followRotate90Cw() }
+        maskDirty = true
+        doodleDirty = true
+        effectsDirty = true
         invalidate()
     }
 
@@ -571,6 +666,8 @@ class CropView @JvmOverloads constructor(
         if (!initialized) return false
         // 文字手势优先：点文字选中/拖动/双指缩放
         if (handleTextTouch(event)) return true
+        // 涂抹模式：单指画，双指缩放图片
+        if (handlePaintTouch(event)) return true
         // 注意：不管是否处于裁剪状态，图片都允许拖动/双指缩放
         scaleDetector.onTouchEvent(event)
 
@@ -777,6 +874,206 @@ class CropView @JvmOverloads constructor(
         invalidate()
     }
 
+    // ------------------------------------------------------------------
+    // 涂抹（马赛克/毛刷）
+    // ------------------------------------------------------------------
+
+    private fun handlePaintTouch(event: MotionEvent): Boolean {
+        if (!paintEnabled) return false
+        when (event.actionMasked) {
+            MotionEvent.ACTION_DOWN -> {
+                if (event.pointerCount > 1) return false
+                startStroke(event.x, event.y)
+                return true
+            }
+
+            MotionEvent.ACTION_POINTER_DOWN -> {
+                // 双指：结束当前笔画，交给图片缩放
+                activeStroke = null
+                return false
+            }
+
+            MotionEvent.ACTION_MOVE -> {
+                val stroke = activeStroke ?: return false
+                if (event.pointerCount > 1) return false
+                for (i in 0 until event.pointerCount) {
+                    addPointToStroke(stroke, event.getX(i), event.getY(i))
+                }
+                return true
+            }
+
+            MotionEvent.ACTION_POINTER_UP -> {
+                activeStroke = null
+                return false
+            }
+
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                val had = activeStroke != null
+                activeStroke = null
+                return had
+            }
+        }
+        return false
+    }
+
+    private fun startStroke(x: Float, y: Float) {
+        if (imageRect.width() <= 0f || imageRect.height() <= 0f) return
+        android.util.Log.d(
+            "FilePickerCropView",
+            "开始涂抹: style=$paintStyle eraser=$paintEraser color=${Integer.toHexString(brushColor)}",
+        )
+        val stroke = BrushStroke(
+            radiusFrac = brushRadiusFrac,
+            mode = paintStyle,
+            erase = paintEraser,
+            color = brushColor,
+        )
+        strokes.add(stroke)
+        activeStroke = stroke
+        addPointToStroke(stroke, x, y)
+    }
+
+    private fun addPointToStroke(stroke: BrushStroke, x: Float, y: Float) {
+        if (imageRect.width() <= 0f || imageRect.height() <= 0f) return
+        val fx = ((x - imageRect.left) / imageRect.width()).coerceIn(0f, 1f)
+        val fy = ((y - imageRect.top) / imageRect.height()).coerceIn(0f, 1f)
+        val points = stroke.points
+        if (points.isNotEmpty()) {
+            val last = points[points.size - 1]
+            val dx = (fx - last[0]) * imageRect.width()
+            val dy = (fy - last[1]) * imageRect.height()
+            if (dx * dx + dy * dy < (2.5f * density) * (2.5f * density)) return
+        }
+        stroke.add(fx, fy)
+        maskDirty = true
+        doodleDirty = true
+        invalidate()
+    }
+
+    /** 把涂抹效果画到画布上：效果图 + 遮罩 */
+    private fun drawPaintedEffects(canvas: Canvas, bmp: Bitmap) {
+        if (strokes.isEmpty()) return
+        ensureEffects(bmp)
+        ensureMasks(bmp)
+        val mosaicMask = pixelMask ?: return
+        val smudgeMask = smudgeMask ?: return
+        val save = canvas.saveLayer(imageRect, null)
+        // 像素马赛克
+        val mosaic = mosaicBitmap
+        if (mosaic != null) {
+            canvas.drawBitmap(mosaic, null, imageRect, effectPaint)
+            canvas.drawBitmap(mosaicMask, null, imageRect, maskPaint)
+            // DST_IN 后原本区域变成马赛克；需要再恢复遮罩外的原图：
+        }
+        canvas.restoreToCount(save)
+        // 上面的 saveLayer 只处理马赛克；毛刷单独一层
+        val save2 = canvas.saveLayer(imageRect, null)
+        val smudge = smudgeBitmap
+        if (smudge != null) {
+            canvas.drawBitmap(smudge, null, imageRect, effectPaint)
+            canvas.drawBitmap(smudgeMask, null, imageRect, maskPaint)
+        }
+        canvas.restoreToCount(save2)
+        // 彩色画笔涂鸦层
+        val doodle = doodleLayer
+        if (doodle != null) {
+            canvas.drawBitmap(doodle, null, imageRect, effectPaint)
+        }
+    }
+
+    private var pixelMask: Bitmap? = null
+    private var smudgeMask: Bitmap? = null
+
+    private fun ensureEffects(bmp: Bitmap) {
+        if (!effectsDirty && mosaicBitmap != null && smudgeBitmap != null) return
+        effectsDirty = false
+        mosaicBitmap?.recycle()
+        smudgeBitmap?.recycle()
+        val shortSide = min(bmp.width, bmp.height).coerceAtLeast(8)
+        val mosaicBlock = (shortSide * 0.035f).toInt().coerceAtLeast(4)
+        val mosaicW = max(1, bmp.width / mosaicBlock)
+        val mosaicH = max(1, bmp.height / mosaicBlock)
+        val down = Bitmap.createScaledBitmap(bmp, mosaicW, mosaicH, true)
+        mosaicBitmap = Bitmap.createScaledBitmap(down, bmp.width, bmp.height, false)
+        if (down != mosaicBitmap && down != bmp) down.recycle()
+
+        val blurW = max(1, bmp.width / 14)
+        val blurH = max(1, bmp.height / 14)
+        val blurDown = Bitmap.createScaledBitmap(bmp, blurW, blurH, true)
+        smudgeBitmap = Bitmap.createScaledBitmap(blurDown, bmp.width, bmp.height, true)
+        if (blurDown != smudgeBitmap && blurDown != bmp) blurDown.recycle()
+    }
+
+    private fun ensureMasks(bmp: Bitmap) {
+        if (!maskDirty && pixelMask != null && smudgeMask != null) return
+        maskDirty = false
+        pixelMask?.recycle()
+        smudgeMask?.recycle()
+        pixelMask = Bitmap.createBitmap(bmp.width, bmp.height, Bitmap.Config.ARGB_8888)
+        smudgeMask = Bitmap.createBitmap(bmp.width, bmp.height, Bitmap.Config.ARGB_8888)
+        val shortSide = min(bmp.width, bmp.height).toFloat()
+        val pixelCanvas = Canvas(pixelMask!!)
+        val smudgeCanvas = Canvas(smudgeMask!!)
+        val clearPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+            strokeCap = Paint.Cap.ROUND
+            strokeJoin = Paint.Join.ROUND
+            xfermode = android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.CLEAR)
+        }
+        // 彩色画笔涂鸦层
+        if (doodleDirty || doodleLayer == null) {
+            doodleDirty = false
+            doodleLayer?.recycle()
+            doodleLayer = Bitmap.createBitmap(bmp.width, bmp.height, Bitmap.Config.ARGB_8888)
+            val doodleCanvas = Canvas(doodleLayer!!)
+            val doodlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                style = Paint.Style.STROKE
+                strokeCap = Paint.Cap.ROUND
+                strokeJoin = Paint.Join.ROUND
+            }
+            val doodleClear = Paint(doodlePaint).apply {
+                xfermode = android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.CLEAR)
+            }
+            for (stroke in strokes) {
+                if (stroke.points.isEmpty() || stroke.mode != 2) continue
+                doodlePaint.color = stroke.color
+                doodlePaint.strokeWidth = stroke.radiusFrac * shortSide * 2f
+                doodleClear.strokeWidth = doodlePaint.strokeWidth
+                drawStrokePath(
+                    doodleCanvas, stroke, bmp,
+                    if (stroke.erase) doodleClear else doodlePaint,
+                )
+            }
+        }
+        for (stroke in strokes) {
+            if (stroke.points.isEmpty() || stroke.mode == 2) continue
+            paintStrokePaint.strokeWidth = stroke.radiusFrac * shortSide * 2f
+            clearPaint.strokeWidth = paintStrokePaint.strokeWidth
+            if (stroke.erase) {
+                // 橡皮：两张遮罩都要擦掉
+                drawStrokePath(pixelCanvas, stroke, bmp, clearPaint)
+                drawStrokePath(smudgeCanvas, stroke, bmp, clearPaint)
+            } else {
+                val target = if (stroke.mode == 1) smudgeCanvas else pixelCanvas
+                drawStrokePath(target, stroke, bmp, paintStrokePaint)
+            }
+        }
+    }
+
+    private fun drawStrokePath(canvas: Canvas, stroke: BrushStroke, bmp: Bitmap, paint: Paint) {
+        val points = stroke.points
+        if (points.size == 1) {
+            canvas.drawPoint(points[0][0] * bmp.width, points[0][1] * bmp.height, paint)
+            return
+        }
+        val path = android.graphics.Path()
+        path.moveTo(points[0][0] * bmp.width, points[0][1] * bmp.height)
+        for (i in 1 until points.size) {
+            path.lineTo(points[i][0] * bmp.width, points[i][1] * bmp.height)
+        }
+        canvas.drawPath(path, paint)
+    }
+
     private fun panBy(dx: Float, dy: Float) {
         centerX += dx
         centerY += dy
@@ -874,6 +1171,7 @@ class CropView @JvmOverloads constructor(
         val bmp = bitmap ?: return
         if (!initialized) return
         canvas.drawBitmap(bmp, null, imageRect, null)
+        drawPaintedEffects(canvas, bmp)
         drawTextLayers(canvas, bmp)
         if (!cropMode) return
 
