@@ -141,6 +141,7 @@ class FilePickerEditDialog(
         toolText.setOnClickListener {
             currentTool = Tool.TEXT
             cropView.setCropMode(false)
+            cropView.setTextEditEnabled(true)
             updateToolColors()
             buildSecondaryPanel()
             showTextInput()
@@ -237,18 +238,27 @@ class FilePickerEditDialog(
     }
 
     // ------------------------------------------------------------------
-    // 文字输入（透明浮层，屏幕正中输入 + 右上角完成）
+    // 文字输入（透明浮层：屏幕中央输入 + 右上角绿色完成 + 底部颜色条）
     // ------------------------------------------------------------------
+
+    /** 文字样式模式：true = 圆角背景模式（颜色条=背景色，文字白色）；false = 字体颜色模式 */
+    private var textBgMode = false
+    /** 颜色条选中的颜色（背景模式=背景色，字体模式=字色） */
+    private var textStyleColor = DOODLE_COLORS.first()
 
     private fun showTextInput() {
         if (textInputOverlay != null || !::contentRoot.isInitialized) return
+        val statusBar = run {
+            val res = context.resources
+            val id = res.getIdentifier("status_bar_height", "dimen", "android")
+            if (id > 0) res.getDimensionPixelSize(id) else dp(24)
+        }
         val host = android.widget.FrameLayout(context).apply {
             layoutParams = android.view.ViewGroup.LayoutParams(
                 android.view.ViewGroup.LayoutParams.MATCH_PARENT,
                 android.view.ViewGroup.LayoutParams.MATCH_PARENT,
             )
         }
-        // 轻微压暗，让输入焦点更清楚（点击不关闭）
         host.addView(View(context).apply {
             setBackgroundColor(0x33000000)
         }, android.widget.FrameLayout.LayoutParams(
@@ -256,52 +266,30 @@ class FilePickerEditDialog(
             android.view.ViewGroup.LayoutParams.MATCH_PARENT,
         ))
 
+        // ---- 输入框（支持圆角背景样式实时预览）----
         val editText = android.widget.EditText(context).apply {
             hint = "输入文字"
             setHintTextColor(0x80FFFFFF.toInt())
-            setTextColor(Color.WHITE)
-            textSize = 22f
-            background = null
+            textSize = 24f
             gravity = android.view.Gravity.CENTER
+            background = null
             inputType = android.text.InputType.TYPE_CLASS_TEXT or
                 android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE
             isSingleLine = false
             maxLines = 4
-            setPadding(dp(12), dp(12), dp(12), dp(12))
+            setPadding(dp(12), dp(8), dp(12), dp(8))
         }
-        host.addView(editText, android.widget.FrameLayout.LayoutParams(
-            android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+        val editLp = android.widget.FrameLayout.LayoutParams(
             android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
-        ).apply {
-            gravity = android.view.Gravity.CENTER
-            leftMargin = dp(24)
-            rightMargin = dp(24)
-        })
+            android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
+            android.view.Gravity.CENTER,
+        )
+        host.addView(editText, editLp)
 
-        val statusBar = run {
-            val res = context.resources
-            val id = res.getIdentifier("status_bar_height", "dimen", "android")
-            if (id > 0) res.getDimensionPixelSize(id) else dp(24)
-        }
-        val done = TextView(context).apply {
-            text = "完成"
-            setTextColor(Color.WHITE)
-            textSize = 16f
-            setPadding(dp(16), dp(12), dp(16), dp(12))
-            setOnClickListener { commitTextInput(editText.text.toString()) }
-        }
-        host.addView(done, android.widget.FrameLayout.LayoutParams(
-            android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
-            android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
-        ).apply {
-            gravity = android.view.Gravity.TOP or android.view.Gravity.END
-            topMargin = statusBar + dp(4)
-            rightMargin = dp(4)
-        })
-
+        // ---- 顶部：取消 / 绿色圆角完成 ----
         val cancel = TextView(context).apply {
             text = "取消"
-            setTextColor(0xCCFFFFFF.toInt())
+            setTextColor(Color.WHITE)
             textSize = 16f
             setPadding(dp(16), dp(12), dp(16), dp(12))
             setOnClickListener { hideTextInput() }
@@ -311,30 +299,169 @@ class FilePickerEditDialog(
             android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
         ).apply {
             gravity = android.view.Gravity.TOP or android.view.Gravity.START
-            topMargin = statusBar + dp(4)
-            leftMargin = dp(4)
+            topMargin = statusBar + dp(2)
+            leftMargin = dp(2)
         })
 
-        // 输入时把编辑页自己的工具条藏起来，避免"完成"和撤销/重做图标叠在一起
+        val done = TextView(context).apply {
+            text = "完成"
+            setTextColor(Color.WHITE)
+            textSize = 15f
+            setPadding(dp(16), dp(6), dp(16), dp(6))
+            background = GradientDrawable().apply {
+                shape = GradientDrawable.RECTANGLE
+                cornerRadius = dp(8).toFloat()
+                setColor(0xFF04AD0C.toInt())
+            }
+            setOnClickListener { commitTextInput(editText.text.toString()) }
+        }
+        host.addView(done, android.widget.FrameLayout.LayoutParams(
+            android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
+            android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
+        ).apply {
+            gravity = android.view.Gravity.TOP or android.view.Gravity.END
+            topMargin = statusBar + dp(6)
+            rightMargin = dp(12)
+        })
+
+        // ---- 底部颜色条：T（字体/背景切换） + 8 个颜色 ----
+        val accessory = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
+        }
+        val accessoryLp = android.widget.FrameLayout.LayoutParams(
+            android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
+            dp(52),
+            android.view.Gravity.BOTTOM or android.view.Gravity.CENTER_HORIZONTAL,
+        )
+        host.addView(accessory, accessoryLp)
+
+        // 实时刷新 EditText 的样式预览
+        fun applyPreviewStyle() {
+            if (textBgMode) {
+                editText.setTextColor(Color.WHITE)
+                editText.background = GradientDrawable().apply {
+                    shape = GradientDrawable.RECTANGLE
+                    cornerRadius = dp(10).toFloat()
+                    setColor(textStyleColor)
+                }
+            } else {
+                editText.setTextColor(textStyleColor)
+                editText.background = null
+            }
+            editText.setPadding(dp(12), dp(8), dp(12), dp(8))
+        }
+        fun rebuildAccessory() {
+            accessory.removeAllViews()
+            // T 按钮：选中（白色圆角底）表示"字体颜色模式"，再点变"背景模式"
+            val tSize = dp(36)
+            val tButton = ImageView(context).apply {
+                layoutParams = LinearLayout.LayoutParams(tSize, tSize).apply {
+                    setMargins(dp(2), 0, dp(2), 0)
+                }
+                setPadding(dp(9), dp(9), dp(9), dp(9))
+                scaleType = ImageView.ScaleType.FIT_CENTER
+                setImageResource(R.drawable.filepicker_ic_edit_text)
+                setColorFilter(if (!textBgMode) 0xFF1A1A1A.toInt() else Color.WHITE)
+                background = if (!textBgMode) {
+                    GradientDrawable().apply {
+                        shape = GradientDrawable.RECTANGLE
+                        cornerRadius = dp(9).toFloat()
+                        setColor(0xF2FFFFFF.toInt())
+                    }
+                } else {
+                    null
+                }
+                contentDescription = if (textBgMode) "背景模式" else "字体颜色模式"
+                setOnClickListener {
+                    textBgMode = !textBgMode
+                    applyPreviewStyle()
+                    rebuildAccessory()
+                }
+            }
+            accessory.addView(tButton)
+            accessory.addView(View(context).apply {
+                setBackgroundColor(0x40FFFFFF)
+                layoutParams = LinearLayout.LayoutParams(dp(1), dp(22)).apply {
+                    setMargins(dp(8), 0, dp(8), 0)
+                }
+            })
+            for (color in DOODLE_COLORS) {
+                val selected = color == textStyleColor
+                val slot = android.widget.FrameLayout(context).apply {
+                    layoutParams = LinearLayout.LayoutParams(dp(34), dp(48))
+                    isClickable = true
+                    contentDescription = "颜色#%06X".format(0xFFFFFF and color)
+                    setOnClickListener {
+                        textStyleColor = color
+                        applyPreviewStyle()
+                        rebuildAccessory()
+                    }
+                }
+                val dot = View(context).apply {
+                    layoutParams = android.widget.FrameLayout.LayoutParams(dp(18), dp(18)).apply {
+                        gravity = android.view.Gravity.CENTER
+                    }
+                    background = GradientDrawable().apply {
+                        shape = GradientDrawable.OVAL
+                        setColor(color)
+                        if (selected) {
+                            setStroke(dp(2.5f), Color.WHITE)
+                        } else {
+                            setStroke(dp(1.5f), Color.WHITE)
+                        }
+                    }
+                    if (selected) {
+                        scaleX = 1.4f
+                        scaleY = 1.4f
+                    }
+                }
+                slot.addView(dot)
+                accessory.addView(slot)
+            }
+        }
+
+        applyPreviewStyle()
+        rebuildAccessory()
+
+        // 键盘弹出时把输入框和颜色条顶上去（IME insets）
+        val hostLp = accessory.layoutParams as android.widget.FrameLayout.LayoutParams
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(host) { _, insets ->
+            val ime = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.ime()).bottom
+            if (ime > 0) {
+                // 颜色条贴着键盘顶；输入框保持屏幕正中间（默认位置，不随键盘上移）
+                hostLp.bottomMargin = ime + dp(4)
+                accessory.layoutParams = hostLp
+            }
+            insets
+        }
+
         topBar.visibility = View.GONE
         toolRow.visibility = View.GONE
         secondaryPanel.visibility = View.GONE
         cropView.setCropMode(false)
+        cropView.setTextEditEnabled(false)
 
         contentRoot.addView(host)
         textInputOverlay = host
-        FilePickerLog.d(TAG, "showTextInput: topBar=${topBar.visibility} toolRow=${toolRow.visibility} secondary=${secondaryPanel.visibility}")
+        FilePickerLog.d(TAG, "showTextInput: 背景模式=$textBgMode")
+
         editText.requestFocus()
         editText.post {
             val imm = context.getSystemService(Context.INPUT_METHOD_SERVICE)
                 as? android.view.inputmethod.InputMethodManager
             imm?.showSoftInput(editText, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
+            host.requestApplyInsets()
         }
     }
 
     private fun commitTextInput(text: String) {
         if (text.isNotBlank()) {
-            cropView.addText(text.trim())
+            if (textBgMode) {
+                cropView.addText(text.trim(), Color.WHITE, textStyleColor)
+            } else {
+                cropView.addText(text.trim(), textStyleColor, null)
+            }
         }
         hideTextInput()
     }
@@ -349,7 +476,10 @@ class FilePickerEditDialog(
         if (::topBar.isInitialized) topBar.visibility = View.VISIBLE
         if (::toolRow.isInitialized) toolRow.visibility = View.VISIBLE
         if (::secondaryPanel.isInitialized) secondaryPanel.visibility = View.VISIBLE
-        if (::cropView.isInitialized) cropView.setCropMode(currentTool == Tool.CROP)
+        if (::cropView.isInitialized) {
+            cropView.setCropMode(currentTool == Tool.CROP)
+            cropView.setTextEditEnabled(currentTool == Tool.TEXT)
+        }
     }
 
     // ------------------------------------------------------------------
@@ -360,6 +490,8 @@ class FilePickerEditDialog(
         currentTool = tool
         // 只有裁剪工具显示裁剪框并允许手势，其他工具先保留画布（笔迹能力后续接入）
         cropView.setCropMode(tool == Tool.CROP)
+        // 文字工具下：单指拖文字、双指缩放文字；其他工具恢复图片手势
+        cropView.setTextEditEnabled(tool == Tool.TEXT)
         updateToolColors()
         buildSecondaryPanel()
     }

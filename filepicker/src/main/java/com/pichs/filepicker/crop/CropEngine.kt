@@ -269,12 +269,29 @@ object CropEngine {
                 textAlign = android.graphics.Paint.Align.CENTER
                 setShadowLayer(shortSide * 0.004f, 0f, shortSide * 0.002f, 0x66000000)
             }
+            val bgPaint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+                style = android.graphics.Paint.Style.FILL
+            }
             for (layer in textLayers) {
-                paint.color = layer.color
                 paint.textSize = maxOf(1f, layer.sizeFrac * shortSide)
+                val fm = paint.fontMetrics
+                val textW = paint.measureText(layer.text)
+                val textH = fm.descent - fm.ascent
                 val x = (layer.fx - ratio.left) / ratio.width * w
                 val y = (layer.fy - ratio.top) / ratio.height * h
-                val fm = paint.fontMetrics
+                // 圆角背景（文字带底色）
+                layer.backgroundColor?.let { bg ->
+                    bgPaint.color = bg
+                    val padH = textH * 0.38f
+                    val padV = textH * 0.20f
+                    val left = x - textW / 2f - padH
+                    val top = y - textH / 2f - padV
+                    val right = x + textW / 2f + padH
+                    val bottom = y + textH / 2f + padV
+                    val radius = (bottom - top) * 0.28f
+                    canvas.drawRoundRect(left, top, right, bottom, radius, radius, bgPaint)
+                }
+                paint.color = layer.textColor
                 canvas.drawText(layer.text, x, y - (fm.ascent + fm.descent) / 2f, paint)
             }
             FilePickerLog.d(

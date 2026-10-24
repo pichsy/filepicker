@@ -70,6 +70,15 @@ class CropView @JvmOverloads constructor(
     /** 是否处于"裁剪工具"模式：false 时隐藏裁剪框、忽略手势（画笔/文字/马赛克用画布时切换） */
     private var cropMode = true
 
+    /** 当前选中的文字图层下标，-1 = 没选中 */
+    private var selectedTextIndex = -1
+    /** 是否正在拖动文字 */
+    private var textDragging = false
+    /** 文字编辑模式（选中文字工具时开启：单指拖文字、双指缩放文字） */
+    private var textEditEnabled = false
+    /** 双指缩放文字时上一帧两指间距 */
+    private var lastSpan = 0f
+
     private var draggingHandle = CropGeometry.Handle.NONE
     private var lastTouchX = 0f
     private var lastTouchY = 0f
@@ -95,6 +104,20 @@ class CropView @JvmOverloads constructor(
         strokeWidth = 2.5f * density
         strokeCap = Paint.Cap.SQUARE
         color = Color.WHITE
+    }
+    private val textMeasurePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        textAlign = Paint.Align.CENTER
+    }
+    private val textBgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.FILL
+    }
+    private val textSelectionPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        strokeWidth = 1.5f * density
+        color = 0xCCFFFFFF.toInt()
+        pathEffect = android.graphics.DashPathEffect(
+            floatArrayOf(5f * density, 4f * density), 0f
+        )
     }
     private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         textAlign = Paint.Align.CENTER
@@ -135,8 +158,17 @@ class CropView @JvmOverloads constructor(
 
     fun currentRotation(): Int = rotation
 
-    /** 在当前裁剪框中心加一段文字（坐标按显示图片归一化保存） */
-    fun addText(text: String, color: Int = android.graphics.Color.WHITE) {
+    /**
+     * 在当前裁剪框中心加一段文字（坐标按显示图片归一化保存）。
+     *
+     * @param textColor 文字颜色
+     * @param backgroundColor 圆角背景色；null = 无背景（字体颜色模式）
+     */
+    fun addText(
+        text: String,
+        textColor: Int = android.graphics.Color.WHITE,
+        backgroundColor: Int? = null,
+    ) {
         val bmp = bitmap ?: return
         if (text.isBlank() || imageRect.width() <= 0f || imageRect.height() <= 0f) return
         val centerXInBmp = (frame.centerX() - imageRect.left) / imageRect.width()
@@ -147,15 +179,43 @@ class CropView @JvmOverloads constructor(
                 fx = centerXInBmp.coerceIn(0f, 1f),
                 fy = centerYInBmp.coerceIn(0f, 1f),
                 sizeFrac = defaultTextSizeFrac,
-                color = color,
+                textColor = textColor,
+                backgroundColor = backgroundColor,
             )
         )
-        android.util.Log.d("FilePickerCropView", "文字图层 +1: \"$text\" 共 ${textLayers.size} 个")
+        // 新加的文字直接选中，方便马上拖动/缩放
+        selectedTextIndex = textLayers.size - 1
+        android.util.Log.d(
+            "FilePickerCropView",
+            "文字图层 +1: \"$text\" 共 ${textLayers.size} 个, 选中=$selectedTextIndex"
+        )
         invalidate()
     }
 
     /** 当前文字图层快照（导出时用） */
     fun textLayersSnapshot(): List<TextLayer> = textLayers.toList()
+
+    /** 是否选中了某段文字（编辑页用来显示提示/状态） */
+    fun hasSelectedText(): Boolean = selectedTextIndex >= 0
+
+    /** 取消文字选中（切工具/点空白时调用） */
+    fun clearTextSelection() {
+        if (selectedTextIndex < 0) return
+        selectedTextIndex = -1
+        textDragging = false
+        invalidate()
+    }
+
+    /**
+     * 文字编辑模式：
+     * - 开启后单指按住文字可拖动，双指可缩放该段文字；
+     * - 关闭时恢复图片平移/缩放手势。
+     */
+    fun setTextEditEnabled(enabled: Boolean) {
+        if (textEditEnabled == enabled) return
+        textEditEnabled = enabled
+        if (!enabled) clearTextSelection()
+    }
 
     fun currentRotationDegrees(): Int = rotation
 
@@ -323,13 +383,39 @@ class CropView @JvmOverloads constructor(
     private fun drawTextLayers(canvas: Canvas, bmp: Bitmap) {
         if (textLayers.isEmpty()) return
         val shortSide = min(bmp.width, bmp.height).toFloat()
-        for (layer in textLayers) {
-            textPaint.color = layer.color
+        textLayers.forEachIndexed { index, layer ->
             textPaint.textSize = max(8f * density, layer.sizeFrac * shortSide * scale)
             val x = imageRect.left + layer.fx * imageRect.width()
             val y = imageRect.top + layer.fy * imageRect.height()
+            val box = textBox(layer, textPaint, x, y)
+            // 圆角背景（微信那种"文字带底色"）
+            layer.backgroundColor?.let { bg ->
+                textBgPaint.color = bg
+                canvas.drawRoundRect(box, box.height() * 0.28f, box.height() * 0.28f, textBgPaint)
+            }
+            textPaint.color = layer.textColor
             val fm = textPaint.fontMetrics
             canvas.drawText(layer.text, x, y - (fm.ascent + fm.descent) / 2f, textPaint)
+
+            // 选中的文字：画虚线框，提示可以拖动/双指缩放
+            if (index == selectedTextIndex && textEditEnabled) {
+                canvas.drawRoundRect(box, 4f * density, 4f * density, textSelectionPaint)
+            }
+        }
+    }
+
+    /** 文字（含背景内边距）在 View 上的矩形 */
+    private fun textBox(layer: TextLayer, paint: Paint, cx: Float, cy: Float): RectF {
+        val w = paint.measureText(layer.text)
+        val fm = paint.fontMetrics
+        val h = fm.descent - fm.ascent
+        return if (layer.backgroundColor != null) {
+            val padH = h * 0.38f
+            val padV = h * 0.20f
+            RectF(cx - w / 2f - padH, cy - h / 2f - padV, cx + w / 2f + padH, cy + h / 2f + padV)
+        } else {
+            val pad = 8f * density
+            RectF(cx - w / 2f - pad, cy - h / 2f - pad, cx + w / 2f + pad, cy + h / 2f + pad)
         }
     }
 
@@ -423,6 +509,8 @@ class CropView @JvmOverloads constructor(
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
         if (!initialized) return false
+        // 文字编辑模式优先吃掉手势（拖文字/双指缩放文字）
+        if (textEditEnabled && handleTextTouch(event)) return true
         if (!cropMode) return true
         scaleDetector.onTouchEvent(event)
 
@@ -494,6 +582,111 @@ class CropView @JvmOverloads constructor(
             }
         }
         return true
+    }
+
+    // ------------------------------------------------------------------
+    // 文字手势：单指拖、双指缩放
+    // ------------------------------------------------------------------
+
+    private fun handleTextTouch(event: MotionEvent): Boolean {
+        val bmp = bitmap ?: return false
+        when (event.actionMasked) {
+            MotionEvent.ACTION_DOWN -> {
+                val hit = hitTestText(event.x, event.y, bmp)
+                if (hit >= 0) {
+                    selectedTextIndex = hit
+                    textDragging = true
+                    lastTouchX = event.x
+                    lastTouchY = event.y
+                    invalidate()
+                    return true
+                }
+                // 点空白：取消选中，把手势让回图片
+                if (selectedTextIndex >= 0) {
+                    selectedTextIndex = -1
+                    invalidate()
+                }
+                return false
+            }
+
+            MotionEvent.ACTION_POINTER_DOWN -> {
+                if (!textDragging || selectedTextIndex < 0) return false
+                lastSpan = spanOf(event)
+                return true
+            }
+
+            MotionEvent.ACTION_MOVE -> {
+                if (!textDragging || selectedTextIndex < 0) return false
+                if (event.pointerCount >= 2) {
+                    val span = spanOf(event)
+                    if (lastSpan > 1f && span > 1f) {
+                        resizeSelectedText(span / lastSpan)
+                    }
+                    lastSpan = span
+                } else {
+                    moveSelectedText(event.x - lastTouchX, event.y - lastTouchY)
+                    lastTouchX = event.x
+                    lastTouchY = event.y
+                }
+                return true
+            }
+
+            MotionEvent.ACTION_POINTER_UP -> {
+                if (!textDragging) return false
+                // 手指抬起后重置单指拖动基准，避免松手瞬间跳
+                val remain = if (event.actionIndex == 0) 1 else 0
+                if (remain < event.pointerCount) {
+                    lastTouchX = event.getX(remain)
+                    lastTouchY = event.getY(remain)
+                }
+                lastSpan = 0f
+                return true
+            }
+
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                if (!textDragging) return false
+                textDragging = false
+                return true
+            }
+        }
+        return false
+    }
+
+    private fun spanOf(event: MotionEvent): Float {
+        if (event.pointerCount < 2) return 0f
+        val dx = event.getX(0) - event.getX(1)
+        val dy = event.getY(0) - event.getY(1)
+        return kotlin.math.sqrt(dx * dx + dy * dy)
+    }
+
+    /** 命中测试：返回被点中的文字图层下标（后加的在上层） */
+    private fun hitTestText(x: Float, y: Float, bmp: Bitmap): Int {
+        val shortSide = min(bmp.width, bmp.height).toFloat()
+        for (i in textLayers.indices.reversed()) {
+            val layer = textLayers[i]
+            textMeasurePaint.textSize = max(8f * density, layer.sizeFrac * shortSide * scale)
+            val cx = imageRect.left + layer.fx * imageRect.width()
+            val cy = imageRect.top + layer.fy * imageRect.height()
+            val box = textBox(layer, textMeasurePaint, cx, cy)
+            if (x in box.left..box.right && y in box.top..box.bottom) return i
+        }
+        return -1
+    }
+
+    /** 拖动选中的文字（dx/dy 是 View 像素，换算成图片归一化坐标） */
+    private fun moveSelectedText(dx: Float, dy: Float) {
+        val layer = textLayers.getOrNull(selectedTextIndex) ?: return
+        if (imageRect.width() <= 0f || imageRect.height() <= 0f) return
+        layer.fx = (layer.fx + dx / imageRect.width()).coerceIn(0f, 1f)
+        layer.fy = (layer.fy + dy / imageRect.height()).coerceIn(0f, 1f)
+        invalidate()
+    }
+
+    /** 双指缩放选中的文字：只改字号比例，锚点不动 */
+    private fun resizeSelectedText(factor: Float) {
+        val layer = textLayers.getOrNull(selectedTextIndex) ?: return
+        layer.sizeFrac = (layer.sizeFrac * factor).coerceIn(0.02f, 0.4f)
+        invalidate()
     }
 
     private fun panBy(dx: Float, dy: Float) {
