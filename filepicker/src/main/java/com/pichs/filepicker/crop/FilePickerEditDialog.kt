@@ -746,12 +746,7 @@ class FilePickerEditDialog(
         toolText.setColorFilter(if (currentTool == Tool.TEXT) accent else normal)
         toolCrop.setColorFilter(if (currentTool == Tool.CROP) accent else normal)
         toolMosaic.setColorFilter(if (currentTool == Tool.MOSAIC) accent else normal)
-        // 马赛克主菜单图标：外面加 2dp 圆角底（选中绿、未选中白），和图标之间留白
-        toolMosaic.background = GradientDrawable().apply {
-            shape = GradientDrawable.RECTANGLE
-            cornerRadius = dp(2).toFloat()
-            setColor(if (currentTool == Tool.MOSAIC) 0xFF06B10D.toInt() else 0x55FFFFFF.toInt())
-        }
+
     }
 
     private fun buildSecondaryPanel() {
