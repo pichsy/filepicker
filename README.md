@@ -46,7 +46,7 @@
 ```kotlin
 dependencies {
     // 基础组件库 （必须）
-    implementation("com.gitee.pichs:filepicker:7.4.0")
+    implementation("com.gitee.pichs:filepicker:7.4.1")
 
     // 基础组件库 （必须）
     implementation("com.gitee.pichs:xwidget:5.8.1")
@@ -89,7 +89,7 @@ dependencies {
 # libs.version.toml中写法
 [versions]
 xwidget="5.8.1"
-filepicker="7.4.0"
+filepicker="7.4.1"
 brv="1.6.1"
 basepopup="3.2.1"
 glide="4.16.0"
@@ -608,6 +608,27 @@ val uiConfig = FilePickerUIConfig().apply {
 感谢你们的无私奉献，让开发变得更加高效和有趣！
 
 ## 升级日志
+
+### 7.4.1
+
+> 修复预览页的一批体验问题：底部缩略图绿框复用残留、翻页手感、大图预览卡顿。
+
+#### 修复
+
+* **底部缩略图绿框残留**：以前是"记住上一项、只清它一个"，而翻页只改可见项，
+  ViewHolder 被复用后会把绿框带到别的格子上。现在按 adapter position 整条重绘，
+  任何时候只有当前页那一格亮。
+* **底条滚动**：预览页 / 最终预览页 / 相册页统一改用 `RecyclerView.smoothScrollToPosition()`，
+  删掉手算居中坐标的 CenterSmoothScroller（`findViewByPosition` 取不到视图时会算错落点，表现为"乱跳"）。
+* **底条间距**：三处底部条都按"一屏露出 5 个半格子"压缩间距（只动间距，图片尺寸、
+  右上角删除按钮的位置和大小都不变）；格子已完全可见时不再起无意义的平滑滚动动画。
+* **大图预览卡顿**：预览大图改为按屏幕 2 倍采样解码（原先是整张原图全尺寸解码，
+  4000×3000 的照片单张约 48MB），并先用网格缓存缩略图顶帧、预加载左右相邻页。
+  左右滑动明显跟手，屏幕内观感与原图一致。
+
+#### 说明
+
+* 无 API 变更，从 7.4.0 升级无需改代码。
 
 ### 7.4.0
 
