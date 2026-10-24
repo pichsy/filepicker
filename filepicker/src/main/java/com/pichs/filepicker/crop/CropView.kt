@@ -41,6 +41,12 @@ class CropView @JvmOverloads constructor(
     /** 初始显示位图（EXIF 摆正后、未做用户旋转/镜像），"还原"时恢复它 */
     private var sourceBitmap: Bitmap? = null
 
+    /** 编辑页加的文字图层（锚点/字号都是相对当前显示图片的比例） */
+    private val textLayers = mutableListOf<TextLayer>()
+
+    /** 文字默认字号：图片短边的 7% */
+    private val defaultTextSizeFrac = 0.07f
+
     /** 用户旋转/镜像的累计变换（只含 90° 旋转和水平镜像，导出时作用在解码后的原图上） */
     private val bakeMatrix = Matrix()
 
@@ -90,6 +96,11 @@ class CropView @JvmOverloads constructor(
         strokeCap = Paint.Cap.SQUARE
         color = Color.WHITE
     }
+    private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        textAlign = Paint.Align.CENTER
+        color = Color.WHITE
+        setShadowLayer(2f * density, 0f, 1f * density, 0x66000000)
+    }
     private val handlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
         strokeWidth = 2.5f * density
@@ -116,12 +127,37 @@ class CropView @JvmOverloads constructor(
         aspectRatio = aspect
         rotation = 0
         bakeMatrix.reset()
+        textLayers.clear()
         initialized = false
         initLayout()
         invalidate()
     }
 
     fun currentRotation(): Int = rotation
+
+    /** 在当前裁剪框中心加一段文字（坐标按显示图片归一化保存） */
+    fun addText(text: String, color: Int = android.graphics.Color.WHITE) {
+        val bmp = bitmap ?: return
+        if (text.isBlank() || imageRect.width() <= 0f || imageRect.height() <= 0f) return
+        val centerXInBmp = (frame.centerX() - imageRect.left) / imageRect.width()
+        val centerYInBmp = (frame.centerY() - imageRect.top) / imageRect.height()
+        textLayers.add(
+            TextLayer(
+                text = text,
+                fx = centerXInBmp.coerceIn(0f, 1f),
+                fy = centerYInBmp.coerceIn(0f, 1f),
+                sizeFrac = defaultTextSizeFrac,
+                color = color,
+            )
+        )
+        android.util.Log.d("FilePickerCropView", "文字图层 +1: \"$text\" 共 ${textLayers.size} 个")
+        invalidate()
+    }
+
+    /** 当前文字图层快照（导出时用） */
+    fun textLayersSnapshot(): List<TextLayer> = textLayers.toList()
+
+    fun currentRotationDegrees(): Int = rotation
 
     /** 切换裁剪工具模式（编辑页里选其他工具时隐藏裁剪框） */
     fun setCropMode(enabled: Boolean) {
@@ -150,6 +186,7 @@ class CropView @JvmOverloads constructor(
     fun resetCrop() {
         rotation = 0
         bakeMatrix.reset()
+        textLayers.clear()
         bitmap = sourceBitmap
         initLayout()
         notifyFrameChanged()
@@ -180,6 +217,9 @@ class CropView @JvmOverloads constructor(
         replaceBitmap(flipped)
         bakeMatrix.postConcat(Matrix().apply { postScale(-1f, 1f) })
         applyInPlace(contentInNewBitmap)
+        // 文字锚点跟着图一起镜像
+        textLayers.forEach { it.followMirrorHorizontal() }
+        invalidate()
     }
 
     /** 当前裁剪框在图片像素坐标里的位置 */
@@ -274,6 +314,23 @@ class CropView @JvmOverloads constructor(
         rotation = (rotation + 90) % 360
         bakeMatrix.postConcat(Matrix().apply { postRotate(90f) })
         applyInPlace(contentInNewBitmap)
+        // 文字锚点跟着图一起转
+        textLayers.forEach { it.followRotate90Cw() }
+        invalidate()
+    }
+
+    /** 把文字图层画到 View 上（坐标随图片缩放/平移） */
+    private fun drawTextLayers(canvas: Canvas, bmp: Bitmap) {
+        if (textLayers.isEmpty()) return
+        val shortSide = min(bmp.width, bmp.height).toFloat()
+        for (layer in textLayers) {
+            textPaint.color = layer.color
+            textPaint.textSize = max(8f * density, layer.sizeFrac * shortSide * scale)
+            val x = imageRect.left + layer.fx * imageRect.width()
+            val y = imageRect.top + layer.fy * imageRect.height()
+            val fm = textPaint.fontMetrics
+            canvas.drawText(layer.text, x, y - (fm.ascent + fm.descent) / 2f, textPaint)
+        }
     }
 
     // ------------------------------------------------------------------
@@ -517,6 +574,7 @@ class CropView @JvmOverloads constructor(
         val bmp = bitmap ?: return
         if (!initialized) return
         canvas.drawBitmap(bmp, null, imageRect, null)
+        drawTextLayers(canvas, bmp)
         if (!cropMode) return
 
         val w = width.toFloat()

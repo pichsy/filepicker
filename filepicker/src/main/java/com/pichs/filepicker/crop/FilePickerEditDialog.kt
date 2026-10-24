@@ -64,6 +64,8 @@ class FilePickerEditDialog(
     private lateinit var toolCrop: ImageView
     private lateinit var toolMosaic: ImageView
     private lateinit var btnDone: TextView
+    private lateinit var topBar: View
+    private lateinit var toolRow: View
     private lateinit var progressBar: View
 
     private var currentTool = Tool.CROP
@@ -74,6 +76,10 @@ class FilePickerEditDialog(
     /** 马赛克面板：橡皮是否被选中 */
     private var mosaicEraserActive = false
     private var mosaicStyle = 0 // 0 = 像素马赛克，1 = 模糊
+    /** 弹窗内容根视图（文字输入浮层挂在这上面） */
+    private lateinit var contentRoot: android.view.ViewGroup
+    /** 当前正在显示的文字输入浮层 */
+    private var textInputOverlay: android.widget.FrameLayout? = null
     private var bitmapLoaded = false
     private var exporting = false
     private var finished = false
@@ -86,6 +92,7 @@ class FilePickerEditDialog(
 
     override fun onViewCreated(contentView: View) {
         super.onViewCreated(contentView)
+        (contentView as? android.view.ViewGroup)?.let { contentRoot = it }
         setBackgroundColor(Color.TRANSPARENT)
         setOutSideDismiss(false)
         setBackPressEnable(true)
@@ -100,6 +107,8 @@ class FilePickerEditDialog(
         toolCrop = contentView.findViewById(R.id.tool_crop)
         toolMosaic = contentView.findViewById(R.id.tool_mosaic)
         btnDone = contentView.findViewById(R.id.btn_done)
+        topBar = contentView.findViewById(R.id.top_bar)
+        toolRow = contentView.findViewById(R.id.tool_row)
         progressBar = contentView.findViewById(R.id.progress)
 
         // 底部工具条按导航栏让位（弹窗里 insets 分发不可靠，直接取系统资源高度）
@@ -128,7 +137,14 @@ class FilePickerEditDialog(
             finishWithResult(null)
         }
         toolDoodle.setOnClickListener { switchTool(Tool.DOODLE) }
-        toolText.setOnClickListener { switchTool(Tool.TEXT) }
+        // 文字：点一下就在屏幕正中弹透明输入框，不出现二级面板
+        toolText.setOnClickListener {
+            currentTool = Tool.TEXT
+            cropView.setCropMode(false)
+            updateToolColors()
+            buildSecondaryPanel()
+            showTextInput()
+        }
         toolCrop.setOnClickListener { switchTool(Tool.CROP) }
         toolMosaic.setOnClickListener { switchTool(Tool.MOSAIC) }
         btnDone.setOnClickListener { export() }
@@ -180,10 +196,13 @@ class FilePickerEditDialog(
 
         val ratio = cropView.cropRatio()
         val transform = cropView.exportTransform()
+        val textLayers = cropView.textLayersSnapshot()
         val uri = entity.uri
         val path = entity.path
         Thread {
-            val file = CropEngine.export(context, uri, path, ratio, transform, outputMaxSize, quality)
+            val file = CropEngine.export(
+                context, uri, path, ratio, transform, outputMaxSize, quality, textLayers
+            )
             handler.post {
                 exporting = false
                 progressBar.visibility = View.GONE
@@ -215,6 +234,122 @@ class FilePickerEditDialog(
         super.onDismiss()
         FilePickerLog.d(TAG, "onDismiss")
         if (::cropView.isInitialized) cropView.release()
+    }
+
+    // ------------------------------------------------------------------
+    // 文字输入（透明浮层，屏幕正中输入 + 右上角完成）
+    // ------------------------------------------------------------------
+
+    private fun showTextInput() {
+        if (textInputOverlay != null || !::contentRoot.isInitialized) return
+        val host = android.widget.FrameLayout(context).apply {
+            layoutParams = android.view.ViewGroup.LayoutParams(
+                android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+            )
+        }
+        // 轻微压暗，让输入焦点更清楚（点击不关闭）
+        host.addView(View(context).apply {
+            setBackgroundColor(0x33000000)
+        }, android.widget.FrameLayout.LayoutParams(
+            android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+            android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+        ))
+
+        val editText = android.widget.EditText(context).apply {
+            hint = "输入文字"
+            setHintTextColor(0x80FFFFFF.toInt())
+            setTextColor(Color.WHITE)
+            textSize = 22f
+            background = null
+            gravity = android.view.Gravity.CENTER
+            inputType = android.text.InputType.TYPE_CLASS_TEXT or
+                android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE
+            isSingleLine = false
+            maxLines = 4
+            setPadding(dp(12), dp(12), dp(12), dp(12))
+        }
+        host.addView(editText, android.widget.FrameLayout.LayoutParams(
+            android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+            android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
+        ).apply {
+            gravity = android.view.Gravity.CENTER
+            leftMargin = dp(24)
+            rightMargin = dp(24)
+        })
+
+        val statusBar = run {
+            val res = context.resources
+            val id = res.getIdentifier("status_bar_height", "dimen", "android")
+            if (id > 0) res.getDimensionPixelSize(id) else dp(24)
+        }
+        val done = TextView(context).apply {
+            text = "完成"
+            setTextColor(Color.WHITE)
+            textSize = 16f
+            setPadding(dp(16), dp(12), dp(16), dp(12))
+            setOnClickListener { commitTextInput(editText.text.toString()) }
+        }
+        host.addView(done, android.widget.FrameLayout.LayoutParams(
+            android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
+            android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
+        ).apply {
+            gravity = android.view.Gravity.TOP or android.view.Gravity.END
+            topMargin = statusBar + dp(4)
+            rightMargin = dp(4)
+        })
+
+        val cancel = TextView(context).apply {
+            text = "取消"
+            setTextColor(0xCCFFFFFF.toInt())
+            textSize = 16f
+            setPadding(dp(16), dp(12), dp(16), dp(12))
+            setOnClickListener { hideTextInput() }
+        }
+        host.addView(cancel, android.widget.FrameLayout.LayoutParams(
+            android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
+            android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
+        ).apply {
+            gravity = android.view.Gravity.TOP or android.view.Gravity.START
+            topMargin = statusBar + dp(4)
+            leftMargin = dp(4)
+        })
+
+        // 输入时把编辑页自己的工具条藏起来，避免"完成"和撤销/重做图标叠在一起
+        topBar.visibility = View.GONE
+        toolRow.visibility = View.GONE
+        secondaryPanel.visibility = View.GONE
+        cropView.setCropMode(false)
+
+        contentRoot.addView(host)
+        textInputOverlay = host
+        FilePickerLog.d(TAG, "showTextInput: topBar=${topBar.visibility} toolRow=${toolRow.visibility} secondary=${secondaryPanel.visibility}")
+        editText.requestFocus()
+        editText.post {
+            val imm = context.getSystemService(Context.INPUT_METHOD_SERVICE)
+                as? android.view.inputmethod.InputMethodManager
+            imm?.showSoftInput(editText, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
+        }
+    }
+
+    private fun commitTextInput(text: String) {
+        if (text.isNotBlank()) {
+            cropView.addText(text.trim())
+        }
+        hideTextInput()
+    }
+
+    private fun hideTextInput() {
+        val overlay = textInputOverlay ?: return
+        textInputOverlay = null
+        val imm = context.getSystemService(Context.INPUT_METHOD_SERVICE)
+            as? android.view.inputmethod.InputMethodManager
+        imm?.hideSoftInputFromWindow(overlay.windowToken, 0)
+        (overlay.parent as? android.view.ViewGroup)?.removeView(overlay)
+        if (::topBar.isInitialized) topBar.visibility = View.VISIBLE
+        if (::toolRow.isInitialized) toolRow.visibility = View.VISIBLE
+        if (::secondaryPanel.isInitialized) secondaryPanel.visibility = View.VISIBLE
+        if (::cropView.isInitialized) cropView.setCropMode(currentTool == Tool.CROP)
     }
 
     // ------------------------------------------------------------------
@@ -262,9 +397,7 @@ class FilePickerEditDialog(
             }
 
             Tool.TEXT -> {
-                addIconButton(R.drawable.filepicker_ic_edit_text, selected = true) {
-                    Toast.makeText(context, "文字编辑下一步接入", Toast.LENGTH_SHORT).show()
-                }
+                // 文字直接弹输入框，二级面板留空
             }
 
             Tool.MOSAIC -> {

@@ -104,6 +104,7 @@ object CropEngine {
         transform: android.graphics.Matrix?,
         outputMaxSize: Int,
         quality: Int,
+        textLayers: List<TextLayer> = emptyList(),
     ): File? {
         return try {
             val decodeMax = if (outputMaxSize > 0) {
@@ -115,7 +116,10 @@ object CropEngine {
             if (transform != null && !transform.isIdentity) {
                 bitmap = applyTransform(bitmap, transform) ?: return null
             }
-            val cropped = cropBitmap(bitmap, ratio) ?: return null
+            var cropped = cropBitmap(bitmap, ratio) ?: return null
+            if (textLayers.isNotEmpty()) {
+                cropped = drawTextLayersOnCrop(cropped, ratio, textLayers) ?: cropped
+            }
             val output = scaleDown(cropped, outputMaxSize)
             val dir = editDir(context).apply { mkdirs() }
             val file = File(dir, "edit_${System.currentTimeMillis()}.jpg")
@@ -232,6 +236,55 @@ object CropEngine {
             result
         } catch (e: Throwable) {
             FilePickerLog.e(TAG, "应用旋转/镜像失败: ${e.message}")
+            null
+        }
+    }
+
+    /**
+     * 把文字图层拼到裁剪结果上（在缩放前按原图分辨率画，字号才准）。
+     *
+     * 文字坐标是「显示图片」的归一化坐标 = 变换后原图的归一化坐标，
+     * 所以直接用 ratio 反算到裁剪块的像素坐标即可。
+     */
+    private fun drawTextLayersOnCrop(
+        cropped: Bitmap,
+        ratio: CropGeometry.RectF2,
+        textLayers: List<TextLayer>,
+    ): Bitmap? {
+        return try {
+            val w = cropped.width.toFloat()
+            val h = cropped.height.toFloat()
+            if (w <= 0f || h <= 0f || ratio.width <= 0f || ratio.height <= 0f) return null
+            // 还原出「变换后原图」的尺寸，用来算字号（字号是相对短边的比例）
+            val fullW = w / ratio.width
+            val fullH = h / ratio.height
+            val shortSide = minOf(fullW, fullH)
+            val mutable = if (cropped.isMutable && cropped.config == Bitmap.Config.ARGB_8888) {
+                cropped
+            } else {
+                cropped.copy(Bitmap.Config.ARGB_8888, true) ?: return null
+            }
+            val canvas = android.graphics.Canvas(mutable)
+            val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+                textAlign = android.graphics.Paint.Align.CENTER
+                setShadowLayer(shortSide * 0.004f, 0f, shortSide * 0.002f, 0x66000000)
+            }
+            for (layer in textLayers) {
+                paint.color = layer.color
+                paint.textSize = maxOf(1f, layer.sizeFrac * shortSide)
+                val x = (layer.fx - ratio.left) / ratio.width * w
+                val y = (layer.fy - ratio.top) / ratio.height * h
+                val fm = paint.fontMetrics
+                canvas.drawText(layer.text, x, y - (fm.ascent + fm.descent) / 2f, paint)
+            }
+            FilePickerLog.d(
+                TAG,
+                "拼接文字: ${textLayers.size} 个, 字号=${paint.textSize.toInt()}px, " +
+                    "画布=${mutable.width}x${mutable.height}, ratio=[${ratio.left},${ratio.top},${ratio.right},${ratio.bottom}]"
+            )
+            mutable
+        } catch (e: Throwable) {
+            FilePickerLog.e(TAG, "拼接文字失败: ${e.message}")
             null
         }
     }
