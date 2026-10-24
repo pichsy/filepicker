@@ -133,6 +133,13 @@ class FilePickerEditDialog(
             insets
         }
 
+        // 把顶栏/工具栏占用的高度告诉裁剪画布：裁剪框不会钻到它们下面，四角都能拖
+        contentRoot.post {
+            val top = topBar.bottom
+            val bottom = contentRoot.height - toolRow.top
+            cropView.setCropContentInsets(top, bottom)
+        }
+
         contentView.findViewById<View>(R.id.btn_cancel).setOnClickListener {
             finishWithResult(null)
         }

@@ -103,6 +103,28 @@ class CropView @JvmOverloads constructor(
     /** 是否处于"裁剪工具"模式：false 时隐藏裁剪框、忽略手势（画笔/文字/马赛克用画布时切换） */
     private var cropMode = true
 
+    /** 裁剪框停手后自动放大到"留边合适大小"（和微信一致） */
+    private val idleHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private var idleAutoFit: Runnable? = null
+    private var autoFitAnimator: android.animation.ValueAnimator? = null
+
+    /** 进入裁剪时图片留白比例（图片占屏幕的 90%，四周留出可拖拽空间） */
+    private val cropEnterInset = 0.90f
+
+    /** 裁剪可用区域的上下内边距（由编辑页把顶栏/工具栏高度传进来，避免框角被挡） */
+    private var cropContentTop = 0
+    private var cropContentBottom = 0
+
+    /** 编辑页告诉裁剪画布：顶部栏/底部栏占掉多少高度 */
+    fun setCropContentInsets(top: Int, bottom: Int) {
+        cropContentTop = top.coerceAtLeast(0)
+        cropContentBottom = bottom.coerceAtLeast(0)
+        if (cropMode && initialized) {
+            setCropMode(false)
+            setCropMode(true)
+        }
+    }
+
     /** 当前选中的文字图层下标，-1 = 没选中 */
     private var selectedTextIndex = -1
     /** 是否正在拖动文字 */
@@ -345,19 +367,34 @@ class CropView @JvmOverloads constructor(
         if (cropMode == enabled) return
         cropMode = enabled
         draggingHandle = CropGeometry.Handle.NONE
+        cancelIdleAutoFit()
+        autoFitAnimator?.cancel()
+        autoFitAnimator = null
         val bmp = bitmap
         if (bmp != null) {
             if (enabled) {
-                // 进入裁剪：网格框 = 当前图片可见区域（用户可以拖边框改形状）
+                // 进入裁剪：先把图片缩一点，四周留出可拖拽的边距（微信的初始状态）
+                val availTop = cropContentTop.toFloat()
+                val availBottom = (height - cropContentBottom).toFloat()
+                val availW = width.toFloat()
+                val availH = (availBottom - availTop).coerceAtLeast(1f)
+                val fit = min(availW / bmp.width, availH / bmp.height)
+                scale = (fit * cropEnterInset).coerceAtLeast(0.05f)
+                centerX = availW / 2f
+                centerY = availTop + availH / 2f
                 updateImageRect()
-                frame.set(
-                    max(imageRect.left, 0f),
-                    max(imageRect.top, 0f),
-                    min(imageRect.right, width.toFloat()),
-                    min(imageRect.bottom, height.toFloat()),
+                // 网格框 = 图片区域（框本身离屏幕边缘有留边，四角/四边都能拖）
+                frame.set(imageRect)
+                minScale = min(fit, scale)
+                maxScale = minScale * MAX_ZOOM
+                android.util.Log.d(
+                    "FilePickerCropView",
+                    "进入裁剪: imgScale=$scale frame=${frame.width().toInt()}x${frame.height().toInt()} " +
+                        "view=${width}x$height",
                 )
+                scheduleIdleAutoFit()
             }
-            minScale = computeMinScale()
+            minScale = if (enabled) minScale else computeMinScale()
             maxScale = minScale * MAX_ZOOM
             scale = scale.coerceIn(minScale, maxScale)
             updateImageRect()
@@ -573,6 +610,99 @@ class CropView @JvmOverloads constructor(
     }
 
     // ------------------------------------------------------------------
+    // 裁剪框空闲自动放大（停手 3 秒 → 框放大到留边合适大小，动画过渡）
+    // ------------------------------------------------------------------
+
+    private fun scheduleIdleAutoFit() {
+        android.util.Log.d("FilePickerCropView", "安排空闲自动放大 3s")
+        cancelIdleAutoFit()
+        val runnable = Runnable { autoFitCropFrame() }
+        idleAutoFit = runnable
+        idleHandler.postDelayed(runnable, 3000)
+    }
+
+    private fun cancelIdleAutoFit() {
+        idleAutoFit?.let { idleHandler.removeCallbacks(it) }
+        idleAutoFit = null
+    }
+
+    /**
+     * 把当前裁剪框放大到"屏幕内留边最大"（保持宽高比），
+     * 同时让框里的内容保持在框中心，动画过渡；和微信停手后的自动回弹一致。
+     */
+    private fun autoFitCropFrame() {
+        if (!cropMode || !initialized) return
+        val bmp = bitmap ?: return
+        if (frame.width() <= 1f || frame.height() <= 1f) return
+        val margin = 24f * density
+        val availTop = cropContentTop.toFloat()
+        val availBottom = (height - cropContentBottom).toFloat()
+        val maxW = width - margin * 2
+        val maxH = (availBottom - availTop) - margin * 2
+        val factor = min(maxW / frame.width(), maxH / frame.height())
+        if (factor <= 1.02f) return
+
+        // 框中心在图片里的归一化位置（放大时保持这个中心）
+        val frameCxInBmp = (frame.centerX() - imageRect.left) / imageRect.width()
+        val frameCyInBmp = (frame.centerY() - imageRect.top) / imageRect.height()
+
+        val startFrame = RectF(frame)
+        val startScale = scale
+        val startCx = centerX
+        val startCy = centerY
+
+        // 目标框：保持宽高比、居中到屏幕中心
+        val targetW = frame.width() * factor
+        val targetH = frame.height() * factor
+        val availCx = width / 2f
+        val availCy = availTop + (availBottom - availTop) / 2f
+        val targetFrame = RectF(
+            availCx - targetW / 2f,
+            availCy - targetH / 2f,
+            availCx + targetW / 2f,
+            availCy + targetH / 2f,
+        )
+        val targetScale = (startScale * factor).coerceIn(minScale, maxScale)
+        // 让框里的内容中心仍然对齐框中心
+        val bmpCx = frameCxInBmp * bmp.width
+        val bmpCy = frameCyInBmp * bmp.height
+        val targetCx = targetFrame.centerX() - (bmpCx - bmp.width / 2f) * targetScale
+        val targetCy = targetFrame.centerY() - (bmpCy - bmp.height / 2f) * targetScale
+
+        autoFitAnimator?.cancel()
+        val animator = android.animation.ValueAnimator.ofFloat(0f, 1f)
+        animator.duration = 260
+        animator.interpolator = android.view.animation.DecelerateInterpolator()
+        animator.addUpdateListener { va ->
+            val f = va.animatedFraction
+            frame.set(
+                startFrame.left + (targetFrame.left - startFrame.left) * f,
+                startFrame.top + (targetFrame.top - startFrame.top) * f,
+                startFrame.right + (targetFrame.right - startFrame.right) * f,
+                startFrame.bottom + (targetFrame.bottom - startFrame.bottom) * f,
+            )
+            scale = startScale + (targetScale - startScale) * f
+            centerX = startCx + (targetCx - startCx) * f
+            centerY = startCy + (targetCy - startCy) * f
+            updateImageRect()
+            invalidate()
+        }
+        animator.addListener(object : android.animation.AnimatorListenerAdapter() {
+            override fun onAnimationEnd(animation: android.animation.Animator) {
+                constrain()
+                notifyFrameChanged()
+                invalidate()
+            }
+        })
+        autoFitAnimator = animator
+        animator.start()
+        android.util.Log.d(
+            "FilePickerCropView",
+            "裁剪框空闲自动放大: factor=$factor frame=${frame.width().toInt()}x${frame.height().toInt()}",
+        )
+    }
+
+    // ------------------------------------------------------------------
     // 初始化 / 布局
     // ------------------------------------------------------------------
 
@@ -673,6 +803,7 @@ class CropView @JvmOverloads constructor(
 
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
+                cancelIdleAutoFit()
                 lastTouchX = event.x
                 lastTouchY = event.y
                 lastFocusX = event.x
@@ -683,6 +814,11 @@ class CropView @JvmOverloads constructor(
                 } else {
                     CropGeometry.Handle.NONE
                 }
+                android.util.Log.d(
+                    "FilePickerCropView",
+                    "DOWN at (${event.x.toInt()},${event.y.toInt()}) hit=$draggingHandle frame=" +
+                        "${frame.left.toInt()},${frame.top.toInt()},${frame.right.toInt()},${frame.bottom.toInt()}",
+                )
                 return true
             }
 
@@ -735,6 +871,7 @@ class CropView @JvmOverloads constructor(
 
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                 draggingHandle = CropGeometry.Handle.NONE
+                if (cropMode) scheduleIdleAutoFit()
                 return true
             }
         }
