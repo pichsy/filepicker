@@ -50,7 +50,9 @@ class FilePickerFinalPreviewDialog(
     val viewModel: FilePickerViewModel,
     val onDismissDataDelete: (deleteList: MutableList<MediaEntity>) -> Unit,
     val onDragEnd: () -> Unit,
-    val onConfirm: (ArrayList<MediaEntity>) -> Unit
+    val onConfirm: (ArrayList<MediaEntity>) -> Unit,
+    /** 编辑完成后通知外面刷新对应格子（网格缩略图 + 已编辑角标） */
+    val onEditApplied: (MediaEntity) -> Unit = {},
 ) : BasePopupWindow(context) {
 
     lateinit var binding: DialogFilePickerSelectedPreviewBinding
@@ -277,6 +279,11 @@ class FilePickerFinalPreviewDialog(
             dismiss()
         }
 
+        // 和多选网格里的单图预览复用同一个编辑页
+        FilePickerClickHelper.clicks(binding.tvEdit) {
+            startEditForCurrentItem()
+        }
+
         FilePickerClickHelper.clicks(binding.btnConfirm) {
 //            这里可以回调到选择器，通知选择完成。
 //            if (viewModel.getSelectedCount() <= 0 && viewModel.tempSelectData.isEmpty()) {
@@ -473,8 +480,44 @@ class FilePickerFinalPreviewDialog(
             binding.tvSelectIndex.isChecked = true
             binding.ivSelectState.isChecked = true
         }
+        // 「编辑」入口：开启编辑且当前是图片时显示（视频/GIF 不支持）
+        binding.tvEdit.isVisible = viewModel.editInPreview.value && item.mediaEntity.isImage()
         // 整条重绘底部缩略图的"当前页"绿框
         refreshStripSelection()
+    }
+
+    /** 预览页「编辑」：对当前大图做编辑（结果作为会话级覆盖，不改原图） */
+    private fun startEditForCurrentItem() {
+        val item = mCurrentItem?.mediaEntity ?: return
+        if (!item.isImage()) return
+        // 再次编辑从"编辑后的图"开始
+        val source = viewModel.displayEntity(item) ?: item
+        com.pichs.filepicker.crop.FilePickerEditDialog(
+            context = context,
+            entity = source,
+            outputMaxSize = viewModel.cropOutputMaxSize.value,
+            quality = viewModel.cropQuality.value,
+        ) { editedPath ->
+            if (editedPath.isNullOrEmpty()) {
+                FilePickerLog.d("FilePickerFinalPreviewDialog", "编辑已取消")
+                return@FilePickerEditDialog
+            }
+            viewModel.attachEdit(item, editedPath)
+            FilePickerLog.d("FilePickerFinalPreviewDialog", "编辑完成: $editedPath")
+            refreshAfterEdit(item)
+            onEditApplied(item)
+        }.showPopupWindow()
+    }
+
+    /** 编辑完成后：只刷当前页 + 底部已选条，不动列表数据、不动选中状态 */
+    @SuppressLint("NotifyDataSetChanged")
+    private fun refreshAfterEdit(item: MediaEntity) {
+        val pos = itemIndexOfList(mCurrentItem)
+        if (pos >= 0) {
+            binding.viewPager2.adapter?.notifyItemChanged(pos)
+        }
+        binding.rvSelected.bindingAdapter?.notifyDataSetChanged()
+        updateIndexUI(mCurrentItem)
     }
 
 

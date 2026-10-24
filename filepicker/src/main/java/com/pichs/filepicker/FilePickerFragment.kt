@@ -229,6 +229,14 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                     return@FilePickerFinalPreviewDialog
                 }
                 callbackToChooser(resultList)
+            }, onEditApplied = { edited ->
+                // 只刷被编辑的那一格：缩略图换成编辑后的图 + 左下角"已编辑"角标
+                val position = viewModel.getCurrentFolderDataList().indexOf(edited)
+                if (position >= 0) {
+                    binding.recyclerView.bindingAdapter?.notifyItemChanged(position)
+                }
+                binding.rvSelected.bindingAdapter?.notifyDataSetChanged()
+                updateBottomMenuSelectNumberUI()
             }).showPopupWindow()
         }
 
