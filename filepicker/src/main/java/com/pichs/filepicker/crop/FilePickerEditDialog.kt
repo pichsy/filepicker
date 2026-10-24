@@ -115,27 +115,13 @@ class FilePickerEditDialog(
         toolRow = contentView.findViewById(R.id.tool_row)
         progressBar = contentView.findViewById(R.id.progress)
 
-        // 底部工具条按导航栏让位（弹窗里 insets 分发不可靠，直接取系统资源高度）
+        // 底部工具条：离屏幕底部只留 20dp（不要再顶上去）
         val toolRow = contentView.findViewById<View>(R.id.tool_row)
-        val navBarHeight = run {
-            val res = context.resources
-            val id = res.getIdentifier("navigation_bar_height", "dimen", "android")
-            if (id > 0) res.getDimensionPixelSize(id) else dp(48)
-        }
-        // 行高 = 内容 64dp + 导航栏高度，避免 padding 把 48dp 图标挤扁
-        toolRow.layoutParams = toolRow.layoutParams.apply { height = dp(64) + navBarHeight }
+        val bottomGap = dp(20)
+        toolRow.layoutParams = toolRow.layoutParams.apply { height = dp(64) + bottomGap }
         toolRow.setPadding(
-            toolRow.paddingLeft, toolRow.paddingTop, toolRow.paddingRight, navBarHeight
+            toolRow.paddingLeft, toolRow.paddingTop, toolRow.paddingRight, bottomGap
         )
-        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(contentView) { _, insets ->
-            val bars = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars())
-            if (bars.bottom > navBarHeight) {
-                toolRow.setPadding(
-                    toolRow.paddingLeft, toolRow.paddingTop, toolRow.paddingRight, bars.bottom
-                )
-            }
-            insets
-        }
 
         setupCropControls(contentView)
 
@@ -272,11 +258,7 @@ class FilePickerEditDialog(
 
     private fun setupCropControls(contentView: View) {
         val margin = dp(24)
-        val navBarHeight = run {
-            val res = context.resources
-            val id = res.getIdentifier("navigation_bar_height", "dimen", "android")
-            if (id > 0) res.getDimensionPixelSize(id) else dp(48)
-        }
+        val bottomGap = dp(20)
         val host = android.widget.FrameLayout(context).apply {
             layoutParams = android.view.ViewGroup.LayoutParams(
                 android.view.ViewGroup.LayoutParams.MATCH_PARENT,
@@ -292,7 +274,7 @@ class FilePickerEditDialog(
                 dp(52),
                 android.view.Gravity.BOTTOM or android.view.Gravity.START,
             ).apply {
-                bottomMargin = navBarHeight + dp(64)
+                bottomMargin = bottomGap + dp(64)
             }
         }
         val tools = LinearLayout(context).apply {
@@ -355,7 +337,7 @@ class FilePickerEditDialog(
         }
         host.addView(cancelCrop, android.widget.FrameLayout.LayoutParams(dp(72), minRow).apply {
             gravity = android.view.Gravity.BOTTOM or android.view.Gravity.START
-            bottomMargin = navBarHeight + dp(4)
+            bottomMargin = bottomGap
             leftMargin = margin
         })
 
@@ -372,7 +354,7 @@ class FilePickerEditDialog(
         }
         host.addView(confirmCrop, android.widget.FrameLayout.LayoutParams(dp(72), minRow).apply {
             gravity = android.view.Gravity.BOTTOM or android.view.Gravity.END
-            bottomMargin = navBarHeight + dp(4)
+            bottomMargin = bottomGap
             rightMargin = margin
         })
 
@@ -382,7 +364,7 @@ class FilePickerEditDialog(
             val id = res.getIdentifier("status_bar_height", "dimen", "android")
             if (id > 0) res.getDimensionPixelSize(id) else dp(24)
         }
-        val cropBottomInset = navBarHeight + dp(4) + minRow + dp(8) + dp(52) + dp(8)
+        val cropBottomInset = bottomGap + minRow + dp(8) + dp(52) + dp(8)
         cropView.setCropContentInsets(statusBar + dp(8), cropBottomInset)
 
         (contentRoot as? android.view.ViewGroup)?.addView(host)
