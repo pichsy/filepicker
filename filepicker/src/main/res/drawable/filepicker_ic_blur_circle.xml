@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 圆形"毛刷"图标：白色圆环 + 内部约 3 条 45° 斜条 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="48" android:viewportHeight="48">
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="2.5" android:fillColor="#00000000"
+        android:pathData="M24,3a21,21 0,1 0,0 42a21,21 0,1 0,0 -42" />
+    <path android:fillColor="#FFFFFF"
+        android:pathData="M12,24l4,-4l20,0l-4,4zM12,31l4,-4l20,0l-4,4zM12,17l4,-4l20,0l-4,4z" />
+</vector>
