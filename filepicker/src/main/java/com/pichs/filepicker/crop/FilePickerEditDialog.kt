@@ -342,7 +342,7 @@ class FilePickerEditDialog(
         host.addView(cancelCrop, android.widget.FrameLayout.LayoutParams(minRow, minRow).apply {
             gravity = android.view.Gravity.BOTTOM or android.view.Gravity.START
             bottomMargin = bottomGap
-            leftMargin = dp(16)
+            leftMargin = dp(4)
         })
 
         // ✓ 换成需求方给的图标（视觉小一点，点击热区不变）
@@ -359,7 +359,7 @@ class FilePickerEditDialog(
         host.addView(confirmCrop, android.widget.FrameLayout.LayoutParams(minRow, minRow).apply {
             gravity = android.view.Gravity.BOTTOM or android.view.Gravity.END
             bottomMargin = bottomGap
-            rightMargin = dp(16)
+            rightMargin = dp(4)
         })
 
         // 裁剪可用区域：顶=状态栏下 8dp（裁剪时顶栏隐藏），底=✕/✓ + 旋转排 + 间距
