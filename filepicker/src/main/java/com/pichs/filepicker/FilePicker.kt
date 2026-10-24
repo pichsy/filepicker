@@ -269,6 +269,13 @@ class FilePicker {
         var mMaxSelectNumber = 0
             private set
 
+        /**
+         * **合计**最大选择数量（所有类型加起来最多几个），`0` / `Int.MAX_VALUE` 表示不限。
+         *
+         * 与新模型的分类型规则（[setSelectRules]）**同时生效**：可再选数 =
+         * `min(该类型剩余额度, 合计剩余额度)`。不调用 [setSelectRules] 时，
+         * 这就是唯一的口径，行为与老版本一致。
+         */
         fun setMaxSelectNumber(maxSelectNumber: Int): Builder {
             this.mMaxSelectNumber = maxSelectNumber
             return this
@@ -278,7 +285,6 @@ class FilePicker {
 
         private var mSelectRules: MutableList<SelectRule> = mutableListOf()
         private var mSelectExclusive: Boolean = false
-        private var mSelectTotalMaxCount: Int = -1
         private var mGifCountsAsImage: Boolean = true
         private var mSelectRulesUsed: Boolean = false
 
@@ -312,13 +318,6 @@ class FilePicker {
             return this
         }
 
-        /** 合计上限（属于新模型，0 = 不限）。不传时按各类型 max 之和自动推导。 */
-        fun setTotalMaxCount(count: Int): Builder {
-            this.mSelectTotalMaxCount = count
-            this.mSelectRulesUsed = true
-            return this
-        }
-
         /**
          * GIF 是否占用"图片"的额度，默认 true（用户视角里 GIF 就是图片）。
          * 单独给 GIF 配了 [SelectRule.ofGif] 时，GIF 用自己的规则，此项不生效。
@@ -334,22 +333,29 @@ class FilePicker {
 
         /**
          * 构造规则引擎并做配置自检。
-         * 矛盾配置（合计容量装不下必选数量）在这里直接抛异常：开发期就炸，别留到用户点不动。
+         *
+         * **数量限制只有一个来源**：一旦使用规则，合计上限就由各类型的 `max` 自动叠加得出
+         * （互斥时取单类型的最大 `max`），调用方不需要、也不应该再写第二个数字 ——
+         * 因此 [setMaxSelectNumber] 在规则模式下**不生效**（会打一条 warn 日志）。
+         * 不调用规则时，[setMaxSelectNumber] 就是唯一口径，行为与老版本完全一致。
+         *
+         * 这样不存在"合计上限与规则冲突"的配置，也就不需要运行时抉择。
          */
         internal fun buildSelectRulesEngine(): SelectRulesEngine? {
             if (!mSelectRulesUsed) return null
             val engine = SelectRulesEngine(
                 rules = mSelectRules,
                 exclusive = mSelectExclusive,
-                totalMaxCount = if (mSelectTotalMaxCount < 0) 0 else mSelectTotalMaxCount,
+                // 合计上限不外部设置：由规则推导，从设计上消除"两个数字打架"
+                totalMaxCount = 0,
                 gifCountsAsImage = mGifCountsAsImage,
             )
             engine.checkSatisfiable("FilePicker.Builder")
             if (mMaxSelectNumber != 0) {
                 FilePickerLog.w(
                     "FilePicker",
-                    "setMaxSelectNumber(${mMaxSelectNumber}) 已失效：调用了 setSelectRules/setExclusive/setTotalMaxCount 后，" +
-                            "数量限制只由规则决定。${engine.describe()}"
+                    "setMaxSelectNumber(${mMaxSelectNumber}) 在规则模式下不生效：合计上限由规则自动叠加得出。" +
+                            "规则=${engine.rules.joinToString { it.describe() }}，capacity=${engine.totalCapacity()}"
                 )
             }
             if (mSingleClickEnable && engine.totalCapacity() != 1) {
@@ -367,7 +373,6 @@ class FilePicker {
             intent.putExtra("useSelectRules", true)
             intent.putStringArrayListExtra("selectRules", ArrayList(engine.rules.map { SelectRule.encode(it) }))
             intent.putExtra("selectExclusive", engine.exclusive)
-            intent.putExtra("selectTotalMaxCount", engine.totalMaxCount)
             intent.putExtra("gifCountsAsImage", engine.gifCountsAsImage)
         }
 

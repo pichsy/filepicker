@@ -56,30 +56,38 @@
             android:paddingEnd="16dp"
             android:paddingBottom="16dp">
 
-            <com.pichs.xwidget.view.XTextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="最大选择数量"
-                android:textColor="#9E9E9E"
-                android:textSize="13sp" />
-
-            <androidx.appcompat.widget.AppCompatEditText
-                android:id="@+id/et_max_select_count"
+            <!-- 只在「规则模式=无」时展示：规则模式下合计上限由规则自动叠加，这个输入不参与 -->
+            <LinearLayout
+                android:id="@+id/layout_max_count"
                 android:layout_width="match_parent"
-                android:layout_height="44dp"
-                android:layout_marginTop="6dp"
-                android:background="@drawable/demo_input_bg"
-                android:gravity="center_vertical"
-                android:hint="0 表示不限"
-                android:importantForAutofill="no"
-                android:inputType="number"
-                android:paddingStart="12dp"
-                android:paddingEnd="12dp"
-                android:singleLine="true"
-                android:text="9"
-                android:textColor="#fff"
-                android:textColorHint="#666666"
-                android:textSize="15sp" />
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <com.pichs.xwidget.view.XTextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="最大选择数量"
+                    android:textColor="#9E9E9E"
+                    android:textSize="13sp" />
+
+                <androidx.appcompat.widget.AppCompatEditText
+                    android:id="@+id/et_max_select_count"
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:layout_marginTop="6dp"
+                    android:background="@drawable/demo_input_bg"
+                    android:gravity="center_vertical"
+                    android:hint="0 表示不限"
+                    android:importantForAutofill="no"
+                    android:inputType="number"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:singleLine="true"
+                    android:text="9"
+                    android:textColor="#fff"
+                    android:textColorHint="#666666"
+                    android:textSize="15sp" />
+            </LinearLayout>
 
             <com.pichs.xwidget.view.XTextView
                 android:layout_width="wrap_content"

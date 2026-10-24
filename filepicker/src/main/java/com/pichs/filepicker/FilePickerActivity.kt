@@ -107,7 +107,7 @@ class FilePickerActivity : AppCompatActivity() {
         viewModel.slideChooseEnable.value = slideChooseEnable
         viewModel.showCameraEntry.value = showCameraEntry
 
-        // 新的按类型限量模型：一旦开启，maxSelectNumber 完全不参与判定（单一数据源）
+        // 按类型限量模型：合计上限由规则自动叠加，maxSelectNumber 在该模式下不生效
         if (intent.getBooleanExtra("useSelectRules", false)) {
             val rules = intent.getStringArrayListExtra("selectRules")
                 ?.mapNotNull { SelectRule.decode(it) }
@@ -115,7 +115,7 @@ class FilePickerActivity : AppCompatActivity() {
             val engine = SelectRulesEngine(
                 rules = rules,
                 exclusive = intent.getBooleanExtra("selectExclusive", false),
-                totalMaxCount = intent.getIntExtra("selectTotalMaxCount", 0),
+                totalMaxCount = 0,
                 gifCountsAsImage = intent.getBooleanExtra("gifCountsAsImage", true),
             )
             viewModel.setSelectRulesEngine(engine)
@@ -123,7 +123,7 @@ class FilePickerActivity : AppCompatActivity() {
             if (maxSelectNumber != 0) {
                 FilePickerLog.w(
                     "FilePickerActivity",
-                    "setMaxSelectNumber($maxSelectNumber) 已失效：已启用按类型限量的选择规则，数量限制只由规则决定"
+                    "setMaxSelectNumber($maxSelectNumber) 在规则模式下不生效：合计上限由规则自动叠加得出"
                 )
             }
             if (singleClickEnable && engine.totalCapacity() != 1) {

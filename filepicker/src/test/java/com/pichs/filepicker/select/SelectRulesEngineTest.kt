@@ -142,6 +142,18 @@ class SelectRulesEngineTest {
         assertEquals(0, SelectRulesEngine(emptyList()).totalCapacity())
     }
 
+    /** 互斥下只能选其中一类：容量取单类型最大 max，而不是相加 */
+    @Test
+    fun totalCapacity_exclusiveUsesMaxSingleType() {
+        val ruleEngine = SelectRulesEngine(
+            rules = listOf(SelectRule.ofImage(0, 9), SelectRule.ofVideo(0, 1)),
+            exclusive = true,
+        )
+        assertEquals(9, ruleEngine.totalCapacity())
+        // 只有一个类型且 max=1 → 容量 1，可用于触发"点一下就返回"
+        assertEquals(1, SelectRulesEngine(listOf(SelectRule.ofVideo(1, 1)), exclusive = true).totalCapacity())
+    }
+
     // ---------------------------------------------------------------- 批量筛选（滑动连选）
 
     @Test
@@ -206,6 +218,27 @@ class SelectRulesEngineTest {
         } catch (e: IllegalArgumentException) {
             assertTrue(e.message!!.contains("配置矛盾"))
         }
+    }
+
+    /** 你问的那个场景：合计上限 5，但规则要求图片必须 9 个 → 矛盾，start() 抛异常 */
+    @Test
+    fun checkSatisfiable_throwsWhenTotalCapCannotHoldRequired() {
+        val engine = SelectRulesEngine(
+            rules = listOf(SelectRule.ofImage(9, 9)),
+            totalMaxCount = 5,
+        )
+        val error = try {
+            engine.checkSatisfiable("FilePicker.Builder")
+            null
+        } catch (e: IllegalArgumentException) {
+            e
+        }
+        assertTrue("应该抛 IllegalArgumentException", error != null)
+        val msg = error!!.message!!
+        // 报错里要能直接看出资源与需求
+        assertTrue("报错应含合计容量: $msg", msg.contains("合计容量(5)"))
+        assertTrue("报错应含必选数量: $msg", msg.contains("必选数量(9)"))
+        println("[config-error] $msg")
     }
 
     @Test

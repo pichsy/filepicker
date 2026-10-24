@@ -46,7 +46,7 @@
 ```kotlin
 dependencies {
     // 基础组件库 （必须）
-    implementation("com.gitee.pichs:filepicker:7.2.0")
+    implementation("com.gitee.pichs:filepicker:7.3.1")
 
     // 基础组件库 （必须）
     implementation("com.gitee.pichs:xwidget:5.8.1")
@@ -89,7 +89,7 @@ dependencies {
 # libs.version.toml中写法
 [versions]
 xwidget="5.8.1"
-filepicker="7.2.0"
+filepicker="7.3.1"
 brv="1.6.1"
 basepopup="3.2.1"
 glide="4.16.0"
@@ -328,7 +328,7 @@ FilePicker.with(this)
 | 图片必须正好 9 张 | `setSelectRules(SelectRule.ofImage(9, 9))` |
 | 视频必须 1 个、图片最多 9 张 | `setSelectRules(SelectRule.ofVideo(1, 1), SelectRule.ofImage(0, 9))` |
 | 图片和视频**只能选其中一类** | 上面的规则 + `.setExclusive(true)` |
-| 合计最多 5 个（不分类） | `.setTotalMaxCount(5)` |
+| 合计最多 5 个（不分类） | `.setMaxSelectNumber(5)` |
 | GIF 不占图片额度 | `.setGifCountsAsImage(false)` |
 
 **互斥（`setExclusive(true)`）的锁定规则**：
@@ -337,9 +337,14 @@ FilePicker.with(this)
 * 两类都配了 `min > 0` → **先点哪类就锁定哪类**，另一类的"必须选"本次作废；
 * 已选类型全部取消后**自动解锁**，可以改选另一类。
 
-**和 `setMaxSelectNumber` 的关系（重要）**：调用 `setSelectRules` / `setExclusive` /
-`setTotalMaxCount` 中**任意一个**就进入"按类型限量"模型，此时 `setMaxSelectNumber` **完全不生效**
-（数量限制只保留一个数据源，库会打一条 warn 日志）。不调用这些新方法时，行为与 7.1.0 **完全一致**。
+**和 `setMaxSelectNumber` 的关系**：**用了规则，`setMaxSelectNumber` 就不生效了**。
+数量限制始终只有一个来源：
+
+* 不用规则 → `setMaxSelectNumber(n)` 是唯一口径（老行为）；
+* 用了规则 → **合计上限由各类型 `max` 自动叠加得出**（互斥时取单类型最大的 `max`），
+  调用方不需要再写第二个数字，也就不存在"合计上限和规则冲突"这种配置。
+
+所以规则模式下没有任何"谁优先"的抉择 —— 从设计上就没有第二个数字。
 
 三个提示文案都可以在 `FilePickerUIConfig` 里改：`selectTypeMaxToastContent`（"图片最多选择2个"）、
 `selectExclusiveConflictToastContent`（"当前只能选择视频"）、`selectRuleNotSatisfiedToastContent`
@@ -511,10 +516,9 @@ FilePicker.with(this)
 | 方法名                             | 描述                                               |
 | ------------------------------- | ------------------------------------------------ |
 | `setSelectType(type)`           | 设置选择的文件类型                                        |
-| `setMaxSelectNumber(num)`       | 设置最大选择数量（合计上限；启用「按类型限量」后被忽略）                    |
+| `setMaxSelectNumber(num)`       | 设置最大选择数量（`0`/`Int.MAX_VALUE` = 不限）。**只在不用 `setSelectRules` 时生效**；规则模式下合计上限由规则自动叠加，本方法被忽略 |
 | `setSelectRules(vararg rules)`  | 按类型分别限量，见「[按类型限量](#6-按类型限量图片-n-张--视频-m-个--互斥)」 |
 | `setExclusive(exclusive)`       | 互斥：图片与视频只能选其中一类                                |
-| `setTotalMaxCount(count)`       | 合计上限（0 = 不限）；不传则由各类型 max 之和推导                  |
 | `setGifCountsAsImage(counts)`   | GIF 是否占用图片额度，默认 `true`                          |
 | `setMaxFileSize(size)`          | 设置最大文件大小（字节）                                     |
 | `setMinFileSize(size)`          | 设置最小文件大小（字节）                                     |
@@ -600,6 +604,39 @@ val uiConfig = FilePickerUIConfig().apply {
 感谢你们的无私奉献，让开发变得更加高效和有趣！
 
 ## 升级日志
+
+### 7.3.1
+
+> **数量限制只留一个来源**：规则模式下 `setMaxSelectNumber` 不再生效，合计上限由各类型 `max`
+> 自动叠加得出。这样不存在"合计上限与规则要求冲突"的配置，也就不需要任何运行时抉择。
+
+#### 变更
+
+* **规则模式下 `setMaxSelectNumber` 被忽略**（打一条 warn 日志）：合计上限 = 各类型 `max` 之和；
+  互斥模式下 = 单类型最大的 `max`。调用方**不需要也不应该**再写第二个数字。
+* 不调用 `setSelectRules` / `setExclusive` / `setGifCountsAsImage` 时，`setMaxSelectNumber`
+  依然是唯一口径，行为与老版本完全一致。
+* 由于合计上限恒 ≥ 必选数量，"配置矛盾"在库内已经不可能发生（引擎里的 `checkSatisfiable`
+  仅作为直接构造 `SelectRulesEngine` 时的兜底）。
+* demo：规则模式为「无」时显示「最大选择数量」并隐藏分类型输入；选共存 / 互斥时反过来。
+
+### 7.3.0
+
+> **合并重复 API**：`setTotalMaxCount` 已移除，合计上限统一用 `setMaxSelectNumber`。
+> 7.2.0 只发布了 1 天、该 API 没有实际使用；如果你的项目已经用了，换成 `setMaxSelectNumber(n)` 即可。
+
+#### 变更
+
+* **数量限制收敛为两个维度、两个 API**：
+  * 合计上限 → `setMaxSelectNumber(n)`（一直有效，两个模型都认）；
+  * 分类型 min/max → `setSelectRules(...)`。
+
+  两者同时生效、取交集，不再有"启用规则后 `setMaxSelectNumber` 被忽略"这条规则 —— 那套"单一数据源"
+  的约定，实际效果是给同一个概念（合计上限）造了第二个名字，对使用者不友好。
+* **移除** `setTotalMaxCount`：它和 `setMaxSelectNumber` 含义完全相同。需要合计上限直接用
+  `setMaxSelectNumber(n)`；不设置时，合计容量仍由各类型 `max` 之和自动推导。
+* 示例同步更新：`setSelectRules(Image(0, 9), Video(0, 1)).setMaxSelectNumber(9)` 表示
+  "图片 ≤ 9、视频 ≤ 1，且合计 ≤ 9"。
 
 ### 7.2.0
 

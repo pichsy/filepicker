@@ -12,8 +12,8 @@ android {
         minSdk = 26
         //noinspection OldTargetApi
         targetSdk = 35
-        versionCode = 702
-        versionName = "7.2.0"
+        versionCode = 704
+        versionName = "7.3.1"
     }
 
     buildTypes {

@@ -114,8 +114,8 @@ class FilePickerViewModel : ViewModel() {
      * 按类型分别限量的规则引擎。
      *
      * null = 走旧的 [maxSelectNumber] 单一合计上限，行为和以前 1:1 一致；
-     * 非 null = 调用方用了 setSelectRules / setExclusive / setTotalMaxCount，
-     * 此时 maxSelectNumber **完全不参与判定**（单一数据源，避免两个数字打架）。
+     * 非 null = 调用方用了 setSelectRules / setExclusive / setGifCountsAsImage。
+     * 注意 maxSelectNumber 依旧生效：它是**合计上限**，与分类型规则同时约束、取交集。
      */
     var selectRulesEngine: SelectRulesEngine? = null
         private set

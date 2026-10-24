@@ -278,10 +278,12 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
                 add(SelectRule.ofVideo(if (videoForce) videoCount else 0, videoCount))
             }
         }
+        // 合计上限沿用上面「最大选择数量」输入框（setMaxSelectNumber），0 = 不限
+        val totalMax = countOf(binding.etMaxSelectCount)
         XLog.d(
             "FilePicker",
-            "规则参数：模式=$selectedRuleMode 图片=$imageCount(强制=$imageForce) " +
-                    "视频=$videoCount(强制=$videoForce) → $rules"
+            "规则参数：模式=$selectedRuleMode 合计上限=$totalMax " +
+                    "图片=$imageCount(强制=$imageForce) 视频=$videoCount(强制=$videoForce) → $rules"
         )
         return rules to (selectedRuleMode != RuleMode.NONE)
     }
@@ -372,11 +374,15 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
         applyRuleModeVisibility()
     }
 
-    /** 规则模式为「无」时数量与强制不参与规则，直接隐藏；只有共存 / 互斥才展示。 */
+    /**
+     * 规则模式为「无」时：用「最大选择数量」（旧的单一上限），隐藏分类型输入；
+     * 共存 / 互斥时反过来：合计上限由规则自动叠加，隐藏「最大选择数量」。
+     */
     private fun applyRuleModeVisibility() {
-        val showLimits = selectedRuleMode != RuleMode.NONE
-        binding.layoutImageCount.isVisible = showLimits
-        binding.layoutVideoCount.isVisible = showLimits
+        val useRules = selectedRuleMode != RuleMode.NONE
+        binding.layoutMaxCount.isVisible = !useRules
+        binding.layoutImageCount.isVisible = useRules
+        binding.layoutVideoCount.isVisible = useRules
     }
 
     fun selectFile(type: String, maxSelectCount: Int, maxFileSize: Int, showCameraEntry: Boolean) {

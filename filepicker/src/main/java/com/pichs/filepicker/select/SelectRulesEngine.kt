@@ -129,12 +129,23 @@ class SelectRulesEngine(
     }
 
     /**
-     * 总容量：显式 [totalMaxCount] 优先，否则由各类型 max 推导。
+     * 总容量：显式 [totalMaxCount] 优先；一般由各类型 max 推导（规则模式下调用方不再手写合计上限）。
      * 返回 0 表示不限。用于决定"单击即选即返回"这类交互模式。
+     *
+     * - 共存：各类型 max 之和；
+     * - 互斥：只能选其中一类，所以取单类型里最大的那个 max。
      */
     fun totalCapacity(): Int {
         if (totalMaxCount > 0) return totalMaxCount
         if (ruleMap.isEmpty()) return 0
+        if (exclusive) {
+            var maxOfRules = 0
+            for (rule in ruleMap.values) {
+                if (rule.max == Int.MAX_VALUE) return 0
+                if (rule.max > maxOfRules) maxOfRules = rule.max
+            }
+            return maxOfRules
+        }
         var sum = 0L
         for (rule in ruleMap.values) {
             if (rule.max == Int.MAX_VALUE) return 0
