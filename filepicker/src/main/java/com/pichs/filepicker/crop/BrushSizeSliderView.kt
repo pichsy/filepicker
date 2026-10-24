@@ -28,10 +28,11 @@ class BrushSizeSliderView @JvmOverloads constructor(
 
     private val density = resources.displayMetrics.density
     private val trackPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        // 浅一点的白色，不要那么刺眼
-        color = 0x8CFFFFFF.toInt()
+        // 纯色（不透明），避免半透明叠在图片上出现虚影
+        color = 0xFFD0D0D0.toInt()
         style = Paint.Style.FILL
     }
+    private val trackPath = android.graphics.Path()
     private val thumbPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.WHITE
         style = Paint.Style.FILL
@@ -60,14 +61,18 @@ class BrushSizeSliderView @JvmOverloads constructor(
         super.onDraw(canvas)
         val cy = height / 2f
         val usable = max(1f, width - padH * 2)
-        // 用非常密的圆填充成连续的锥形笔触（不露一颗颗圈圈）
-        var x = padH
-        while (x <= padH + usable) {
-            val t = ((x - padH) / usable).coerceIn(0f, 1f)
-            val r = thinR + (thickR - thinR) * t
-            canvas.drawCircle(x, cy, r, trackPaint)
-            x += max(0.8f, r * 0.35f)
-        }
+        // 用 Path 画一条连续的锥形笔触（梯形 + 两端圆头），不再是圈圈
+        val x0 = padH
+        val x1 = padH + usable
+        trackPath.reset()
+        trackPath.moveTo(x0, cy - thinR)
+        trackPath.lineTo(x1, cy - thickR)
+        trackPath.lineTo(x1, cy + thickR)
+        trackPath.lineTo(x0, cy + thinR)
+        trackPath.close()
+        canvas.drawPath(trackPath, trackPaint)
+        canvas.drawCircle(x0, cy, thinR, trackPaint)
+        canvas.drawCircle(x1, cy, thickR, trackPaint)
         // 当前粗细位置：实心白色圆点
         val thumbR = thinR + (thickR - thinR) * value + 2.5f * density
         canvas.drawCircle(padH + usable * value, cy, thumbR, thumbPaint)

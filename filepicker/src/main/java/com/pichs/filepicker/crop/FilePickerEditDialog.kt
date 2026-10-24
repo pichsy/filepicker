@@ -757,8 +757,8 @@ class FilePickerEditDialog(
             }
 
             Tool.DOODLE -> {
-                // 第一行：画笔图标 + 竖线 + 锥形粗细滑条
-                newRow()
+                // 第一行：画笔图标 + 竖线 + 锥形粗细滑条（紧贴下面颜色行）
+                newRow(44)
                 row().addView(ImageView(context).apply {
                     layoutParams = LinearLayout.LayoutParams(dp(32), dp(32)).apply {
                         setMargins(dp(4), 0, dp(6), 0)
@@ -841,13 +841,13 @@ class FilePickerEditDialog(
     /** 当前面板行（面板是竖向的，每个工具可以有 1~2 行） */
     private var panelRow: LinearLayout? = null
 
-    private fun newRow(): LinearLayout {
+    private fun newRow(rowHeight: Int = 52): LinearLayout {
         val row = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = android.view.Gravity.CENTER_VERTICAL
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                dp(52),
+                dp(rowHeight),
             )
         }
         secondaryPanel.addView(row)
