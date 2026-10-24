@@ -779,8 +779,8 @@ class FilePickerEditDialog(
                         rightMargin = dp(34)
                     }
                     contentDescription = "画笔粗细"
-                    val minFrac = 0.008f
-                    val maxFrac = 0.060f
+                    val minFrac = 0.004f
+                    val maxFrac = 0.030f
                     setValue(((cropView.brushRadiusFracValue() - minFrac) / (maxFrac - minFrac)).coerceIn(0f, 1f))
                     onValueChanged = { v ->
                         cropView.setBrushRadiusFrac(minFrac + v * (maxFrac - minFrac))
