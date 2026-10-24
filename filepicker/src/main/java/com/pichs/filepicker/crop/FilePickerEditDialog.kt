@@ -353,33 +353,41 @@ class FilePickerEditDialog(
         }
         fun rebuildAccessory() {
             accessory.removeAllViews()
-            // T 按钮：选中（白色圆角底）表示"字体颜色模式"，再点变"背景模式"
-            val tSize = dp(36)
-            val tButton = ImageView(context).apply {
-                layoutParams = LinearLayout.LayoutParams(tSize, tSize).apply {
+            // T 按钮：**默认不选中 = 无背景（字体颜色模式）**；
+            // 选中后显示圆形浅白底 = 圆角背景模式（输入的字体带背景）
+            val tHit = dp(40)
+            val tCircle = dp(32)
+            val tSlot = android.widget.FrameLayout(context).apply {
+                layoutParams = LinearLayout.LayoutParams(tHit, dp(48)).apply {
                     setMargins(dp(2), 0, dp(2), 0)
                 }
-                setPadding(dp(9), dp(9), dp(9), dp(9))
-                scaleType = ImageView.ScaleType.FIT_CENTER
-                setImageResource(R.drawable.filepicker_ic_edit_text)
-                setColorFilter(if (!textBgMode) 0xFF1A1A1A.toInt() else Color.WHITE)
-                background = if (!textBgMode) {
-                    GradientDrawable().apply {
-                        shape = GradientDrawable.RECTANGLE
-                        cornerRadius = dp(9).toFloat()
-                        setColor(0xF2FFFFFF.toInt())
-                    }
-                } else {
-                    null
-                }
-                contentDescription = if (textBgMode) "背景模式" else "字体颜色模式"
+                isClickable = true
+                contentDescription = if (textBgMode) "背景模式（已选中）" else "字体颜色模式（未选中）"
                 setOnClickListener {
                     textBgMode = !textBgMode
                     applyPreviewStyle()
                     rebuildAccessory()
                 }
             }
-            accessory.addView(tButton)
+            val tButton = ImageView(context).apply {
+                layoutParams = android.widget.FrameLayout.LayoutParams(tCircle, tCircle).apply {
+                    gravity = android.view.Gravity.CENTER
+                }
+                setPadding(dp(7), dp(7), dp(7), dp(7))
+                scaleType = ImageView.ScaleType.FIT_CENTER
+                setImageResource(R.drawable.filepicker_ic_edit_text)
+                setColorFilter(if (textBgMode) 0xFF06B10D.toInt() else Color.WHITE)
+                background = if (textBgMode) {
+                    GradientDrawable().apply {
+                        shape = GradientDrawable.OVAL
+                        setColor(0x40FFFFFF)
+                    }
+                } else {
+                    null
+                }
+            }
+            tSlot.addView(tButton)
+            accessory.addView(tSlot)
             accessory.addView(View(context).apply {
                 setBackgroundColor(0x40FFFFFF)
                 layoutParams = LinearLayout.LayoutParams(dp(1), dp(22)).apply {
