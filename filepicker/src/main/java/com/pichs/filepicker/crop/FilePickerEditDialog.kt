@@ -303,7 +303,7 @@ class FilePickerEditDialog(
     }
 
     /**
-     * 颜色小圆点：**槽位固定 18dp，位置不动**；选中时只在原地放大 1.2 倍（scale），
+     * 颜色小圆点：**槽位固定 18dp，位置不动**；选中时只在原地放大 1.5 倍（scale），
      * 不改变布局尺寸，所以不会把后面的圆点挤走。
      */
     private fun addColorDot(color: Int) {
@@ -324,8 +324,9 @@ class FilePickerEditDialog(
                 }
             }
             if (selected) {
-                scaleX = 1.2f
-                scaleY = 1.2f
+                // 槽位不再变化，只在原地放大 1.5 倍（不影响后面圆点的位置）
+                scaleX = 1.5f
+                scaleY = 1.5f
             }
             setOnClickListener {
                 selectedColor = color
