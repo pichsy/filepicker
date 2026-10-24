@@ -142,7 +142,9 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
         binding.tvIndex.text = "$index"
         // 统一走库里的 MediaLoader：图片读真实文件、视频走 MediaStore 视频缩略图通道，
         // 和选择器内部的取图口径保持一致（自己用 Glide 直接 load(path) 对视频是拿不到封面的）
-        MediaLoader.loadThumbnail(item, binding.ivCover)
+        // 编辑过的图：展示编辑产物（临时文件），身份仍是原图
+        val displayItem = if (item.isEdited()) item.copy(path = item.editedPath, uri = null) else item
+        MediaLoader.loadThumbnail(displayItem, binding.ivCover)
 
         val isVideo = item.isVideo()
         binding.ivPlay.isVisible = isVideo
@@ -231,6 +233,11 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
     private fun renderResult(list: List<MediaEntity>) {
         val hasResult = list.isNotEmpty()
         binding.tvResultTitle.isVisible = hasResult
+        if (hasResult) {
+            val editedCount = list.count { it.isEdited() }
+            val editedSuffix = if (editedCount > 0) "，$editedCount 张已编辑" else ""
+            binding.tvResultTitle.text = "选择结果（${list.size} 张$editedSuffix）"
+        }
         binding.recyclerView.isVisible = hasResult
         if (hasResult) {
             binding.recyclerView.models = list
@@ -393,16 +400,21 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
     }
 
     fun selectFile(type: String, maxSelectCount: Int, maxFileSize: Int, showCameraEntry: Boolean) {
+        // 头像裁剪：单选 + 单击即裁剪（1:1 固定框）
+        val avatarCrop = binding.cbAvatarCrop.isChecked
+        // 预览页「编辑」：预览大图时自由裁剪
+        val editInPreview = binding.cbEditPreview.isChecked
         val (rules, useNewModel) = buildSelectRules()
         if (selectedRuleMode != RuleMode.NONE && !useNewModel) {
             Toast.makeText(this, "没填图片/视频数量，按「最大选择数量」执行", Toast.LENGTH_SHORT).show()
         }
-        val builder = FilePicker.with(this).setMaxSelectNumber(maxSelectCount)
+        val effectiveMaxCount = if (avatarCrop) 1 else maxSelectCount
+        val builder = FilePicker.with(this).setMaxSelectNumber(effectiveMaxCount)
             .setMaxFileSize(maxFileSize.toLong()).setSelectType(type)
             .setShowCameraEntry(showCameraEntry)
             // 新模型下总容量=1 会自动启用单击返回；为了让规则测试能看到勾选过程，
             // 这里只在旧模型（不限）时打开，和原来 maxSelectNumber!=1 时无效的行为一致
-            .setSingleClickEnable(!useNewModel)
+            .setSingleClickEnable(avatarCrop || !useNewModel)
             .setSelectedList(selectedDataList).setOnSelectCallback { isUseOriginal, list ->
                 XLog.d("FilePicker", "Selected files: ${list.size}")
                 selectedDataList = list
@@ -420,6 +432,13 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
                     )
                 )
             )
+
+        if (avatarCrop) {
+            builder.setCropAspectRatio(1f)
+        }
+        if (editInPreview) {
+            builder.setEditInPreviewEnable(true)
+        }
 
         // 选用新模型：分类型限量 + 互斥；模式为"无"时完全走旧逻辑
         if (useNewModel) {

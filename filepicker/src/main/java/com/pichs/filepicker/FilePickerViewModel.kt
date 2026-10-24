@@ -65,6 +65,67 @@ class FilePickerViewModel : ViewModel() {
     val maxFileSize = MutableStateFlow(0L)
     val minFileSize = MutableStateFlow(0L)
 
+    /** 裁剪配置：aspect > 0 表示固定比例（头像 1:1）；<= 0 表示自由裁剪 */
+    val cropAspect = MutableStateFlow(0f)
+    val cropOutputMaxSize = MutableStateFlow(2048)
+    val cropQuality = MutableStateFlow(90)
+
+    /** 预览页是否显示「编辑」入口 */
+    val editInPreview = MutableStateFlow(false)
+
+    /**
+     * 本次选择内的编辑覆盖：key = 原图 path。
+     * 编辑只是覆盖（原图实体身份不变），所以选中顺序/数量/规则完全不受影响。
+     */
+    private val editSessions = HashMap<String, com.pichs.filepicker.crop.EditSession>()
+
+    /** 该图在本次选择内是否被编辑过 */
+    fun isEdited(entity: MediaEntity?): Boolean {
+        val key = entity?.path ?: return false
+        return editSessions.containsKey(key)
+    }
+
+    /** 编辑产物的路径；未编辑返回 null */
+    fun editedPathOf(entity: MediaEntity?): String? {
+        val key = entity?.path ?: return null
+        return editSessions[key]?.editedFile?.absolutePath
+    }
+
+    /**
+     * 展示用实体：编辑过就换成编辑产物路径（Uri 置空，让加载器走本地文件）。
+     * 只用于**显示**，选中/规则判断一律用原图实体。
+     */
+    fun displayEntity(entity: MediaEntity?): MediaEntity? {
+        val edited = editedPathOf(entity) ?: return entity
+        return entity?.copy(path = edited, uri = null, dateModified = 0)
+    }
+
+    /** 记录一次编辑（覆盖旧产物，删掉旧临时文件） */
+    fun attachEdit(entity: MediaEntity, editedPath: String): com.pichs.filepicker.crop.EditSession? {
+        val key = entity.path ?: return null
+        editSessions.remove(key)?.editedFile?.let {
+            com.pichs.filepicker.crop.CropEngine.deleteQuietly(it)
+        }
+        val session = com.pichs.filepicker.crop.EditSession(key, java.io.File(editedPath))
+        editSessions[key] = session
+        entity.editedPath = editedPath
+        return session
+    }
+
+    /** 清除某张图的编辑，回到原图 */
+    fun clearEdit(entity: MediaEntity) {
+        val key = entity.path ?: return
+        val session = editSessions.remove(key) ?: return
+        com.pichs.filepicker.crop.CropEngine.deleteQuietly(session.editedFile)
+        entity.editedPath = null
+    }
+
+    /** 清空全部编辑（选择器结束时调用） */
+    fun clearAllEdits() {
+        editSessions.values.forEach { com.pichs.filepicker.crop.CropEngine.deleteQuietly(it.editedFile) }
+        editSessions.clear()
+    }
+
     /**
      * 是否显示网格第一格的"拍照 / 录像"入口。默认 false —— 不开启时这条链路完全不参与，
      * 不挂 header、不注册 viewType、不碰权限，等同于没写这段代码。

@@ -106,6 +106,16 @@ class FilePickerActivity : AppCompatActivity() {
         viewModel.singleClickEnable.value = singleClickEnable
         viewModel.slideChooseEnable.value = slideChooseEnable
         viewModel.showCameraEntry.value = showCameraEntry
+        viewModel.cropAspect.value = intent.getFloatExtra("cropAspect", 0f)
+        viewModel.cropOutputMaxSize.value = intent.getIntExtra("cropOutputMaxSize", 2048)
+        viewModel.cropQuality.value = intent.getIntExtra("cropQuality", 90)
+        viewModel.editInPreview.value = intent.getBooleanExtra("editInPreview", false)
+        // 编辑缓存目录：宿主传了就用自己的，没传用默认 Android/data/<包名>/cache/filepicker
+        com.pichs.filepicker.crop.FilePickerEditCache.customDir =
+            intent.getStringExtra("editCacheDir")?.takeIf { it.isNotEmpty() }?.let { java.io.File(it) }
+        // 兜底清理：删掉超过 24h 的编辑缓存（崩溃/被杀进程的残留）。
+        // 注意：**不在返回结果后清理**，宿主可能还要把文件另存到自己的位置。
+        kotlin.concurrent.thread { com.pichs.filepicker.crop.CropEngine.pruneCache(this) }
 
         // 按类型限量模型：合计上限由规则自动叠加，maxSelectNumber 在该模式下不生效。
         // 注意：没配任何规则时这里什么都不做，仍然走 setMaxSelectNumber（setExclusive 不生效）。

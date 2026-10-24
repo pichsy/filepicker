@@ -25,6 +25,13 @@ data class MediaEntity(
      * 避免出现"缩略图是这张、点开是另一张"。默认 0 表示未知（退化为无签名）。
      */
     var dateModified: Long = 0,
+    /**
+     * 本次选择内编辑后的临时文件路径（裁剪等编辑的产物）。
+     *
+     * 只用于展示与回传给宿主（`entity.editedPath ?: entity.path`），
+     * **不参与 equals/hashCode**（身份仍然按原图 path 判等），也不写相册。
+     */
+    var editedPath: String? = null,
     // 是否为选中状态， -1 表示未选中，0标识选中列表中的位置， 默认值为 -1
     internal var selectedIndex: Int = -1,
 ) : Parcelable {
@@ -67,6 +74,9 @@ data class MediaEntity(
             }
         }
     }
+
+    /** 本次选择内是否被编辑过 */
+    fun isEdited(): Boolean = !editedPath.isNullOrEmpty()
 
     fun isVideo(): Boolean {
         return mimeType?.contains("video/", true) == true

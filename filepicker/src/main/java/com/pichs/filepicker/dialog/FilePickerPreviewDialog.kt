@@ -28,6 +28,7 @@ import com.drake.brv.utils.models
 import com.drake.brv.utils.setup
 import com.pichs.filepicker.SelectTypeUtil
 import com.pichs.filepicker.databinding.FilePickerItemRvAlbumSelectedBinding
+import com.pichs.filepicker.crop.FilePickerCropActivity
 import com.pichs.filepicker.loader.MediaLoader
 import com.pichs.filepicker.utils.FilePickerClickHelper
 import com.pichs.filepicker.utils.FilePickerLog
@@ -52,7 +53,9 @@ class FilePickerPreviewDialog(
     val onSelect: (MediaEntity, Boolean, Int) -> Unit,
     val onDragEnd: () -> Unit,
     var onSelectListScrollChanged: (index: Int, type: Int, dx: Int) -> Unit,
-    val onConfirm: (Int) -> Unit
+    val onConfirm: (Int) -> Unit,
+    /** 编辑完成后通知外面刷新对应格子（网格缩略图 + 已编辑角标） */
+    val onEditApplied: (MediaEntity) -> Unit = {},
 ) : BasePopupWindow(context) {
 
     lateinit var binding: DialogFilePickerPreviewBinding
@@ -202,7 +205,7 @@ class FilePickerPreviewDialog(
                 val item = getModel<MediaEntity>()
                 val itemBinding = getBinding<FilePickerItemRvAlbumSelectedBinding>()
 
-                MediaLoader.loadThumbnail(item, itemBinding.ivCoverImage)
+                MediaLoader.loadThumbnail(viewModel.displayEntity(item), itemBinding.ivCoverImage)
 
                 itemBinding.clSelectDelete.isVisible = viewModel.uiConfig.isShowSelectedListDeleteIcon
                 itemBinding.ivDelete.setImageResource(if (viewModel.uiConfig.selectedListDeleteIconResId != 0) viewModel.uiConfig.selectedListDeleteIconResId else R.drawable.filepicker_ic_delete_item)
@@ -452,6 +455,8 @@ class FilePickerPreviewDialog(
 
         val index = resolveCurrentIndex(binding.viewPager2.currentItem)
 
+        binding.tvEdit.setOnClickListener { startCropForCurrentItem() }
+
         binding.viewPager2.setCurrentItem(index, false)
 
         updateIndexUI(mCurrentItem)
@@ -482,6 +487,8 @@ class FilePickerPreviewDialog(
         }
         // 整条重绘底部缩略图的"当前页"绿框
         refreshStripSelection()
+        // 「编辑」入口：只在开启、且当前是图片时显示（视频/GIF 不支持编辑）
+        binding.tvEdit.isVisible = viewModel.editInPreview.value && item.isImage()
     }
 
 
@@ -506,6 +513,44 @@ class FilePickerPreviewDialog(
             stripLayout = layout
             rv.bindingAdapter?.notifyDataSetChanged()
         }
+    }
+
+    /** 预览页「编辑」：对当前大图做自由裁剪，结果作为会话级覆盖，不改原图 */
+    private fun startCropForCurrentItem() {
+        val item = mCurrentItem ?: return
+        if (!item.isImage()) return
+        // 再次编辑从"编辑后的图"开始（完成即生成新图，不回退原图）
+        val source = viewModel.displayEntity(item) ?: item
+        FilePickerCropActivity.start(
+            context = context,
+            entity = source,
+            aspect = 0f,
+            outputMaxSize = viewModel.cropOutputMaxSize.value,
+            quality = viewModel.cropQuality.value,
+            title = "编辑",
+        ) { editedPath ->
+            if (editedPath.isNullOrEmpty()) {
+                FilePickerLog.d("FilePickerPreviewDialog", "编辑已取消")
+                return@start
+            }
+            viewModel.attachEdit(item, editedPath)
+            FilePickerLog.d("FilePickerPreviewDialog", "编辑完成: $editedPath")
+            refreshAfterEdit(item)
+            onEditApplied(item)
+        }
+    }
+
+    /** 编辑完成后：只刷当前页 + 底条对应格，不动列表数据、不动选中状态 */
+    private fun refreshAfterEdit(item: MediaEntity) {
+        val index = itemIndexOfList(item)
+        if (index >= 0) {
+            binding.viewPager2.adapter?.notifyItemChanged(index)
+        }
+        val selectedIndex = viewModel.getSelectedDataList().indexOf(item)
+        if (selectedIndex >= 0) {
+            binding.rvSelected.bindingAdapter?.notifyItemChanged(selectedIndex)
+        }
+        refreshStripSelection()
     }
 
     /** 当前预览项在"已选列表"里的下标；不在已选里返回 -1 */
@@ -602,7 +647,7 @@ class FilePickerPreviewDialog(
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
             val item = viewModel.getCurrentFolderDataList().getOrNull(position) ?: return
             if (holder is ImageViewHolder) {
-                MediaLoader.loadImage(item, holder.photoView)
+                MediaLoader.loadImage(viewModel.displayEntity(item), holder.photoView)
 //                Glide.with(context).load(item.path).into(holder.photoView)
             } else if (holder is VideoViewHolder) {
                 FilePickerLog.d("MediaPagerAdapter", "onBindViewHolder: item.path=${item.path}, item.uri=${item.uri}")

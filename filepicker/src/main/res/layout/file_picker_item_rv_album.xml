@@ -73,6 +73,18 @@
         app:xp_radius="4dp" />
 
 
+    <!-- 左下角"已编辑"角标（25dp，仅编辑过的图片显示） -->
+    <com.pichs.xwidget.cardview.XCardImageView
+        android:id="@+id/iv_edited_badge"
+        android:layout_width="25dp"
+        android:layout_height="25dp"
+        android:layout_marginStart="4dp"
+        android:layout_marginBottom="4dp"
+        android:src="@drawable/filepicker_ic_image_edited"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
     <com.pichs.xwidget.cardview.XCardImageView
         android:id="@+id/iv_preview_image"
         android:layout_width="44dp"

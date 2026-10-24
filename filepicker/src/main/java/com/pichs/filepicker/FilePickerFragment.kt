@@ -35,6 +35,7 @@ import com.drake.brv.utils.models
 import com.drake.brv.utils.setup
 import com.google.android.material.tabs.TabLayout
 import com.pichs.filepicker.camera.CameraEntryModel
+import com.pichs.filepicker.crop.FilePickerCropActivity
 import com.pichs.filepicker.camera.FilePickerCaptureHelper
 import com.pichs.filepicker.databinding.FilePickerItemRvAlbumBinding
 import com.pichs.filepicker.databinding.FilePickerItemRvAlbumSelectedBinding
@@ -636,8 +637,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
 
                 itemBinding.root.setOnClickListener {
                     if (viewModel.isCanSingleClickSelect()) {
-                        // 单击选择模式，直接回调选择器
-                        callbackToChooser(arrayListOf(item))
+                        handleSingleClick(item)
                         return@setOnClickListener
                     }
 
@@ -760,7 +760,9 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
 //                    height = width
 //                }
 
-                MediaLoader.loadThumbnail(item, itemBinding.ivCoverImage)
+                // 编辑过的图片展示编辑产物（身份仍是原图），并显示左下角"已编辑"角标
+                MediaLoader.loadThumbnail(viewModel.displayEntity(item), itemBinding.ivCoverImage)
+                itemBinding.ivEditedBadge.isVisible = viewModel.isEdited(item)
 
                 itemBinding.clSelectArea.isVisible = !viewModel.isCanSingleClickSelect()
                 itemBinding.ivPreviewImage.isVisible = !viewModel.isCanSingleClickSelect()
@@ -815,7 +817,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
 
                 itemBinding.ivCoverImage.setOnClickListener {
                     if (viewModel.isCanSingleClickSelect()) {
-                        callbackToChooser(arrayListOf(item))
+                        handleSingleClick(item)
                         return@setOnClickListener
                     }
                     FilePickerLog.d("FilePickerFragment", "item.path:${item.path},mimeType:${item.mimeType}")
@@ -852,9 +854,9 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                 }
 
                 itemBinding.ivPreviewImage.setOnClickListener {
-                    // 进入弹窗
+                    // 进入弹窗（头像是单击即裁剪）
                     if (viewModel.isCanSingleClickSelect()) {
-                        callbackToChooser(arrayListOf(item))
+                        handleSingleClick(item)
                         return@setOnClickListener
                     }
                     showFilePickerPreviewDialog(item)
@@ -881,7 +883,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                 val itemBinding = getBinding<FilePickerItemRvAlbumSelectedBinding>()
 
                 if (item.isVideo() || item.isImage() || item.isGif()) {
-                    MediaLoader.loadThumbnail(item, itemBinding.ivCoverImage)
+                    MediaLoader.loadThumbnail(viewModel.displayEntity(item), itemBinding.ivCoverImage)
                 } else {
                     itemBinding.ivCoverImage.setImageResource(FilePickerIconUtils.getFileIcon(item))
                 }
@@ -998,6 +1000,15 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
             }
             FilePickerLog.d("FilePickerFragment", "onConfirm: finalList=${finalList.size}")
             callbackToChooser(finalList)
+        }, onEditApplied = { edited ->
+            // 只刷被编辑的那一格：缩略图换成编辑后的图 + 左下角"已编辑"角标
+            val position = viewModel.getCurrentFolderDataList().indexOf(edited)
+            if (position >= 0) {
+                binding.recyclerView.bindingAdapter?.notifyItemChanged(position)
+            }
+            // 底部已选缩略图条同步换成编辑后的图
+            binding.rvSelected.bindingAdapter?.notifyDataSetChanged()
+            updateBottomMenuSelectNumberUI()
         }).showPopupWindow()
 
         var indexOfSelected = viewModel.indexOfSelected(item)
@@ -1023,6 +1034,49 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
     /**
      * 选择数据返回
      */
+    /**
+     * 单选单击的统一入口：
+     * - 配置了固定比例（头像场景）→ 先进裁剪页，确认后把编辑产物挂到原图实体上返回；
+     * - 否则维持原行为：直接回调选择器。
+     */
+    private fun handleSingleClick(item: MediaEntity) {
+        if (viewModel.cropAspect.value > 0f && item.isImage()) {
+            launchAvatarCrop(item)
+            return
+        }
+        callbackToChooser(arrayListOf(item))
+    }
+
+    /**
+     * 头像场景：点图直接进固定比例裁剪页。
+     * 裁剪结果只挂到原图实体的 [MediaEntity.editedPath] 上（相册原图不动），然后把原图实体返回给宿主。
+     */
+    private fun launchAvatarCrop(item: MediaEntity) {
+        FilePickerLog.d("FilePickerFragment", "launchAvatarCrop: ${item.path}")
+        val aspect = viewModel.cropAspect.value
+        if (aspect <= 0f) {
+            callbackToChooser(arrayListOf(item))
+            return
+        }
+        val ctx = context ?: return
+        FilePickerCropActivity.start(
+            context = ctx,
+            entity = item,
+            aspect = aspect,
+            outputMaxSize = viewModel.cropOutputMaxSize.value,
+            quality = viewModel.cropQuality.value,
+            title = "裁剪",
+        ) { editedPath ->
+            if (editedPath.isNullOrEmpty()) {
+                FilePickerLog.d("FilePickerFragment", "头像裁剪已取消")
+                return@start
+            }
+            viewModel.attachEdit(item, editedPath)
+            FilePickerLog.d("FilePickerFragment", "头像裁剪完成: ${item.editedPath}")
+            callbackToChooser(arrayListOf(item))
+        }
+    }
+
     private fun callbackToChooser(selectList: ArrayList<MediaEntity>) {
         FilePickerLog.d("FilePickerFragment", "1111callbackToChooser: selectList size:${selectList.size}, selectType:${viewModel.selectType.value}")
         // 这里可以回调到选择器，通知选择完成。

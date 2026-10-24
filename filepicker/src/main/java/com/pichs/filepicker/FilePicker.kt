@@ -44,6 +44,23 @@ class FilePicker {
             return _instance
         }
 
+        /**
+         * 清理裁剪/编辑产生的临时缓存（`Android/data/<包名>/cache/filepicker/`）。
+         *
+         * 编辑产物只在本次选择内使用，宿主另存到自己的位置后可以随时调用本方法清理；
+         * 选择器启动时也会自动清理超过 24 小时的残留。
+         */
+        fun clearEditCache(context: android.content.Context): Boolean =
+            com.pichs.filepicker.crop.FilePickerEditCache.clear(context)
+
+        /** 当前编辑缓存占用大小（字节），方便宿主做容量控制 */
+        fun editCacheSize(context: android.content.Context): Long =
+            com.pichs.filepicker.crop.FilePickerEditCache.size(context)
+
+        /** 编辑缓存目录（`Android/data/<包名>/cache/filepicker/`） */
+        fun editCacheDir(context: android.content.Context): java.io.File =
+            com.pichs.filepicker.crop.FilePickerEditCache.dir(context)
+
         fun with(activity: FragmentActivity): Builder {
             return Builder(activity).apply {
                 get().setBuilder(this)
@@ -261,6 +278,72 @@ class FilePicker {
         var mShowCameraEntry: Boolean = false
             private set
 
+        /** 固定裁剪比例：> 0 生效（1f = 头像 1:1）；<= 0 表示不启用或者自由裁剪 */
+        var mCropAspect: Float = 0f
+            private set
+
+        /** 裁剪输出最长边（0 = 不缩放） */
+        var mCropOutputMaxSize: Int = 2048
+            private set
+
+        /** 裁剪输出 JPEG 质量（60~100） */
+        var mCropQuality: Int = 90
+            private set
+
+        /** 预览页是否显示「编辑」入口（自由裁剪） */
+        var mEditInPreview: Boolean = false
+            private set
+
+        /** 编辑产物缓存目录；空 = 默认 Android/data/<包名>/cache/filepicker */
+        var mEditCacheDir: String = ""
+            private set
+
+        /**
+         * 自定义编辑产物的缓存目录。
+         *
+         * 默认（不传）是 `Android/data/<包名>/cache/filepicker/`。
+         * 编辑产物只是临时文件，宿主另存到自己的位置后可调用 `FilePicker.clearEditCache(context)` 清理。
+         */
+        fun setEditCacheDir(path: String): Builder {
+            this.mEditCacheDir = path
+            return this
+        }
+
+        /**
+         * 头像场景：固定比例裁剪 + 单选单击。
+         *
+         * 配合 `setMaxSelectNumber(1)` + `setSingleClickEnable(true)` 使用：
+         * 点击图片不再直接返回，而是先进入裁剪页（固定比例、只能拖动/缩放图片），
+         * 裁剪确认后把结果挂到原图实体上返回（`entity.editedPath`），相册原图不动。
+         *
+         * @param aspect 1f = 1:1；其他比例传对应浮点值；<= 0 表示关闭固定比例
+         */
+        fun setCropAspectRatio(aspect: Float): Builder {
+            this.mCropAspect = aspect
+            return this
+        }
+
+        /** 裁剪输出最长边，默认 2048；传 0 表示不缩放（原图级） */
+        fun setCropOutputMaxSize(size: Int): Builder {
+            this.mCropOutputMaxSize = size
+            return this
+        }
+
+        /** 裁剪输出 JPEG 质量，默认 90 */
+        fun setCropQuality(quality: Int): Builder {
+            this.mCropQuality = quality.coerceIn(60, 100)
+            return this
+        }
+
+        /**
+         * 预览页显示「编辑」入口（自由裁剪）。
+         * 默认 false；开启后预览大图页顶部出现「编辑」，只对图片生效。
+         */
+        fun setEditInPreviewEnable(enable: Boolean): Builder {
+            this.mEditInPreview = enable
+            return this
+        }
+
         fun setShowCameraEntry(enable: Boolean): Builder {
             this.mShowCameraEntry = enable
             return this
@@ -455,6 +538,11 @@ class FilePicker {
                             intent.putExtra("singleClickEnable", bd.mSingleClickEnable)
                             intent.putExtra("slideChooseEnable", bd.mSlideChooseEnable)
                             intent.putExtra("showCameraEntry", bd.mShowCameraEntry)
+                            intent.putExtra("cropAspect", bd.mCropAspect)
+                            intent.putExtra("cropOutputMaxSize", bd.mCropOutputMaxSize)
+                            intent.putExtra("cropQuality", bd.mCropQuality)
+                            intent.putExtra("editInPreview", bd.mEditInPreview)
+                            intent.putExtra("editCacheDir", bd.mEditCacheDir)
                             bd.applySelectRuleExtras(intent, selectRulesEngine)
                             FilePickerViewModel.userUseSelectDataList.clear()
                             FilePickerViewModel.userUseSelectDataList.addAll(bd.mSelectedList)
@@ -495,6 +583,11 @@ class FilePicker {
                         intent.putExtra("singleClickEnable", bd.mSingleClickEnable)
                         intent.putExtra("slideChooseEnable", bd.mSlideChooseEnable)
                         intent.putExtra("showCameraEntry", bd.mShowCameraEntry)
+                            intent.putExtra("cropAspect", bd.mCropAspect)
+                            intent.putExtra("cropOutputMaxSize", bd.mCropOutputMaxSize)
+                            intent.putExtra("cropQuality", bd.mCropQuality)
+                            intent.putExtra("editInPreview", bd.mEditInPreview)
+                            intent.putExtra("editCacheDir", bd.mEditCacheDir)
                         bd.applySelectRuleExtras(intent, selectRulesEngine)
                         FilePickerViewModel.userUseSelectDataList.clear()
                         FilePickerViewModel.userUseSelectDataList.addAll(bd.mSelectedList)

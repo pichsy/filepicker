@@ -167,10 +167,14 @@ object MediaLoader {
 
     /** 大图预览：读原文件，整屏尺寸会跳过 MediaStore 缩略图分支，带 signature 保证不显示旧图 */
     private fun loadOriginalImage(entity: MediaEntity, view: ImageView) {
-        val uri = entity.uri ?: return
+        // 本地文件优先：编辑产物（裁剪结果）是 cacheDir 里的临时文件，没有 content uri；
+        // 普通相册图片的 path 也是权威文件，读不到时再退回 uri。
+        val localFile = entity.path?.takeIf { it.isNotEmpty() }?.let(::File)?.takeIf { it.exists() }
+        val uri = if (localFile == null) entity.uri else null
+        if (localFile == null && uri == null) return
         // 与网格缩略图同 model（File），命中它的内存/磁盘缓存，先秒出一张小图顶上，
         // 大图解码完成后再替换，翻页不会先看到一片黑。
-        val thumbModel: Any = entity.path?.takeIf { it.isNotEmpty() }?.let(::File) ?: uri
+        val thumbModel: Any? = entity.path?.takeIf { it.isNotEmpty() }?.let(::File) ?: uri
         // 关键：**不要按原图全尺寸解码**。一张 4000x3000 的照片是 ~48MB 的 Bitmap，
         // 预览页每翻一页解一张，既卡又容易 OOM；按屏幕 2 倍采样后屏幕内看不出差别，
         // 放大也还有余量，解码量和内存都降一个数量级。
@@ -178,7 +182,7 @@ object MediaLoader {
         val targetWidth = (dm.widthPixels * 2).coerceAtLeast(1)
         val targetHeight = (dm.heightPixels * 2).coerceAtLeast(1)
         Glide.with(view)
-            .load(uri)
+            .load(localFile ?: uri)
             .override(targetWidth, targetHeight)
             .downsample(DownsampleStrategy.AT_MOST)
             .dontTransform()

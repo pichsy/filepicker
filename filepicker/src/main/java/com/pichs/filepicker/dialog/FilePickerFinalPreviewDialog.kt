@@ -190,7 +190,7 @@ class FilePickerFinalPreviewDialog(
 
                 val itemEntity = item.mediaEntity
 
-                MediaLoader.loadThumbnail(itemEntity, itemBinding.ivCoverImage)
+                MediaLoader.loadThumbnail(viewModel.displayEntity(itemEntity), itemBinding.ivCoverImage)
 
                 itemBinding.clSelectDelete.isVisible = viewModel.uiConfig.isShowSelectedListDeleteIcon
                 itemBinding.ivDelete.setImageResource(if (viewModel.uiConfig.selectedListDeleteIconResId != 0) viewModel.uiConfig.selectedListDeleteIconResId else R.drawable.filepicker_ic_delete_item)
@@ -545,7 +545,7 @@ class FilePickerFinalPreviewDialog(
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
             val item = tempSelectDataList.getOrNull(position) ?: return
             if (holder is ImageViewHolder) {
-                MediaLoader.loadImage(item.mediaEntity, holder.photoView)
+                MediaLoader.loadImage(viewModel.displayEntity(item.mediaEntity), holder.photoView)
             } else if (holder is VideoViewHolder) {
                 FilePickerLog.d("MediaPagerAdapter", "onBindViewHolder: item.path=${item.mediaEntity.path}, item.uri=${item.mediaEntity.uri}")
                 holder.videoPlayerView.loadCover(item.mediaEntity)

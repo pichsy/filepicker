@@ -249,6 +249,26 @@
                 android:textColor="#DDDDDD"
                 android:textSize="14sp" />
 
+            <androidx.appcompat.widget.AppCompatCheckBox
+                android:id="@+id/cb_avatar_crop"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:buttonTint="#FFFFFF"
+                android:text="头像裁剪（单选 1:1，点图直接进裁剪页）"
+                android:textColor="#DDDDDD"
+                android:textSize="14sp" />
+
+            <androidx.appcompat.widget.AppCompatCheckBox
+                android:id="@+id/cb_edit_preview"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:buttonTint="#FFFFFF"
+                android:text="预览页可编辑（自由裁剪）"
+                android:textColor="#DDDDDD"
+                android:textSize="14sp" />
+
             <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btn_start"
                 android:layout_width="match_parent"
