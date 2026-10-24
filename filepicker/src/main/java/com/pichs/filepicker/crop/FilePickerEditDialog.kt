@@ -256,7 +256,7 @@ class FilePickerEditDialog(
 
     private fun setupCropControls(contentView: View) {
         val margin = dp(24)
-        val bottomGap = dp(20)
+        val bottomGap = dp(8)
         val host = android.widget.FrameLayout(context).apply {
             layoutParams = android.view.ViewGroup.LayoutParams(
                 android.view.ViewGroup.LayoutParams.MATCH_PARENT,
@@ -272,7 +272,7 @@ class FilePickerEditDialog(
                 dp(52),
                 android.view.Gravity.BOTTOM or android.view.Gravity.START,
             ).apply {
-                bottomMargin = bottomGap + dp(64)
+                bottomMargin = bottomGap + dp(56)
             }
         }
         val tools = LinearLayout(context).apply {
@@ -325,7 +325,7 @@ class FilePickerEditDialog(
         val cancelCrop = TextView(context).apply {
             text = "✕"
             setTextColor(Color.WHITE)
-            textSize = 26f
+            textSize = 20f
             gravity = android.view.Gravity.CENTER
             contentDescription = "取消裁剪"
             setOnClickListener {
@@ -333,27 +333,27 @@ class FilePickerEditDialog(
                 switchTool(Tool.NONE)
             }
         }
-        host.addView(cancelCrop, android.widget.FrameLayout.LayoutParams(dp(72), minRow).apply {
+        host.addView(cancelCrop, android.widget.FrameLayout.LayoutParams(minRow, minRow).apply {
             gravity = android.view.Gravity.BOTTOM or android.view.Gravity.START
             bottomMargin = bottomGap
-            leftMargin = margin
+            leftMargin = dp(16)
         })
 
-        val confirmCrop = TextView(context).apply {
-            text = "✓"
-            setTextColor(Color.WHITE)
-            textSize = 30f
-            gravity = android.view.Gravity.CENTER
+        // ✓ 换成需求方给的图标（视觉小一点，点击热区不变）
+        val confirmCrop = ImageView(context).apply {
+            setImageResource(R.drawable.filepicker_ic_crop_confirm)
+            setPadding(dp(16), dp(16), dp(16), dp(16))
+            scaleType = ImageView.ScaleType.FIT_CENTER
             contentDescription = "确认裁剪"
             setOnClickListener {
                 cropView.confirmCrop()
                 switchTool(Tool.NONE)
             }
         }
-        host.addView(confirmCrop, android.widget.FrameLayout.LayoutParams(dp(72), minRow).apply {
+        host.addView(confirmCrop, android.widget.FrameLayout.LayoutParams(minRow, minRow).apply {
             gravity = android.view.Gravity.BOTTOM or android.view.Gravity.END
             bottomMargin = bottomGap
-            rightMargin = margin
+            rightMargin = dp(16)
         })
 
         // 裁剪可用区域：顶=状态栏下 8dp（裁剪时顶栏隐藏），底=✕/✓ + 旋转排 + 间距
