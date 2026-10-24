@@ -339,7 +339,7 @@ class FilePickerEditDialog(
         // 实时刷新 EditText 的样式预览
         fun applyPreviewStyle() {
             if (textBgMode) {
-                editText.setTextColor(Color.WHITE)
+                editText.setTextColor(contrastTextColor(textStyleColor))
                 editText.background = GradientDrawable().apply {
                     shape = GradientDrawable.RECTANGLE
                     cornerRadius = dp(10).toFloat()
@@ -455,10 +455,19 @@ class FilePickerEditDialog(
         }
     }
 
+    /** 背景模式下文字颜色：浅色/白色背景用黑字，深色背景用白字 */
+    private fun contrastTextColor(background: Int): Int {
+        val r = android.graphics.Color.red(background) / 255f
+        val g = android.graphics.Color.green(background) / 255f
+        val b = android.graphics.Color.blue(background) / 255f
+        val luminance = 0.299f * r + 0.587f * g + 0.114f * b
+        return if (luminance > 0.6f) Color.BLACK else Color.WHITE
+    }
+
     private fun commitTextInput(text: String) {
         if (text.isNotBlank()) {
             if (textBgMode) {
-                cropView.addText(text.trim(), Color.WHITE, textStyleColor)
+                cropView.addText(text.trim(), contrastTextColor(textStyleColor), textStyleColor)
             } else {
                 cropView.addText(text.trim(), textStyleColor, null)
             }
