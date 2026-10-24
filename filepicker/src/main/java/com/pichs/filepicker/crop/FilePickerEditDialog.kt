@@ -299,17 +299,18 @@ class FilePickerEditDialog(
         secondaryPanel.addView(divider)
     }
 
-    /** 颜色小圆点：18dp，全部塞在一行里（和微信一样） */
+    /** 颜色小圆点：未选中 18dp，选中的放大到 24dp（和微信一样，选中有放大反馈） */
     private fun addColorDot(color: Int) {
-        val size = dp(18)
+        val selected = color == selectedColor
+        val size = dp(if (selected) 24 else 18)
         val dot = View(context).apply {
             layoutParams = LinearLayout.LayoutParams(size, size).apply {
-                setMargins(dp(5), 0, dp(5), 0)
+                setMargins(dp(4), 0, dp(4), 0)
             }
             background = GradientDrawable().apply {
                 shape = GradientDrawable.OVAL
                 setColor(color)
-                if (color == selectedColor) {
+                if (selected) {
                     setStroke(dp(2), Color.WHITE)
                 } else {
                     // 给每个点一圈淡描边：黑色点在深色背景上也看得见
