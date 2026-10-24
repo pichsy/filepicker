@@ -61,8 +61,10 @@ class CropView @JvmOverloads constructor(
     private var doodleDirty = true
     /** 是否橡皮（擦掉涂抹效果） */
     private var paintEraser = false
-    /** 笔刷半径 = 图片短边 * 该比例（默认细一点） */
+    /** 笔刷半径 = 图片短边 * 该比例（画笔默认，细一点） */
     private var brushRadiusFrac = 0.0061f
+    /** 马赛克笔刷半径（默认比画笔粗一倍） */
+    private var mosaicRadiusFrac = 0.0122f
     /** 涂抹遮罩/效果图缓存 */
     private var maskBitmap: Bitmap? = null
     private var maskDirty = true
@@ -1229,7 +1231,7 @@ class CropView @JvmOverloads constructor(
             "开始涂抹: style=$paintStyle eraser=$paintEraser color=${Integer.toHexString(brushColor)}",
         )
         val stroke = BrushStroke(
-            radiusFrac = brushRadiusFrac,
+            radiusFrac = if (paintStyle == 2) brushRadiusFrac else mosaicRadiusFrac,
             mode = paintStyle,
             erase = paintEraser,
             color = brushColor,

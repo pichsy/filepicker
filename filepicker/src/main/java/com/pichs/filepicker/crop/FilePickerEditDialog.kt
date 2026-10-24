@@ -228,6 +228,12 @@ class FilePickerEditDialog(
 
     /** 返回键：文字输入时先收键盘（颜色条带动画落回底部），再按一次才退出输入 */
     override fun onBackPressed(): Boolean {
+        // 裁剪模式：先退出裁剪，回到编辑初始状态；再按一次才关弹窗
+        if (currentTool == Tool.CROP) {
+            cropView.cancelCrop()
+            switchTool(Tool.NONE)
+            return true
+        }
         val overlay = textInputOverlay
         if (overlay != null) {
             if (textKeyboardVisible) {
@@ -657,6 +663,9 @@ class FilePickerEditDialog(
         editingTextIndex = -1
         hideTextInput()
         exitTextEditingState()
+        // 强制整窗重绘：确保文字立刻出现在图片上（不等下一次触摸）
+        cropView.postInvalidateOnAnimation()
+        contentRoot.postInvalidateOnAnimation()
     }
 
     private fun cancelTextInput() {
