@@ -5,8 +5,8 @@ import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.os.Handler
 import android.os.Looper
-import android.view.Gravity
 import android.view.View
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
@@ -59,10 +59,10 @@ class FilePickerEditDialog(
 
     private lateinit var cropView: CropView
     private lateinit var secondaryPanel: LinearLayout
-    private lateinit var toolDoodle: TextView
-    private lateinit var toolText: TextView
-    private lateinit var toolCrop: TextView
-    private lateinit var toolMosaic: TextView
+    private lateinit var toolDoodle: ImageView
+    private lateinit var toolText: ImageView
+    private lateinit var toolCrop: ImageView
+    private lateinit var toolMosaic: ImageView
     private lateinit var btnDone: TextView
     private lateinit var progressBar: View
 
@@ -94,13 +94,25 @@ class FilePickerEditDialog(
         btnDone = contentView.findViewById(R.id.btn_done)
         progressBar = contentView.findViewById(R.id.progress)
 
-        // 底部工具条按导航栏让位
+        // 底部工具条按导航栏让位（弹窗里 insets 分发不可靠，直接取系统资源高度）
         val toolRow = contentView.findViewById<View>(R.id.tool_row)
+        val navBarHeight = run {
+            val res = context.resources
+            val id = res.getIdentifier("navigation_bar_height", "dimen", "android")
+            if (id > 0) res.getDimensionPixelSize(id) else dp(48)
+        }
+        // 行高 = 内容 64dp + 导航栏高度，避免 padding 把 48dp 图标挤扁
+        toolRow.layoutParams = toolRow.layoutParams.apply { height = dp(64) + navBarHeight }
+        toolRow.setPadding(
+            toolRow.paddingLeft, toolRow.paddingTop, toolRow.paddingRight, navBarHeight
+        )
         androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(contentView) { _, insets ->
             val bars = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars())
-            toolRow.setPadding(
-                toolRow.paddingLeft, toolRow.paddingTop, toolRow.paddingRight, bars.bottom
-            )
+            if (bars.bottom > navBarHeight) {
+                toolRow.setPadding(
+                    toolRow.paddingLeft, toolRow.paddingTop, toolRow.paddingRight, bars.bottom
+                )
+            }
             insets
         }
 
@@ -212,10 +224,10 @@ class FilePickerEditDialog(
     private fun updateToolColors() {
         val accent = 0xFF06B10D.toInt()
         val normal = Color.WHITE
-        toolDoodle.setTextColor(if (currentTool == Tool.DOODLE) accent else normal)
-        toolText.setTextColor(if (currentTool == Tool.TEXT) accent else normal)
-        toolCrop.setTextColor(if (currentTool == Tool.CROP) accent else normal)
-        toolMosaic.setTextColor(if (currentTool == Tool.MOSAIC) accent else normal)
+        toolDoodle.setColorFilter(if (currentTool == Tool.DOODLE) accent else normal)
+        toolText.setColorFilter(if (currentTool == Tool.TEXT) accent else normal)
+        toolCrop.setColorFilter(if (currentTool == Tool.CROP) accent else normal)
+        toolMosaic.setColorFilter(if (currentTool == Tool.MOSAIC) accent else normal)
     }
 
     private fun buildSecondaryPanel() {
@@ -223,88 +235,76 @@ class FilePickerEditDialog(
         secondaryPanel.removeAllViews()
         when (currentTool) {
             Tool.CROP -> {
-                addTextButton("↺ 旋转") { cropView.rotate90() }
-                addTextButton("⇋ 镜像") { cropView.mirror() }
-                addTextButton("还原") { cropView.resetCrop() }
+                addIconButton(R.drawable.filepicker_ic_crop_rotate) { cropView.rotate90() }
+                addIconButton(R.drawable.filepicker_ic_crop_mirror) { cropView.mirror() }
+                addIconButton(R.drawable.filepicker_ic_edit_reset) { cropView.resetCrop() }
             }
 
             Tool.DOODLE -> {
-                addEraserButton()
+                addIconButton(R.drawable.filepicker_ic_edit_eraser) {
+                    Toast.makeText(context, "橡皮下一步接入", Toast.LENGTH_SHORT).show()
+                }
                 addDivider()
                 for (color in DOODLE_COLORS) {
                     addColorDot(color)
                 }
-                addHint("画笔绘制下一步接入")
             }
 
             Tool.TEXT -> {
-                addTextButton("+ 添加文字") {
+                addIconButton(R.drawable.filepicker_ic_edit_text, selected = true) {
                     Toast.makeText(context, "文字编辑下一步接入", Toast.LENGTH_SHORT).show()
                 }
-                addHint("样式/拖动/缩放在下一步")
             }
 
             Tool.MOSAIC -> {
-                addEraserButton()
+                addIconButton(R.drawable.filepicker_ic_edit_eraser) {
+                    Toast.makeText(context, "橡皮下一步接入", Toast.LENGTH_SHORT).show()
+                }
                 addDivider()
-                addTextButton(if (mosaicStyle == 0) "▦ 像素 ✓" else "▦ 像素") {
+                addIconButton(R.drawable.filepicker_ic_edit_mosaic, selected = mosaicStyle == 0) {
                     mosaicStyle = 0
                     buildSecondaryPanel()
                 }
-                addTextButton(if (mosaicStyle == 1) "◉ 模糊 ✓" else "◉ 模糊") {
+                addIconButton(R.drawable.filepicker_ic_edit_blur, selected = mosaicStyle == 1) {
                     mosaicStyle = 1
                     buildSecondaryPanel()
                 }
-                addHint("涂抹下一步接入")
             }
         }
     }
 
-    private fun addTextButton(text: String, onClick: () -> Unit) {
-        val tv = TextView(context).apply {
-            this.text = text
-            setTextColor(Color.WHITE)
-            textSize = 14f
-            gravity = Gravity.CENTER
-            val pad = dp(10)
-            setPadding(pad, pad, pad, pad)
+    /** 图标按钮（40dp 热区，选中用绿色 tint） */
+    private fun addIconButton(iconRes: Int, selected: Boolean = false, onClick: () -> Unit) {
+        val size = dp(40)
+        val image = ImageView(context).apply {
+            layoutParams = LinearLayout.LayoutParams(size, size).apply {
+                setMargins(dp(2), 0, dp(2), 0)
+            }
+            setPadding(dp(8), dp(8), dp(8), dp(8))
+            scaleType = ImageView.ScaleType.FIT_CENTER
+            setImageResource(iconRes)
+            setColorFilter(if (selected) 0xFF06B10D.toInt() else Color.WHITE)
             setOnClickListener { onClick() }
         }
-        secondaryPanel.addView(tv)
-    }
-
-    private fun addEraserButton() {
-        addTextButton("◇ 橡皮") {
-            Toast.makeText(context, "橡皮下一步接入", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    private fun addHint(text: String) {
-        val tv = TextView(context).apply {
-            this.text = text
-            setTextColor(0x66FFFFFF)
-            textSize = 12f
-            val pad = dp(8)
-            setPadding(pad, pad, pad, pad)
-        }
-        secondaryPanel.addView(tv)
+        secondaryPanel.addView(image)
     }
 
     private fun addDivider() {
         val divider = View(context).apply {
-            setBackgroundColor(0x33FFFFFF)
-            layoutParams = LinearLayout.LayoutParams(dp(1), dp(20)).apply {
-                setMargins(dp(6), 0, dp(6), 0)
+            setBackgroundColor(0x40FFFFFF)
+            layoutParams = LinearLayout.LayoutParams(dp(1), dp(22)).apply {
+                setMargins(dp(8), 0, dp(8), 0)
             }
         }
         secondaryPanel.addView(divider)
     }
 
+    /** 颜色小圆点：22dp，全部塞在一行里（和微信一样） */
     private fun addColorDot(color: Int) {
-        val size = dp(30)
+        val size = dp(22)
         val dot = View(context).apply {
             layoutParams = LinearLayout.LayoutParams(size, size).apply {
-                setMargins(dp(5), 0, dp(5), 0)
+                setMargins(dp(6), 0, dp(6), 0)
             }
             background = GradientDrawable().apply {
                 shape = GradientDrawable.OVAL

@@ -15,11 +15,31 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
+    <!-- 顶部渐变（纯视觉，不拦截触摸） -->
+    <View
+        android:id="@+id/top_scrim"
+        android:layout_width="match_parent"
+        android:layout_height="160dp"
+        android:background="@drawable/filepicker_edit_top_scrim"
+        android:clickable="false"
+        android:focusable="false"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- 底部渐变：从下方半透明黑向上过渡到纯透明（不拦截触摸） -->
+    <View
+        android:id="@+id/bottom_scrim"
+        android:layout_width="match_parent"
+        android:layout_height="240dp"
+        android:background="@drawable/filepicker_edit_bottom_scrim"
+        android:clickable="false"
+        android:focusable="false"
+        app:layout_constraintBottom_toBottomOf="parent" />
+
     <com.pichs.xwidget.view.XStatusBarView
         android:id="@+id/status_bar_view"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="#121212"
+        android:background="#00000000"
         android:clickable="true"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -48,25 +68,25 @@
             android:layout_height="1dp"
             android:layout_weight="1" />
 
-        <TextView
+        <ImageView
             android:id="@+id/btn_undo"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:alpha="0.4"
-            android:padding="10dp"
-            android:text="↶"
-            android:textColor="#ffffff"
-            android:textSize="20sp" />
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:alpha="0.35"
+            android:contentDescription="撤销"
+            android:padding="11dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/filepicker_ic_edit_undo" />
 
-        <TextView
+        <ImageView
             android:id="@+id/btn_redo"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:alpha="0.4"
-            android:padding="10dp"
-            android:text="↷"
-            android:textColor="#ffffff"
-            android:textSize="20sp" />
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:alpha="0.35"
+            android:contentDescription="重做"
+            android:padding="11dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/filepicker_ic_edit_redo" />
     </LinearLayout>
 
     <ProgressBar
@@ -85,6 +105,7 @@
         android:id="@+id/secondary_panel"
         android:layout_width="match_parent"
         android:layout_height="52dp"
+        android:background="#00000000"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingStart="12dp"
@@ -95,49 +116,49 @@
     <LinearLayout
         android:id="@+id/tool_row"
         android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:background="#1A1A1A"
+        android:layout_height="64dp"
+        android:background="@drawable/filepicker_edit_bottom_bar_bg"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingStart="8dp"
+        android:paddingStart="4dp"
         android:paddingEnd="12dp"
         app:layout_constraintBottom_toBottomOf="parent">
 
-        <TextView
+        <ImageView
             android:id="@+id/tool_doodle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:padding="10dp"
-            android:text="✏ 画笔"
-            android:textColor="#ffffff"
-            android:textSize="14sp" />
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:contentDescription="画笔"
+            android:padding="12dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/filepicker_ic_edit_brush" />
 
-        <TextView
+        <ImageView
             android:id="@+id/tool_text"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:padding="10dp"
-            android:text="T 文字"
-            android:textColor="#ffffff"
-            android:textSize="14sp" />
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:contentDescription="文字"
+            android:padding="12dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/filepicker_ic_edit_text" />
 
-        <TextView
+        <ImageView
             android:id="@+id/tool_crop"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:padding="10dp"
-            android:text="⧉ 裁剪"
-            android:textColor="#06B10D"
-            android:textSize="14sp" />
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:contentDescription="裁剪"
+            android:padding="12dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/filepicker_ic_edit_crop" />
 
-        <TextView
+        <ImageView
             android:id="@+id/tool_mosaic"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:padding="10dp"
-            android:text="▦ 马赛克"
-            android:textColor="#ffffff"
-            android:textSize="14sp" />
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:contentDescription="马赛克"
+            android:padding="12dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/filepicker_ic_edit_mosaic" />
 
         <Space
             android:layout_width="0dp"

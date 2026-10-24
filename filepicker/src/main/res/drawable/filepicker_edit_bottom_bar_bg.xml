@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 工具条底：下浓上淡的渐变，保证压住弹窗下方的内容，同时保持"渐变透明"观感 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <gradient
+        android:angle="270"
+        android:startColor="#B3000000"
+        android:endColor="#F2000000" />
+</shape>
