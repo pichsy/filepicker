@@ -104,7 +104,7 @@
     <LinearLayout
         android:id="@+id/secondary_panel"
         android:layout_width="match_parent"
-        android:layout_height="52dp"
+        android:layout_height="56dp"
         android:background="#00000000"
         android:gravity="center_vertical"
         android:orientation="horizontal"
@@ -126,37 +126,37 @@
 
         <ImageView
             android:id="@+id/tool_doodle"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
             android:contentDescription="画笔"
-            android:padding="13dp"
+            android:padding="15dp"
             android:scaleType="fitCenter"
             android:src="@drawable/filepicker_ic_edit_brush" />
 
         <ImageView
             android:id="@+id/tool_text"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
             android:contentDescription="文字"
-            android:padding="13dp"
+            android:padding="15dp"
             android:scaleType="fitCenter"
             android:src="@drawable/filepicker_ic_edit_text" />
 
         <ImageView
             android:id="@+id/tool_crop"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
             android:contentDescription="裁剪"
-            android:padding="13dp"
+            android:padding="15dp"
             android:scaleType="fitCenter"
             android:src="@drawable/filepicker_ic_edit_crop" />
 
         <ImageView
             android:id="@+id/tool_mosaic"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
             android:contentDescription="马赛克"
-            android:padding="13dp"
+            android:padding="15dp"
             android:scaleType="fitCenter"
             android:src="@drawable/filepicker_ic_edit_mosaic" />
 

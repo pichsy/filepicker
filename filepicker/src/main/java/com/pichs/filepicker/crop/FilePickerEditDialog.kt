@@ -303,15 +303,26 @@ class FilePickerEditDialog(
     }
 
     /**
-     * 颜色小圆点：**槽位固定 18dp，位置不动**；选中时只在原地放大 1.5 倍（scale），
-     * 不改变布局尺寸，所以不会把后面的圆点挤走。
+     * 颜色小圆点（比例按微信实测）：
+     * - 视觉直径 14dp，**槽位 34dp 且整槽可点**（好点，和微信一致）；
+     * - 未选中 14dp，选中原地放大 1.4 倍（≈20dp），槽位不变、不挤动其他点。
      */
     private fun addColorDot(color: Int) {
         val selected = color == selectedColor
-        val size = dp(18)
+        val slotSize = dp(34)
+        val dotSize = dp(14)
+        val slot = android.widget.FrameLayout(context).apply {
+            layoutParams = LinearLayout.LayoutParams(slotSize, dp(48))
+            isClickable = true
+            isFocusable = true
+            setOnClickListener {
+                selectedColor = color
+                buildSecondaryPanel()
+            }
+        }
         val dot = View(context).apply {
-            layoutParams = LinearLayout.LayoutParams(size, size).apply {
-                setMargins(dp(6), 0, dp(6), 0)
+            layoutParams = android.widget.FrameLayout.LayoutParams(dotSize, dotSize).apply {
+                gravity = android.view.Gravity.CENTER
             }
             background = GradientDrawable().apply {
                 shape = GradientDrawable.OVAL
@@ -319,21 +330,17 @@ class FilePickerEditDialog(
                 if (selected) {
                     setStroke(dp(2), Color.WHITE)
                 } else {
-                    // 给每个点一圈淡描边：黑色点在深色背景上也看得见
+                    // 给每个点一圈淡描边：黑色点在深色图片上也看得见
                     setStroke(dp(1), 0x99FFFFFF.toInt())
                 }
             }
             if (selected) {
-                // 槽位不再变化，只在原地放大 1.5 倍（不影响后面圆点的位置）
-                scaleX = 1.5f
-                scaleY = 1.5f
-            }
-            setOnClickListener {
-                selectedColor = color
-                buildSecondaryPanel()
+                scaleX = 1.4f
+                scaleY = 1.4f
             }
         }
-        secondaryPanel.addView(dot)
+        slot.addView(dot)
+        secondaryPanel.addView(slot)
     }
 
     private fun dp(value: Int): Int = (value * context.resources.displayMetrics.density).toInt()
