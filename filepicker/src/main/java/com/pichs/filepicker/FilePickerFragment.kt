@@ -919,10 +919,9 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
 
     }
 
-    /** 最普通的平滑滚动：交给 RecyclerView 自己算，不手动计算坐标 */
+    /** 最普通的平滑滚动：交给 RecyclerView 自己算；目标已完全可见就不动（省掉无意义的动画） */
     fun scrollItemToCenter(recyclerView: RecyclerView, position: Int) {
-        if (position < 0) return
-        recyclerView.smoothScrollToPosition(position)
+        SelectedThumbnailStrip.smoothScrollToItem(recyclerView, position)
     }
 
     /**

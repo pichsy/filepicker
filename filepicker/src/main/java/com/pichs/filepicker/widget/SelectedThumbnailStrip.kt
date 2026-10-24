@@ -2,6 +2,7 @@ package com.pichs.filepicker.widget
 
 import android.view.View
 import android.view.ViewGroup
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.drake.brv.utils.bindingAdapter
 import com.pichs.filepicker.R
@@ -64,6 +65,25 @@ object SelectedThumbnailStrip {
         params.marginStart = 0
         params.marginEnd = layout.spacingPx
         itemView.layoutParams = params
+    }
+
+    /**
+     * 最普通的平滑滚动，但如果目标格子**已经完全可见**就不动。
+     *
+     * 为什么加这个判断：`smoothScrollToPosition` 每次都会起一个 SmoothScroller（哪怕目标已可见），
+     * 翻页时底条 + 相册页底条同时跑动画会跟 ViewPager2 抢帧，滑起来就发涩。
+     */
+    fun smoothScrollToItem(recyclerView: RecyclerView, position: Int) {
+        if (position < 0) return
+        val lm = recyclerView.layoutManager as? LinearLayoutManager ?: return
+        val child = lm.findViewByPosition(position)
+        if (child != null &&
+            child.left >= recyclerView.paddingLeft &&
+            child.right <= recyclerView.width - recyclerView.paddingRight
+        ) {
+            return
+        }
+        recyclerView.smoothScrollToPosition(position)
     }
 
     /**

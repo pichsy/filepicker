@@ -240,7 +240,7 @@ class FilePickerFinalPreviewDialog(
                         // 高亮、页码、缩略图跟随统一交给 onPageSelected 处理，避免重复刷新。
                         binding.viewPager2.setCurrentItem(indexOfList, false)
                     } else {
-                        binding.rvSelected.smoothScrollToPosition(modelPosition)
+                        SelectedThumbnailStrip.smoothScrollToItem(binding.rvSelected, modelPosition)
                     }
                 }
             }
@@ -259,13 +259,6 @@ class FilePickerFinalPreviewDialog(
             if (index >= 0) binding.rvSelected.scrollToPosition(index)
             refreshStripSelection()
         }
-        binding.rvSelected.addOnScrollListener(object : RecyclerView.OnScrollListener() {
-            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-                super.onScrolled(recyclerView, dx, dy)
-                // 滚动中新挂载/复用的格子立刻按当前位置重绘绿框
-                refreshStripSelection()
-            }
-        })
     }
 
     fun itemIndexOfList(item: FilePickerTempSelected?): Int {
@@ -325,8 +318,7 @@ class FilePickerFinalPreviewDialog(
 
     /** 最普通的平滑滚动：交给 RecyclerView 自己算，不手动计算坐标 */
     fun scrollItemToCenter(recyclerView: RecyclerView, position: Int) {
-        if (position < 0) return
-        recyclerView.smoothScrollToPosition(position)
+        SelectedThumbnailStrip.smoothScrollToItem(recyclerView, position)
     }
 
     /** 按"边缘露出半格"算一次底部条间距并应用（只改间距，不改格子尺寸） */
@@ -444,8 +436,8 @@ class FilePickerFinalPreviewDialog(
                 mCurrentIndex = position
 
                 binding.rvSelected.post {
-                    // 最普通的平滑滚动：交给 RecyclerView 自己算
-                    binding.rvSelected.smoothScrollToPosition(position)
+                    // 最普通的平滑滚动：交给 RecyclerView 自己算，已经可见就不动
+                    SelectedThumbnailStrip.smoothScrollToItem(binding.rvSelected, position)
                 }
             }
         })

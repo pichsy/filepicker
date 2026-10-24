@@ -248,7 +248,7 @@ class FilePickerPreviewDialog(
                         // 避免这里和翻页回调各做一遍，滚动被触发两次。
                         binding.viewPager2.setCurrentItem(indexOfList, false)
                     } else {
-                        binding.rvSelected.smoothScrollToPosition(modelPosition)
+                        SelectedThumbnailStrip.smoothScrollToItem(binding.rvSelected, modelPosition)
                     }
                 }
             }
@@ -276,8 +276,6 @@ class FilePickerPreviewDialog(
         binding.rvSelected.addOnScrollListener(object : RecyclerView.OnScrollListener() {
             override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                 super.onScrolled(recyclerView, dx, dy)
-                // 滚动过程中新挂载/复用的格子立刻按当前位置重绘绿框
-                refreshStripSelection()
                 // 只镜像用户手动拖动的位移。程序化平滑滚动已经通过 type=1 通知过目标下标，
                 // 再逐帧镜像 dx 会让底部条被滚两次，看起来"越跑越偏"。
                 if (recyclerView.scrollState == RecyclerView.SCROLL_STATE_DRAGGING) {
@@ -443,7 +441,7 @@ class FilePickerPreviewDialog(
                     val indexOfSelect = viewModel.getSelectedDataList().indexOf(item)
                     if (indexOfSelect >= 0) {
                         // 最普通的做法：交给 RecyclerView 自己平滑滚到对应位置
-                        binding.rvSelected.smoothScrollToPosition(indexOfSelect)
+                        SelectedThumbnailStrip.smoothScrollToItem(binding.rvSelected, indexOfSelect)
                     }
                     onSelectListScrollChanged(indexOfSelect, 1, 0)
                 }
@@ -536,7 +534,7 @@ class FilePickerPreviewDialog(
             if (SelectedThumbnailStrip.syncModels(binding.rvSelected, viewModel.getSelectedDataList())) {
                 val index = viewModel.getSelectedDataList().indexOf(mCurrentItem)
                 if (index >= 0) {
-                    binding.rvSelected.post { binding.rvSelected.smoothScrollToPosition(index) }
+                    binding.rvSelected.post { SelectedThumbnailStrip.smoothScrollToItem(binding.rvSelected, index) }
                 }
                 refreshStripSelection()
             }
