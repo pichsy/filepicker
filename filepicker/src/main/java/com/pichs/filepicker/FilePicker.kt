@@ -209,6 +209,12 @@ class FilePicker {
             return this
         }
 
+        /** 裁剪模式右侧"还原"文案（多语言适配用；默认"还原"） */
+        fun setCropResetText(text: String): Builder {
+            this.mUiConfig.cropResetText = text
+            return this
+        }
+
         var mSelectedList: MutableList<MediaEntity> = mutableListOf()
             private set
 

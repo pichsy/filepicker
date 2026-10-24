@@ -367,6 +367,30 @@ class CropView @JvmOverloads constructor(
         invalidate()
     }
 
+    /** 进入裁剪时的视图状态：图片缩到可用区域 90% 居中、框 = 图片区域 */
+    fun enterCropViewState() {
+        val bmp = bitmap ?: return
+        val availTop = cropContentTop.toFloat()
+        val availBottom = (height - cropContentBottom).toFloat()
+        val availW = width.toFloat()
+        val availH = (availBottom - availTop).coerceAtLeast(1f)
+        val fit = min(availW / bmp.width, availH / bmp.height)
+        scale = (fit * cropEnterInset).coerceAtLeast(0.05f)
+        centerX = availW / 2f
+        centerY = availTop + availH / 2f
+        frame.set(0f, 0f, 0f, 0f)
+        updateImageRect()
+        frame.set(imageRect)
+        constrain()
+        notifyFrameChanged()
+        scheduleIdleAutoFit()
+        invalidate()
+        android.util.Log.d(
+            "FilePickerCropView",
+            "进入裁剪视图: scale=$scale frame=${frame.width().toInt()}x${frame.height().toInt()}",
+        )
+    }
+
     /** 是否处于裁剪工具状态（只有这时导出才按裁剪框，否则导出整张图） */
     fun isCropMode(): Boolean = cropMode
 
@@ -505,6 +529,7 @@ class CropView @JvmOverloads constructor(
     }
 
     /** 还原：重置缩放/平移/框/旋转 */
+    /** 还原：重置旋转/镜像/文字/笔画/裁剪，回到"刚进入裁剪"的缩图留边状态 */
     fun resetCrop() {
         rotation = 0
         bakeMatrix.reset()
@@ -512,9 +537,16 @@ class CropView @JvmOverloads constructor(
         strokes.clear()
         activeStroke = null
         maskDirty = true
+        doodleDirty = true
         effectsDirty = true
+        pendingCrop = null
         bitmap = sourceBitmap
-        initLayout()
+        if (cropMode) {
+            initialized = true
+            enterCropViewState()
+        } else {
+            initLayout()
+        }
         notifyFrameChanged()
         invalidate()
     }

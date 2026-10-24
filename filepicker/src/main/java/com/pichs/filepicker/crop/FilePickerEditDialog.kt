@@ -36,6 +36,8 @@ class FilePickerEditDialog(
     private val outputMaxSize: Int = 2048,
     private val quality: Int = 90,
     private val aspect: Float = 0f,
+    /** 裁剪模式右侧"还原"文案（多语言，来自 uiConfig.cropResetText） */
+    private val cropResetText: String = "还原",
     private val onResult: (String?) -> Unit,
 ) : BasePopupWindow(context) {
 
@@ -137,12 +139,6 @@ class FilePickerEditDialog(
 
         setupCropControls(contentView)
 
-        // 把顶栏/工具栏占用的高度告诉裁剪画布：裁剪框不会钻到它们下面，四角都能拖
-        contentRoot.post {
-            val top = topBar.bottom
-            val bottom = contentRoot.height - toolRow.top
-            cropView.setCropContentInsets(top, bottom)
-        }
 
         contentView.findViewById<View>(R.id.btn_cancel).setOnClickListener {
             finishWithResult(null)
@@ -289,16 +285,25 @@ class FilePickerEditDialog(
             isClickable = false
             visibility = View.GONE
         }
-        // 上排：旋转 / 镜像 / 还原
+        // 上排：靠左 旋转 / 镜像；右侧"还原"文字（多语言）
+        val toolsRow = android.widget.FrameLayout(context).apply {
+            layoutParams = android.widget.FrameLayout.LayoutParams(
+                android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                dp(52),
+                android.view.Gravity.BOTTOM or android.view.Gravity.START,
+            ).apply {
+                bottomMargin = navBarHeight + dp(64)
+            }
+        }
         val tools = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
-            gravity = android.view.Gravity.CENTER
+            gravity = android.view.Gravity.START or android.view.Gravity.CENTER_VERTICAL
             layoutParams = android.widget.FrameLayout.LayoutParams(
                 android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
                 dp(52),
-                android.view.Gravity.BOTTOM or android.view.Gravity.CENTER_HORIZONTAL,
+                android.view.Gravity.START or android.view.Gravity.CENTER_VERTICAL,
             ).apply {
-                bottomMargin = navBarHeight + dp(64)
+                leftMargin = margin
             }
         }
         fun addCropIcon(iconRes: Int, desc: String, onClick: () -> Unit) {
@@ -315,28 +320,42 @@ class FilePickerEditDialog(
         }
         addCropIcon(R.drawable.filepicker_ic_crop_rotate, "旋转") { cropView.rotate90() }
         addCropIcon(R.drawable.filepicker_ic_crop_mirror, "镜像") { cropView.mirror() }
-        addCropIcon(R.drawable.filepicker_ic_edit_reset, "还原") { cropView.resetCrop() }
-        host.addView(tools)
+        toolsRow.addView(tools)
 
-        // 下排：左边 ✕（取消裁剪），右边 ✓（确认裁剪）
+        // 右侧：还原（文字，文案来自 config，默认"还原"）
+        val resetText = TextView(context).apply {
+            text = cropResetText
+            setTextColor(Color.WHITE)
+            textSize = 15f
+            setPadding(dp(8), dp(8), dp(8), dp(8))
+            contentDescription = "还原"
+            setOnClickListener { cropView.resetCrop() }
+        }
+        toolsRow.addView(resetText, android.widget.FrameLayout.LayoutParams(
+            android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
+            android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
+        ).apply {
+            gravity = android.view.Gravity.END or android.view.Gravity.CENTER_VERTICAL
+            rightMargin = margin
+        })
+        host.addView(toolsRow)
+
+        // 下排：左边 ✕（取消裁剪），右边 ✓（确认裁剪），贴近底部
+        val minRow = dp(56)
         val cancelCrop = TextView(context).apply {
             text = "✕"
             setTextColor(Color.WHITE)
             textSize = 26f
             gravity = android.view.Gravity.CENTER
-            setPadding(dp(16), dp(8), dp(16), dp(8))
             contentDescription = "取消裁剪"
             setOnClickListener {
                 cropView.cancelCrop()
                 switchTool(Tool.NONE)
             }
         }
-        host.addView(cancelCrop, android.widget.FrameLayout.LayoutParams(
-            android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
-            android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
-        ).apply {
+        host.addView(cancelCrop, android.widget.FrameLayout.LayoutParams(dp(72), minRow).apply {
             gravity = android.view.Gravity.BOTTOM or android.view.Gravity.START
-            bottomMargin = navBarHeight + dp(8)
+            bottomMargin = navBarHeight + dp(4)
             leftMargin = margin
         })
 
@@ -345,21 +364,26 @@ class FilePickerEditDialog(
             setTextColor(Color.WHITE)
             textSize = 30f
             gravity = android.view.Gravity.CENTER
-            setPadding(dp(16), dp(8), dp(16), dp(8))
             contentDescription = "确认裁剪"
             setOnClickListener {
                 cropView.confirmCrop()
                 switchTool(Tool.NONE)
             }
         }
-        host.addView(confirmCrop, android.widget.FrameLayout.LayoutParams(
-            android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
-            android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
-        ).apply {
+        host.addView(confirmCrop, android.widget.FrameLayout.LayoutParams(dp(72), minRow).apply {
             gravity = android.view.Gravity.BOTTOM or android.view.Gravity.END
-            bottomMargin = navBarHeight + dp(8)
+            bottomMargin = navBarHeight + dp(4)
             rightMargin = margin
         })
+
+        // 裁剪可用区域：顶=状态栏下 8dp（裁剪时顶栏隐藏），底=✕/✓ + 旋转排 + 间距
+        val statusBar = run {
+            val res = context.resources
+            val id = res.getIdentifier("status_bar_height", "dimen", "android")
+            if (id > 0) res.getDimensionPixelSize(id) else dp(24)
+        }
+        val cropBottomInset = navBarHeight + dp(4) + minRow + dp(8) + dp(52) + dp(8)
+        cropView.setCropContentInsets(statusBar + dp(8), cropBottomInset)
 
         (contentRoot as? android.view.ViewGroup)?.addView(host)
         cropControls = host

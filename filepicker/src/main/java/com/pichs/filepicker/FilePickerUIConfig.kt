@@ -86,6 +86,12 @@ public data class FilePickerUIConfig(
     var selectedListDeleteIconBackgroundColor: Int = Color.TRANSPARENT,
 
     /**
+     * 编辑页「裁剪」模式里右侧"还原"按钮的文案。
+     * 默认中文"还原"；接入方可在 config 里传自己的多语言文案（或从 strings 资源读）。
+     */
+    var cropResetText: String = "还原",
+
+    /**
      * 至少选择一个 toast
      */
     var atLeastSelectOneToastContent: String = "至少选择一个",
