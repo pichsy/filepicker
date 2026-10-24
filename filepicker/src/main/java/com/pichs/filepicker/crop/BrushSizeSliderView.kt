@@ -28,13 +28,13 @@ class BrushSizeSliderView @JvmOverloads constructor(
 
     private val density = resources.displayMetrics.density
     private val trackPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = 0xCCFFFFFF.toInt()
+        // 浅一点的白色，不要那么刺眼
+        color = 0x8CFFFFFF.toInt()
         style = Paint.Style.FILL
     }
     private val thumbPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.WHITE
-        style = Paint.Style.STROKE
-        strokeWidth = 1.8f * density
+        style = Paint.Style.FILL
     }
 
     fun setValue(v: Float) {
@@ -53,22 +53,23 @@ class BrushSizeSliderView @JvmOverloads constructor(
     }
 
     private val padH = 10f * density
-    private val thinR = 1.2f * density
-    private val thickR = 9.5f * density
+    private val thinR = 1.0f * density
+    private val thickR = 7.5f * density
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         val cy = height / 2f
         val usable = max(1f, width - padH * 2)
-        val steps = 64
-        for (i in 0..steps) {
-            val t = i / steps.toFloat()
+        // 用非常密的圆填充成连续的锥形笔触（不露一颗颗圈圈）
+        var x = padH
+        while (x <= padH + usable) {
+            val t = ((x - padH) / usable).coerceIn(0f, 1f)
             val r = thinR + (thickR - thinR) * t
-            val x = padH + usable * t
             canvas.drawCircle(x, cy, r, trackPaint)
+            x += max(0.8f, r * 0.35f)
         }
-        // 当前粗细位置：白色圆环
-        val thumbR = thinR + (thickR - thinR) * value + 3f * density
+        // 当前粗细位置：实心白色圆点
+        val thumbR = thinR + (thickR - thinR) * value + 2.5f * density
         canvas.drawCircle(padH + usable * value, cy, thumbR, thumbPaint)
     }
 

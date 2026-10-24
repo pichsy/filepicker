@@ -62,7 +62,7 @@ class CropView @JvmOverloads constructor(
     /** 是否橡皮（擦掉涂抹效果） */
     private var paintEraser = false
     /** 笔刷半径 = 图片短边 * 该比例（默认细一点） */
-    private var brushRadiusFrac = 0.02f
+    private var brushRadiusFrac = 0.018f
     /** 涂抹遮罩/效果图缓存 */
     private var maskBitmap: Bitmap? = null
     private var maskDirty = true
