@@ -899,17 +899,20 @@ class FilePickerEditDialog(
         }
     }
 
-    /** 大号圆形图标按钮：用 XCardImageView（支持圆形 + 边框 + 选中态） */
+    /** 大号图标按钮（44dp 热区 / 22dp 视觉，马赛克的两种效果用） */
     private fun addBigIconButton(iconRes: Int, selected: Boolean = false, onClick: () -> Unit) {
-        val view = android.view.LayoutInflater.from(context)
-            .inflate(R.layout.filepicker_item_mosaic_icon, null) as ImageView
-        view.layoutParams = LinearLayout.LayoutParams(dp(44), dp(44)).apply {
-            setMargins(dp(6), 0, dp(6), 0)
+        val size = dp(44)
+        val image = ImageView(context).apply {
+            layoutParams = LinearLayout.LayoutParams(size, size).apply {
+                setMargins(dp(2), 0, dp(2), 0)
+            }
+            setPadding(dp(11), dp(11), dp(11), dp(11))
+            scaleType = ImageView.ScaleType.FIT_CENTER
+            setImageResource(iconRes)
+            setColorFilter(if (selected) 0xFF06B10D.toInt() else Color.WHITE)
+            setOnClickListener { onClick() }
         }
-        view.setImageResource(iconRes)
-        view.setColorFilter(if (selected) 0xFF06B10D.toInt() else Color.WHITE)
-        view.setOnClickListener { onClick() }
-        row().addView(view)
+        row().addView(image)
     }
 
     /** 图标按钮（36dp 热区，选中用绿色 tint） */
