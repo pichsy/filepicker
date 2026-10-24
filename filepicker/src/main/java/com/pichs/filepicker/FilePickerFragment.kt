@@ -54,6 +54,7 @@ import com.pichs.filepicker.utils.FilePickerTimeFormatUtils
 import com.pichs.filepicker.widget.OnFilePickerDragItemTouchHelperCallback
 import com.pichs.filepicker.widget.OnFilePickerItemSelectionChangedListener
 import com.pichs.filepicker.widget.SelectedThumbnailStrip
+import com.pichs.filepicker.widget.StripMetrics
 import com.pichs.filepicker.select.QuotaType
 import com.pichs.filepicker.select.SelectCheck
 import com.pichs.xwidget.utils.XDisplayHelper
@@ -868,6 +869,9 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
         binding.recyclerView.currentSelectedCountProvider = { viewModel.getSelectedCount() + viewModel.tempSelectData.size }
     }
 
+    /** 底部缩略图间距（按"一屏 5 个半"算出来），null = 还没测量/保持原样 */
+    private var stripLayout: StripMetrics.Layout? = null
+
     private fun initSelectedRecyclerView() {
         binding.rvSelected.linear(RecyclerView.HORIZONTAL).setup {
             addType<MediaEntity>(R.layout.file_picker_item_rv_album_selected)
@@ -885,6 +889,8 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                 itemBinding.clSelectDelete.isVisible = viewModel.uiConfig.isShowSelectedListDeleteIcon
                 itemBinding.ivDelete.setImageResource(if (viewModel.uiConfig.selectedListDeleteIconResId != 0) viewModel.uiConfig.selectedListDeleteIconResId else R.drawable.filepicker_ic_delete_item)
                 itemBinding.ivDelete.setBackgroundColor(viewModel.uiConfig.selectedListDeleteIconBackgroundColor)
+                // 只改间距（格子尺寸、图片 50dp、删除按钮都不动），让一屏露出 5 个半
+                SelectedThumbnailStrip.applyLayout(itemBinding.root, stripLayout)
 
                 if (item.isVideo()) {
                     itemBinding.tvDuration.visibility = View.VISIBLE
@@ -917,6 +923,31 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
             ItemTouchHelper(callback).attachToRecyclerView(binding.rvSelected)
         }
 
+        // 算间距（格子尺寸不动）：等 rv 测量完、子项绑出来之后再算，算不出就隔 80ms 重试
+        binding.rvSelected.post { applyStripSpacing() }
+    }
+
+    /**
+     * 按"一屏 5 个半"算一次底部条间距并应用。
+     * 只改间距、不改格子尺寸；间距没变就不重绑，避免缩略图闪烁。
+     */
+    private fun applyStripSpacing(attempt: Int = 0) {
+        if (!::binding.isInitialized) return
+        val rv = binding.rvSelected
+        val itemWidth = rv.getChildAt(0)?.width ?: 0
+        if (rv.width <= 0 || itemWidth <= 0) {
+            if (attempt < 10) rv.postDelayed({ applyStripSpacing(attempt + 1) }, 80)
+            return
+        }
+        val layout = SelectedThumbnailStrip.resolveLayout(rv, itemWidth)
+        FilePickerLog.d(
+            "FilePickerFragment",
+            "缩略图条：可视宽=${rv.width} 格子宽=$itemWidth 算出=$layout 当前=$stripLayout"
+        )
+        if (layout != null && layout != stripLayout) {
+            stripLayout = layout
+            rv.bindingAdapter?.notifyDataSetChanged()
+        }
     }
 
     /** 最普通的平滑滚动：交给 RecyclerView 自己算；目标已完全可见就不动（省掉无意义的动画） */
