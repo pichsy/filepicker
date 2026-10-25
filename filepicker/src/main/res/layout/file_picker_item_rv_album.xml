@@ -76,14 +76,14 @@
     <!-- 左下角"已编辑"角标（25dp，仅编辑过的图片显示） -->
     <com.pichs.xwidget.cardview.XCardImageView
         android:id="@+id/iv_edited_badge"
-        android:layout_width="22dp"
-        android:layout_height="22dp"
-        android:layout_marginStart="4dp"
-        android:layout_marginBottom="4dp"
+        android:layout_width="16dp"
+        android:layout_height="16dp"
+        android:layout_marginStart="2dp"
+        android:layout_marginBottom="2dp"
         android:src="@drawable/filepicker_ic_image_edited"
         android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintBottom_toBottomOf="@+id/iv_cover_image"
+        app:layout_constraintStart_toStartOf="@+id/iv_cover_image" />
 
     <com.pichs.xwidget.cardview.XCardImageView
         android:id="@+id/iv_preview_image"
