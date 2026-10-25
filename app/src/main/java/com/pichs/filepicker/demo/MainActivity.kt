@@ -146,6 +146,8 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
         val displayItem = if (item.isEdited()) item.copy(path = item.editedPath, uri = null) else item
         MediaLoader.loadThumbnail(displayItem, binding.ivCover)
 
+        // 已编辑角标（左下角）
+        binding.ivEditedBadge.isVisible = item.isEdited()
         val isVideo = item.isVideo()
         binding.ivPlay.isVisible = isVideo
         binding.tvDuration.isVisible = isVideo
