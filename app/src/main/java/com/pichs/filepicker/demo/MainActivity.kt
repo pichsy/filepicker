@@ -438,7 +438,8 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
             )
 
         if (avatarCrop) {
-            builder.setCropAspectRatio(1f)
+            // 头像裁剪：先开总开关，再设比例（不设默认 1:1）
+            builder.setAvatarCropMode(true).setCropAspectRatio(1f)
         }
         if (editInPreview) {
             builder.setEditInPreviewEnable(true)

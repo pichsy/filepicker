@@ -636,7 +636,7 @@ FilePicker.with(this)
     // 1) 预览页可编辑（默认 false，必须显式打开）
     .setEditInPreviewEnable(true)
     // 2) 裁剪参数（可选）
-    .setCropAspectRatio(0f)      // 0 = 自由裁剪；>0 = 固定比例（1f = 头像 1:1）
+    .setCropAspectRatio(0f)      // 仅头像模式用：setAvatarCropMode(true) 时才生效
     .setCropOutputMaxSize(2048)  // 裁剪导出最长边，默认 2048
     .setCropQuality(90)          // 导出质量 60~100，默认 90
     .setCropResetText("还原")     // 裁剪页「还原」文案（多语言由接入方传入）
@@ -697,7 +697,8 @@ FilePicker.with(this)
 ```kotlin
 FilePicker.with(this)
     .setSelectType(FilePickerSelectType.ofImage())
-    .setCropAspectRatio(1f)      // ← 只这一句就够：自动单选 + 单击进裁剪页
+    .setAvatarCropMode(true)     // ← 总开关（默认 false，不开就没有头像裁剪）
+    .setCropAspectRatio(1f)      // 可选：比例，不设默认 1:1
     .setCropOutputMaxSize(1024)  // 可选：导出最长边（头像 512~1024 足够）
     .setCropQuality(95)          // 可选：导出质量 60~100
     .setOnSelectCallback { _, list ->
@@ -708,13 +709,14 @@ FilePicker.with(this)
     .start()
 ```
 
-其它比例同理：`setCropAspectRatio(4f / 3f)`、`setCropAspectRatio(16f / 9f)`。
+其它比例同理：`setCropAspectRatio(4f / 3f)`、`setCropAspectRatio(16f / 9f)`；
+不调用 `setCropAspectRatio` 时头像模式默认 **1:1**。
 
 ### 生命周期与结果
 
 | 环节 | 说明 |
 |---|---|
-| 入口 | `setCropAspectRatio(>0)` 后，点图 → `FilePickerCropActivity`（固定比例裁剪框） |
+| 入口 | `setAvatarCropMode(true)` 后，点图 → `FilePickerCropActivity`（固定比例裁剪框） |
 | 裁剪页 UI | 取消 / 旋转 / 镜像 / 还原 / 确认裁剪；比例固定，不能拖成其它比例 |
 | 确认裁剪 | 生成成品图 → 发布到系统相册 `Pictures/filepicker/` → 登记媒体库 |
 | 返回结果 | `MediaEntity.path` / `uri` = 裁剪后的成品地址；`editedPath` 仅会话内使用 |

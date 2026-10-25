@@ -345,6 +345,29 @@ class FilePicker {
          * 预览页显示「编辑」入口（自由裁剪）。
          * 默认 false；开启后预览大图页顶部出现「编辑」，只对图片生效。
          */
+        /** 头像裁剪模式开关（默认 false）；开启后 setCropAspectRatio 等裁剪参数才生效 */
+        var mAvatarCropMode: Boolean = false
+
+        /**
+         * 头像裁剪模式总开关（默认 false）。
+         *
+         * 开启后：
+         * - 强制单选 + 单击图片直接进固定比例裁剪页（数量/规则参数不生效，会打 warn 日志）
+         * - [setCropAspectRatio] 设置裁剪比例（不设置默认 1:1），[setCropOutputMaxSize] / [setCropQuality] 生效
+         *
+         * 关闭时（默认）：[setCropAspectRatio] 等裁剪参数**全部不生效**（打 warn 日志）。
+         */
+        fun setAvatarCropMode(enable: Boolean): Builder {
+            this.mAvatarCropMode = enable
+            return this
+        }
+
+        /** 头像模式实际使用的裁剪比例：开关关闭返回 0（不裁剪），开启且未设比例时默认 1:1 */
+        internal fun effectiveCropAspect(): Float {
+            if (!mAvatarCropMode) return 0f
+            return if (mCropAspect > 0f) mCropAspect else 1f
+        }
+
         fun setEditInPreviewEnable(enable: Boolean): Builder {
             this.mEditInPreview = enable
             return this
@@ -438,7 +461,18 @@ class FilePicker {
          * 避免接入方"设了一堆参数却全部无效"。
          */
         internal fun normalizeForAvatarCrop(): SelectRulesEngine? {
-            if (mCropAspect <= 0f) return buildSelectRulesEngine()
+            if (!mAvatarCropMode) {
+                if (mCropAspect > 0f) {
+                    FilePickerLog.w(
+                        "FilePicker",
+                        "未开启 setAvatarCropMode(true)：setCropAspectRatio(${mCropAspect}) 等裁剪参数不生效",
+                    )
+                }
+                mCropAspect = 0f
+                return buildSelectRulesEngine()
+            }
+            // 头像模式：默认 1:1；强制单选 + 单击即裁剪；规则模式让位
+            if (mCropAspect <= 0f) mCropAspect = 1f
             if (mMaxSelectNumber != 1) {
                 FilePickerLog.w(
                     "FilePicker",
@@ -578,7 +612,7 @@ class FilePicker {
                             intent.putExtra("singleClickEnable", bd.mSingleClickEnable)
                             intent.putExtra("slideChooseEnable", bd.mSlideChooseEnable)
                             intent.putExtra("showCameraEntry", bd.mShowCameraEntry)
-                            intent.putExtra("cropAspect", bd.mCropAspect)
+                            intent.putExtra("cropAspect", bd.effectiveCropAspect())
                             intent.putExtra("cropOutputMaxSize", bd.mCropOutputMaxSize)
                             intent.putExtra("cropQuality", bd.mCropQuality)
                             intent.putExtra("editInPreview", bd.mEditInPreview)
@@ -623,7 +657,7 @@ class FilePicker {
                         intent.putExtra("singleClickEnable", bd.mSingleClickEnable)
                         intent.putExtra("slideChooseEnable", bd.mSlideChooseEnable)
                         intent.putExtra("showCameraEntry", bd.mShowCameraEntry)
-                            intent.putExtra("cropAspect", bd.mCropAspect)
+                            intent.putExtra("cropAspect", bd.effectiveCropAspect())
                             intent.putExtra("cropOutputMaxSize", bd.mCropOutputMaxSize)
                             intent.putExtra("cropQuality", bd.mCropQuality)
                             intent.putExtra("editInPreview", bd.mEditInPreview)
