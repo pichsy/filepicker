@@ -1387,7 +1387,12 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
             // "选了旧的 → 拍完新的 → 弹已达上限" 的死角里，拍的照片反而用不上。
             // 单击模式的结果恒为 1 张，本来也不存在超上限的问题。
             if (viewModel.isCanSingleClickSelect()) {
-                callbackToChooser(arrayListOf(entity))
+                // 头像裁剪模式：拍到的这张也要进 1:1 裁剪页，而不是直接返回原图
+                if (viewModel.cropAspect.value > 0f && entity.isImage()) {
+                    launchAvatarCrop(entity)
+                } else {
+                    callbackToChooser(arrayListOf(entity))
+                }
                 return@launch
             }
 
