@@ -469,11 +469,8 @@ class CropView @JvmOverloads constructor(
                 }
             }
             // 画到外面去的部分自然被裁掉（不夹紧、不捋直）
-            // 比例标定：裁剪后短边变小，字号/笔刷比例按 oldShort/newShort 放大，保证导出与画布一致
-            val newShort = min(cw, ch).toFloat().coerceAtLeast(1f)
-            val k = oldShort / newShort
-            textLayers.forEach { it.sizeFrac *= k }
-            strokes.forEach { it.radiusFrac *= k }
+            // 字号/笔刷半径都是"相对图片短边的比例"，裁剪切掉的是图片边缘，
+            // 比例本身不用改（画布和导出都用同一比例，跟着图走，不会突然变大）
             if (bitmap != sourceBitmap) bitmap?.recycle()
             bitmap = cropped
             sourceBitmap = cropped
