@@ -430,6 +430,40 @@ class FilePicker {
          *
          * 这样不存在"合计上限与规则冲突"的配置，也就不需要运行时抉择。
          */
+        /**
+         * 头像裁剪是「霸道」模式：只要 [setCropAspectRatio] 传了大于 0 的比例，
+         * 就固定为**单选 + 单击直接进裁剪页**。
+         *
+         * 数量、单击开关、选择规则都由库接管（并打 warn 日志），
+         * 避免接入方"设了一堆参数却全部无效"。
+         */
+        internal fun normalizeForAvatarCrop(): SelectRulesEngine? {
+            if (mCropAspect <= 0f) return buildSelectRulesEngine()
+            if (mMaxSelectNumber != 1) {
+                FilePickerLog.w(
+                    "FilePicker",
+                    "头像裁剪强制单选：忽略 setMaxSelectNumber(${mMaxSelectNumber})，实际按 1 处理",
+                )
+            }
+            if (!mSingleClickEnable) {
+                FilePickerLog.w(
+                    "FilePicker",
+                    "头像裁剪强制单击即裁剪：setSingleClickEnable 已按 true 处理",
+                )
+            }
+            if (mSelectRulesUsed) {
+                FilePickerLog.w(
+                    "FilePicker",
+                    "头像裁剪忽略 setSelectRules：头像模式固定单选、点图直接进裁剪页，规则配置不生效",
+                )
+                mSelectRules = mutableListOf()
+                mSelectRulesUsed = false
+            }
+            mMaxSelectNumber = 1
+            mSingleClickEnable = true
+            return null
+        }
+
         internal fun buildSelectRulesEngine(): SelectRulesEngine? {
             if (!mSelectRulesUsed) return null
             val engine = SelectRulesEngine.createOrNull(
@@ -508,8 +542,8 @@ class FilePicker {
 
     private fun doStart(clazz: Class<out FragmentActivity>) {
         builder?.let { bd ->
-            // 新模型：配置自检在这里做，矛盾配置当场抛异常
-            val selectRulesEngine = bd.buildSelectRulesEngine()
+            // 配置自检：头像裁剪会强制单选 + 单击裁剪；其余情况走规则自检
+            val selectRulesEngine = bd.normalizeForAvatarCrop()
             if (bd.getFragment() != null) {
                 bd.getFragment()?.apply {
                     context?.let { ctx ->

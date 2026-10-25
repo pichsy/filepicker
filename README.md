@@ -675,19 +675,32 @@ FilePicker.with(this)
 
 ## 头像裁剪（独立裁剪页）
 
-> 头像场景：单选、点一张图**直接进入 1:1 裁剪页**（独立 Activity），裁剪确认后返回成品图。
+> 头像场景：**单选、点一张图直接进入 1:1 裁剪页**（独立 Activity），裁剪确认后返回成品图。
 > 不经过编辑弹窗，也不修改相册原图。
 
-### 怎么调
+### ⚠️ 头像裁剪是「霸道」模式（务必先看）
+
+只要调用了 `setCropAspectRatio(>0)`，库会**接管以下参数**（并打 warn 日志），
+不需要、也无法通过其它参数改变"单张 + 直接裁剪"的行为：
+
+| 你设置的参数 | 头像模式下的实际行为 |
+|---|---|
+| `setMaxSelectNumber(n)` | **强制为 1**（传 0/9/任意值都一样，日志会提示被忽略） |
+| `setSingleClickEnable(false)` | **强制为 true**（点图即进裁剪页） |
+| `setSelectRules(...)` | **不生效**（规则模式让位，日志提示被忽略） |
+| `setEditInPreviewEnable(...)` | 不受影响（多选预览编辑照常，但头像模式只有 1 张） |
+
+原因：头像裁剪的结果是"一张裁剪后的头像"，一次只能处理一张，所以数量/规则参数在这里没有意义。
+
+### 怎么调（最简写法）
 
 ```kotlin
 FilePicker.with(this)
     .setSelectType(FilePickerSelectType.ofImage())
-    .setMaxSelectNumber(1)          // 头像 = 单选（容量 1 时自动启用"单击即返回"逻辑）
-    .setCropAspectRatio(1f)         // ← 关键：大于 0 时，单选模式点图直接进固定比例裁剪页
-    .setCropOutputMaxSize(1024)     // 裁剪导出最长边（头像一般 512~1024 就够）
-    .setCropQuality(95)             // 导出质量 60~100
-    .setOnSelectCallback { isUseOriginal, list ->
+    .setCropAspectRatio(1f)      // ← 只这一句就够：自动单选 + 单击进裁剪页
+    .setCropOutputMaxSize(1024)  // 可选：导出最长边（头像 512~1024 足够）
+    .setCropQuality(95)          // 可选：导出质量 60~100
+    .setOnSelectCallback { _, list ->
         val avatar = list.firstOrNull()
         // 返回时 path / uri 已经是裁剪后的成品地址（Pictures/filepicker/xxx.jpg）
         Log.d("avatar", "裁剪结果: ${avatar?.path}")
@@ -695,32 +708,24 @@ FilePicker.with(this)
     .start()
 ```
 
-也可以保留勾选流程：
-
-```kotlin
-FilePicker.with(this)
-    .setMaxSelectNumber(1)
-    .setSingleClickEnable(true)     // 允许"点一下就直接选中/裁剪"
-    .setCropAspectRatio(1f)
-    .start()
-```
+其它比例同理：`setCropAspectRatio(4f / 3f)`、`setCropAspectRatio(16f / 9f)`。
 
 ### 生命周期与结果
 
 | 环节 | 说明 |
 |---|---|
-| 入口 | 单选模式（容量=1）下点图片 → `FilePickerCropActivity`（1:1 固定裁剪框） |
-| 裁剪页 UI | 取消 / 旋转 / 镜像 / 还原 / 确认裁剪；固定比例不可拖成其它比例 |
+| 入口 | `setCropAspectRatio(>0)` 后，点图 → `FilePickerCropActivity`（固定比例裁剪框） |
+| 裁剪页 UI | 取消 / 旋转 / 镜像 / 还原 / 确认裁剪；比例固定，不能拖成其它比例 |
 | 确认裁剪 | 生成成品图 → 发布到系统相册 `Pictures/filepicker/` → 登记媒体库 |
 | 返回结果 | `MediaEntity.path` / `uri` = 裁剪后的成品地址；`editedPath` 仅会话内使用 |
 | 取消 | 关闭裁剪页，不产生任何文件 |
 
 ### 注意
 
-* `setCropAspectRatio(1f)` 只影响**单选单击**（头像）流程；多选场景的裁剪仍走
-  「预览 → 编辑 → 裁剪」（自由裁剪，受 `setEditInPreviewEnable(true)` 控制）。
-* 想用别的头像比例（如 4:3、16:9）直接传对应小数：`setCropAspectRatio(4f/3f)`。
-* 需要"先展示裁剪页再确认"的 UI，也可以按 `FilePickerCropActivity.start(...)` 直接启动。
+* 头像模式与「预览页编辑」（`setEditInPreviewEnable`）不冲突：多选时仍可编辑；
+  但头像模式固定单选，实际只会处理一张。
+* 想保留"先勾选、再确认"的流程但又要裁剪，请用编辑弹窗里的裁剪（`setEditInPreviewEnable(true)`），
+  不要再设置 `setCropAspectRatio`（二者是不同入口）。
 
 ## 升级日志
 
