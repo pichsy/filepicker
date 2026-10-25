@@ -46,7 +46,7 @@
 ```kotlin
 dependencies {
     // 基础组件库 （必须）
-    implementation("com.gitee.pichs:filepicker:7.4.1")
+    implementation("com.gitee.pichs:filepicker:7.5.0")
 
     // 基础组件库 （必须）
     implementation("com.gitee.pichs:xwidget:5.8.1")
@@ -89,7 +89,7 @@ dependencies {
 # libs.version.toml中写法
 [versions]
 xwidget="5.8.1"
-filepicker="7.4.1"
+filepicker="7.5.0"
 brv="1.6.1"
 basepopup="3.2.1"
 glide="4.16.0"
@@ -608,6 +608,40 @@ val uiConfig = FilePickerUIConfig().apply {
 感谢你们的无私奉献，让开发变得更加高效和有趣！
 
 ## 升级日志
+
+### 7.5.0
+
+> 新增图片编辑器：画笔 / 文字 / 裁剪 / 马赛克，以及编辑结果的全链路管理。
+
+#### 新增
+
+* **编辑入口**：单图预览页「编辑」、多选预览页「编辑」（`setEditInPreviewEnable(true)` 开启）。
+  编辑结果是**会话级覆盖**：原图文件不动，`MediaEntity.editedPath` 指向编辑产物。
+* **画笔（涂鸦）**：像素级涂抹，8 色可选、橡皮擦；面板增加**锥形粗细滑条**（自定义 View，左细右粗）。
+* **文字**：默认「字体色」模式（无背景）+ 「圆角背景」模式两种样式；8 色；
+  文字可拖动、点选后双指缩放；字号按**图片短边比例**存储，随图片缩放/裁剪保持一致。
+* **裁剪**：专注裁剪模式（隐藏主工具条，只留 旋转 / 镜像 / 还原 + ✕ / ✓）；
+  旋转、镜像以**裁剪框中心**为轴；裁剪框限制在安全区域内（左右各 22dp、顶部状态栏下方、
+  底部裁剪菜单上方）；**裁剪只裁图片**，已有文字/画笔仍可编辑、越界部分自然裁掉；
+  停手 2 秒自动放大裁剪框。
+* **马赛克**：像素马赛克 / 雾化两种效果，共用可调的笔刷粗细（比画笔更粗）。
+* **已编辑角标**：16dp，显示在图库网格、底部已选缩略图条、预览底条及 demo 结果格左下角（图片区域内）。
+* **编辑产物发布**：点「完成」合并出图后，复制到系统相册 `Pictures/filepicker/` 并在媒体库登记
+  （Android 10+ 走 MediaStore，无需额外权限；9 及以下写公共目录 + `MediaScannerConnection` 扫描），
+  返回给调用方的就是**编辑后的真实地址**，下次选择可直接再次选中。
+* **缓存清理**：返回调用方时异步清理编辑临时缓存（`clearCacheExcept` 保留结果文件），
+  `Pictures/filepicker/` 成品永久保留。
+* **新增 API**：`setCropAspectRatio` / `setCropOutputMaxSize` / `setCropQuality` /
+  `setEditInPreviewEnable` / `setEditCacheDir` / `setCropResetText`；
+  `FilePicker.clearEditCache` / `editCacheSize` / `editCacheDir`。
+
+#### 修复
+
+* 文字/画笔比例统一相对**原图短边**：裁剪不再改变字号和笔刷粗细，画布与导出一致。
+* 返回键：裁剪模式下先退出裁剪模式，再按才关闭编辑弹窗；文字输入先收键盘。
+* 添加文字后立即显示（不点图片也可见）；文字层级高于画笔与马赛克。
+* 再次选择时带入的已编辑图片，缩略图/预览/再次编辑都用编辑后的图。
+* demo：结果列表点击预览显示编辑后的图片。
 
 ### 7.4.1
 
