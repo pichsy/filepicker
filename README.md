@@ -756,7 +756,7 @@ FilePicker.with(this)
 
 * 头像模式不调用 `setAvatarCropAspectRatio` 时默认 **1:1**；仍支持 `4f/3f`、`16f/9f` 等自定义比例。
 * 演示 demo 已同步改为 `setAvatarCropMode(true).setAvatarCropAspectRatio(1f)`。
-* 升级建议：全局搜索 `setCropAspectRatio`，在其前面补一行 `setAvatarCropMode(true)` 即可。
+* 升级建议：全局搜索 `setCropAspectRatio`，改成 `setAvatarCropAspectRatio`，并在 Builder 上补一行 `setAvatarCropMode(true)`。
 
 ### 7.5.0
 
