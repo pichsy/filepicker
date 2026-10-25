@@ -457,31 +457,26 @@ class CropView @JvmOverloads constructor(
             val ch = (bar.height * bmp.height).toInt().coerceIn(1, bmp.height - y)
             val oldShort = min(bmp.width, bmp.height).toFloat()
             val cropped = Bitmap.createBitmap(bmp, x, y, cw, ch)
-            // 坐标重映射到裁剪后的图
+            // 只裁图片：文字/画笔/马赛克仍然是可编辑图层，坐标重映射到裁剪后的图
             textLayers.forEach {
-                it.fx = ((it.fx - bar.left) / bar.width).coerceIn(0f, 1f)
-                it.fy = ((it.fy - bar.top) / bar.height).coerceIn(0f, 1f)
+                it.fx = (it.fx - bar.left) / bar.width
+                it.fy = (it.fy - bar.top) / bar.height
             }
             strokes.forEach { st ->
                 st.points.forEach { p ->
-                    p[0] = ((p[0] - bar.left) / bar.width).coerceIn(0f, 1f)
-                    p[1] = ((p[1] - bar.top) / bar.height).coerceIn(0f, 1f)
+                    p[0] = (p[0] - bar.left) / bar.width
+                    p[1] = (p[1] - bar.top) / bar.height
                 }
             }
+            // 画到外面去的部分自然被裁掉（不夹紧、不捋直）
             // 比例标定：裁剪后短边变小，字号/笔刷比例按 oldShort/newShort 放大，保证导出与画布一致
             val newShort = min(cw, ch).toFloat().coerceAtLeast(1f)
             val k = oldShort / newShort
             textLayers.forEach { it.sizeFrac *= k }
             strokes.forEach { it.radiusFrac *= k }
-            // 把文字/画笔/马赛克烧进裁剪结果（确认后不可再编辑/擦除）
-            val flattened = flattenLayers(cropped, oldShort, cw, ch) ?: cropped
             if (bitmap != sourceBitmap) bitmap?.recycle()
-            if (flattened != cropped) cropped.recycle()
-            textLayers.clear()
-            strokes.clear()
-            activeStroke = null
-            bitmap = flattened
-            sourceBitmap = flattened
+            bitmap = cropped
+            sourceBitmap = cropped
             maskDirty = true
             doodleDirty = true
             effectsDirty = true
