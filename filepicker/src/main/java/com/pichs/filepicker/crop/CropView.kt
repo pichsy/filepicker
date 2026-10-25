@@ -323,6 +323,114 @@ class CropView @JvmOverloads constructor(
      * 确认裁剪：把当前裁剪框合成到已确认区域里，并把视图缩放到"裁剪后的画面填满可用区域"。
      * 返回合成后的裁剪区域。
      */
+    /** 把文字/画笔/马赛克烧进位图（确认裁剪时固化，之后不可编辑） */
+    private fun flattenLayers(src: Bitmap, shortSidePx: Float, w: Int, h: Int): Bitmap? {
+        if (textLayers.isEmpty() && strokes.isEmpty()) return src
+        return try {
+            val out = src.copy(Bitmap.Config.ARGB_8888, true) ?: return src
+            val canvas = Canvas(out)
+            if (strokes.isNotEmpty()) {
+                val pixelMask = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+                val smudgeMask = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+                val pc = Canvas(pixelMask)
+                val sc = Canvas(smudgeMask)
+                val sp = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    style = Paint.Style.STROKE
+                    strokeCap = Paint.Cap.ROUND
+                    strokeJoin = Paint.Join.ROUND
+                    color = Color.WHITE
+                }
+                val cp = Paint(sp).apply {
+                    xfermode = android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.CLEAR)
+                }
+                val doodle = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+                val dc = Canvas(doodle)
+                val dp = Paint(sp)
+                val dcp = Paint(cp)
+                for (stroke in strokes) {
+                    if (stroke.points.isEmpty()) continue
+                    val sw = stroke.radiusFrac * shortSidePx * 2f
+                    sp.strokeWidth = sw
+                    cp.strokeWidth = sw
+                    if (stroke.mode == 2) {
+                        dp.color = stroke.color
+                        dp.strokeWidth = sw
+                        dcp.strokeWidth = sw
+                        drawStrokeOn(dc, stroke, w, h, if (stroke.erase) dcp else dp)
+                    } else if (stroke.erase) {
+                        drawStrokeOn(pc, stroke, w, h, cp)
+                        drawStrokeOn(sc, stroke, w, h, cp)
+                    } else if (stroke.mode == 1) {
+                        drawStrokeOn(sc, stroke, w, h, sp)
+                    } else {
+                        drawStrokeOn(pc, stroke, w, h, sp)
+                    }
+                }
+                val block = (min(w, h) * 0.035f).toInt().coerceAtLeast(4)
+                val mute = Bitmap.createScaledBitmap(
+                    Bitmap.createScaledBitmap(src, max(1, w / block), max(1, h / block), true), w, h, false
+                )
+                val blur = Bitmap.createScaledBitmap(
+                    Bitmap.createScaledBitmap(src, max(1, w / 14), max(1, h / 14), true), w, h, true
+                )
+                val mp = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    xfermode = android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.DST_IN)
+                }
+                val fxp = Paint(Paint.FILTER_BITMAP_FLAG)
+                for ((effect, mask) in listOf(mute to pixelMask, blur to smudgeMask)) {
+                    val save = canvas.saveLayer(0f, 0f, w.toFloat(), h.toFloat(), null)
+                    canvas.drawBitmap(effect, 0f, 0f, fxp)
+                    canvas.drawBitmap(mask, 0f, 0f, mp)
+                    canvas.restoreToCount(save)
+                }
+                canvas.drawBitmap(doodle, 0f, 0f, null)
+            }
+            val tp = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                textAlign = Paint.Align.CENTER
+                setShadowLayer(shortSidePx * 0.004f, 0f, shortSidePx * 0.002f, 0x66000000)
+            }
+            val bg = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
+            for (layer in textLayers) {
+                tp.textSize = max(8f, layer.sizeFrac * shortSidePx)
+                tp.color = layer.textColor
+                val cx = layer.fx * w
+                val cy = layer.fy * h
+                val tw = tp.measureText(layer.text)
+                val fm = tp.fontMetrics
+                val th = fm.descent - fm.ascent
+                layer.backgroundColor?.let { color ->
+                    bg.color = color
+                    val ph = th * 0.38f
+                    val pv = th * 0.20f
+                    val l = cx - tw / 2f - ph
+                    val t = cy - th / 2f - pv
+                    val rr = cx + tw / 2f + ph
+                    val bb = cy + th / 2f + pv
+                    val rad = (bb - t) * 0.28f
+                    canvas.drawRoundRect(l, t, rr, bb, rad, rad, bg)
+                }
+                canvas.drawText(layer.text, cx, cy - (fm.ascent + fm.descent) / 2f, tp)
+            }
+            out
+        } catch (e: Throwable) {
+            android.util.Log.e("FilePickerCropView", "烧录图层失败: ${e.message}")
+            null
+        }
+    }
+
+    private fun drawStrokeOn(canvas: Canvas, stroke: BrushStroke, w: Int, h: Int, paint: Paint) {
+        val pts = stroke.points
+        if (pts.isEmpty()) return
+        if (pts.size == 1) {
+            canvas.drawPoint(pts[0][0] * w, pts[0][1] * h, paint)
+            return
+        }
+        val path = android.graphics.Path()
+        path.moveTo(pts[0][0] * w, pts[0][1] * h)
+        for (i in 1 until pts.size) path.lineTo(pts[i][0] * w, pts[i][1] * h)
+        canvas.drawPath(path, paint)
+    }
+
     fun confirmCrop(): CropGeometry.RectF2? {
         val bmp = bitmap ?: return pendingCrop
         val bar = cropRatio().let {
@@ -347,10 +455,9 @@ class CropView @JvmOverloads constructor(
             val y = (bar.top * bmp.height).toInt().coerceIn(0, bmp.height - 1)
             val cw = (bar.width * bmp.width).toInt().coerceIn(1, bmp.width - x)
             val ch = (bar.height * bmp.height).toInt().coerceIn(1, bmp.height - y)
+            val oldShort = min(bmp.width, bmp.height).toFloat()
             val cropped = Bitmap.createBitmap(bmp, x, y, cw, ch)
-            if (bitmap != sourceBitmap) bitmap?.recycle()
-            bitmap = cropped
-            sourceBitmap = cropped
+            // 坐标重映射到裁剪后的图
             textLayers.forEach {
                 it.fx = ((it.fx - bar.left) / bar.width).coerceIn(0f, 1f)
                 it.fy = ((it.fy - bar.top) / bar.height).coerceIn(0f, 1f)
@@ -361,6 +468,20 @@ class CropView @JvmOverloads constructor(
                     p[1] = ((p[1] - bar.top) / bar.height).coerceIn(0f, 1f)
                 }
             }
+            // 比例标定：裁剪后短边变小，字号/笔刷比例按 oldShort/newShort 放大，保证导出与画布一致
+            val newShort = min(cw, ch).toFloat().coerceAtLeast(1f)
+            val k = oldShort / newShort
+            textLayers.forEach { it.sizeFrac *= k }
+            strokes.forEach { it.radiusFrac *= k }
+            // 把文字/画笔/马赛克烧进裁剪结果（确认后不可再编辑/擦除）
+            val flattened = flattenLayers(cropped, oldShort, cw, ch) ?: cropped
+            if (bitmap != sourceBitmap) bitmap?.recycle()
+            if (flattened != cropped) cropped.recycle()
+            textLayers.clear()
+            strokes.clear()
+            activeStroke = null
+            bitmap = flattened
+            sourceBitmap = flattened
             maskDirty = true
             doodleDirty = true
             effectsDirty = true
@@ -368,26 +489,6 @@ class CropView @JvmOverloads constructor(
             initLayout()
         } catch (e: Throwable) {
             android.util.Log.e("FilePickerCropView", "裁剪位图失败: ${e.message}")
-        }
-        // 视图上把"裁剪后的画面"铺满可用区域
-        val availTop = cropContentTop.toFloat()
-        val availBottom = (height - cropContentBottom).toFloat()
-        val availW = width.toFloat()
-        val availH = (availBottom - availTop).coerceAtLeast(1f)
-        val regionW = composed.width * bmp.width
-        val regionH = composed.height * bmp.height
-        if (regionW > 0f && regionH > 0f) {
-            scale = min(availW / regionW, availH / regionH)
-            val regionCx = (composed.left + composed.width / 2f) * bmp.width
-            val regionCy = (composed.top + composed.height / 2f) * bmp.height
-            centerX = availW / 2f - (regionCx - bmp.width / 2f) * scale
-            centerY = availTop + availH / 2f - (regionCy - bmp.height / 2f) * scale
-            minScale = min(scale, computeMinScale())
-            maxScale = minScale * MAX_ZOOM
-            updateImageRect()
-            constrain()
-            notifyFrameChanged()
-            invalidate()
         }
         android.util.Log.d(
             "FilePickerCropView",
