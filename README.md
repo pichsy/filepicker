@@ -631,7 +631,7 @@ FilePicker.with(this)
 
 ```kotlin
 FilePicker.with(this)
-    .setSelectType(FilePicker.SELECT_TYPE_IMAGE)
+    .setSelectType(FilePickerSelectType.ofImage())
     .setMaxSelectNumber(9)
     // 1) 预览页可编辑（默认 false，必须显式打开）
     .setEditInPreviewEnable(true)
@@ -682,7 +682,7 @@ FilePicker.with(this)
 
 ```kotlin
 FilePicker.with(this)
-    .setSelectType(FilePicker.SELECT_TYPE_IMAGE)
+    .setSelectType(FilePickerSelectType.ofImage())
     .setMaxSelectNumber(1)          // 头像 = 单选（容量 1 时自动启用"单击即返回"逻辑）
     .setCropAspectRatio(1f)         // ← 关键：大于 0 时，单选模式点图直接进固定比例裁剪页
     .setCropOutputMaxSize(1024)     // 裁剪导出最长边（头像一般 512~1024 就够）
