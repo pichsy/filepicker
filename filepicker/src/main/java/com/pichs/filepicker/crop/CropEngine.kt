@@ -106,6 +106,7 @@ object CropEngine {
         quality: Int,
         textLayers: List<TextLayer> = emptyList(),
         strokes: List<BrushStroke> = emptyList(),
+        cropRelative: Boolean = false,
     ): File? {
         return try {
             val decodeMax = if (outputMaxSize > 0) {
@@ -119,10 +120,10 @@ object CropEngine {
             }
             var cropped = cropBitmap(bitmap, ratio) ?: return null
             if (strokes.isNotEmpty()) {
-                cropped = applyBrushStrokes(cropped, ratio, strokes) ?: cropped
+                cropped = applyBrushStrokes(cropped, ratio, strokes, cropRelative) ?: cropped
             }
             if (textLayers.isNotEmpty()) {
-                cropped = drawTextLayersOnCrop(cropped, ratio, textLayers) ?: cropped
+                cropped = drawTextLayersOnCrop(cropped, ratio, textLayers, cropRelative) ?: cropped
             }
             val output = scaleDown(cropped, outputMaxSize)
             val dir = editDir(context).apply { mkdirs() }
@@ -254,6 +255,7 @@ object CropEngine {
         cropped: Bitmap,
         ratio: CropGeometry.RectF2,
         strokes: List<BrushStroke>,
+        cropRelative: Boolean,
     ): Bitmap? {
         return try {
             val w = cropped.width
@@ -289,12 +291,12 @@ object CropEngine {
                 strokePaint.strokeWidth = stroke.radiusFrac * shortSide * 2f
                 clearPaint.strokeWidth = strokePaint.strokeWidth
                 if (stroke.erase) {
-                    drawStroke(pixelCanvas, stroke, ratio, w, h, clearPaint)
-                    drawStroke(smudgeCanvas, stroke, ratio, w, h, clearPaint)
+                    drawStroke(pixelCanvas, stroke, ratio, w, h, clearPaint, cropRelative)
+                    drawStroke(smudgeCanvas, stroke, ratio, w, h, clearPaint, cropRelative)
                 } else if (stroke.mode == 1) {
-                    drawStroke(smudgeCanvas, stroke, ratio, w, h, strokePaint)
+                    drawStroke(smudgeCanvas, stroke, ratio, w, h, strokePaint, cropRelative)
                 } else if (stroke.mode == 0) {
-                    drawStroke(pixelCanvas, stroke, ratio, w, h, strokePaint)
+                    drawStroke(pixelCanvas, stroke, ratio, w, h, strokePaint, cropRelative)
                 }
             }
 
@@ -334,6 +336,7 @@ object CropEngine {
                     drawStroke(
                         doodleCanvas, stroke, ratio, w, h,
                         if (stroke.erase) doodleClear else doodlePaint,
+                        cropRelative,
                     )
                 }
                 canvas.drawBitmap(doodleLayer, 0f, 0f, effectPaint)
@@ -353,10 +356,11 @@ object CropEngine {
         w: Int,
         h: Int,
         paint: android.graphics.Paint,
+        cropRelative: Boolean,
     ) {
         val points = stroke.points
-        fun px(p: FloatArray) = (p[0] - ratio.left) / ratio.width * w
-        fun py(p: FloatArray) = (p[1] - ratio.top) / ratio.height * h
+        fun px(p: FloatArray) = if (cropRelative) p[0] * w else (p[0] - ratio.left) / ratio.width * w
+        fun py(p: FloatArray) = if (cropRelative) p[1] * h else (p[1] - ratio.top) / ratio.height * h
         if (points.size == 1) {
             canvas.drawPoint(px(points[0]), py(points[0]), paint)
             return
@@ -379,6 +383,7 @@ object CropEngine {
         cropped: Bitmap,
         ratio: CropGeometry.RectF2,
         textLayers: List<TextLayer>,
+        cropRelative: Boolean,
     ): Bitmap? {
         return try {
             val w = cropped.width.toFloat()
@@ -406,8 +411,8 @@ object CropEngine {
                 val fm = paint.fontMetrics
                 val textW = paint.measureText(layer.text)
                 val textH = fm.descent - fm.ascent
-                val x = (layer.fx - ratio.left) / ratio.width * w
-                val y = (layer.fy - ratio.top) / ratio.height * h
+                val x = if (cropRelative) layer.fx * w else (layer.fx - ratio.left) / ratio.width * w
+                val y = if (cropRelative) layer.fy * h else (layer.fy - ratio.top) / ratio.height * h
                 // 圆角背景（文字带底色）
                 layer.backgroundColor?.let { bg ->
                     bgPaint.color = bg

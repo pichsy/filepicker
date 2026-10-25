@@ -316,6 +316,9 @@ class CropView @JvmOverloads constructor(
     /** 已确认的裁剪区域（相对显示图片归一化坐标） */
     fun confirmedCrop(): CropGeometry.RectF2? = pendingCrop
 
+    /** 文字/笔画坐标是否已经相对"裁剪后的图"（confirmCrop 之后为 true） */
+    fun cropRelative(): Boolean = pendingCrop != null
+
     /**
      * 确认裁剪：把当前裁剪框合成到已确认区域里，并把视图缩放到"裁剪后的画面填满可用区域"。
      * 返回合成后的裁剪区域。
@@ -338,6 +341,34 @@ class CropView @JvmOverloads constructor(
             old.top + bar.bottom * old.height,
         )
         pendingCrop = composed
+        // 真正裁剪显示位图：之后画布/文字/笔画都以裁剪后的图为基准
+        try {
+            val x = (bar.left * bmp.width).toInt().coerceIn(0, bmp.width - 1)
+            val y = (bar.top * bmp.height).toInt().coerceIn(0, bmp.height - 1)
+            val cw = (bar.width * bmp.width).toInt().coerceIn(1, bmp.width - x)
+            val ch = (bar.height * bmp.height).toInt().coerceIn(1, bmp.height - y)
+            val cropped = Bitmap.createBitmap(bmp, x, y, cw, ch)
+            if (bitmap != sourceBitmap) bitmap?.recycle()
+            bitmap = cropped
+            sourceBitmap = cropped
+            textLayers.forEach {
+                it.fx = ((it.fx - bar.left) / bar.width).coerceIn(0f, 1f)
+                it.fy = ((it.fy - bar.top) / bar.height).coerceIn(0f, 1f)
+            }
+            strokes.forEach { st ->
+                st.points.forEach { p ->
+                    p[0] = ((p[0] - bar.left) / bar.width).coerceIn(0f, 1f)
+                    p[1] = ((p[1] - bar.top) / bar.height).coerceIn(0f, 1f)
+                }
+            }
+            maskDirty = true
+            doodleDirty = true
+            effectsDirty = true
+            initialized = false
+            initLayout()
+        } catch (e: Throwable) {
+            android.util.Log.e("FilePickerCropView", "裁剪位图失败: ${e.message}")
+        }
         // 视图上把"裁剪后的画面"铺满可用区域
         val availTop = cropContentTop.toFloat()
         val availBottom = (height - cropContentBottom).toFloat()

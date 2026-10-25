@@ -197,7 +197,8 @@ class FilePickerEditDialog(
         val path = entity.path
         Thread {
             val file = CropEngine.export(
-                context, uri, path, ratio, transform, outputMaxSize, quality, textLayers, strokes
+                context, uri, path, ratio, transform, outputMaxSize, quality,
+                textLayers, strokes, cropRelative = cropView.cropRelative(),
             )
             handler.post {
                 exporting = false
