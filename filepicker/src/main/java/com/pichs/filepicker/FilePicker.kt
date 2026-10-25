@@ -210,7 +210,7 @@ class FilePicker {
         }
 
         /** 裁剪模式右侧"还原"文案（多语言适配用；默认"还原"） */
-        fun setCropResetText(text: String): Builder {
+        fun setAvatarCropResetText(text: String): Builder {
             this.mUiConfig.cropResetText = text
             return this
         }
@@ -324,19 +324,43 @@ class FilePicker {
          *
          * @param aspect 1f = 1:1；其他比例传对应浮点值；<= 0 表示关闭固定比例
          */
-        fun setCropAspectRatio(aspect: Float): Builder {
+        @Deprecated(
+            "8.0.0 起裁剪相关 API 统一加 Avatar 前缀",
+            ReplaceWith("setAvatarCropAspectRatio(aspect)"),
+        )
+        fun setCropAspectRatio(aspect: Float): Builder = setAvatarCropAspectRatio(aspect)
+
+        @Deprecated(
+            "8.0.0 起裁剪相关 API 统一加 Avatar 前缀",
+            ReplaceWith("setAvatarCropOutputMaxSize(size)"),
+        )
+        fun setCropOutputMaxSize(size: Int): Builder = setAvatarCropOutputMaxSize(size)
+
+        @Deprecated(
+            "8.0.0 起裁剪相关 API 统一加 Avatar 前缀",
+            ReplaceWith("setAvatarCropQuality(quality)"),
+        )
+        fun setCropQuality(quality: Int): Builder = setAvatarCropQuality(quality)
+
+        @Deprecated(
+            "8.0.0 起裁剪相关 API 统一加 Avatar 前缀",
+            ReplaceWith("setAvatarCropResetText(text)"),
+        )
+        fun setCropResetText(text: String): Builder = setAvatarCropResetText(text)
+
+        fun setAvatarCropAspectRatio(aspect: Float): Builder {
             this.mCropAspect = aspect
             return this
         }
 
         /** 裁剪输出最长边，默认 2048；传 0 表示不缩放（原图级） */
-        fun setCropOutputMaxSize(size: Int): Builder {
+        fun setAvatarCropOutputMaxSize(size: Int): Builder {
             this.mCropOutputMaxSize = size
             return this
         }
 
         /** 裁剪输出 JPEG 质量，默认 90 */
-        fun setCropQuality(quality: Int): Builder {
+        fun setAvatarCropQuality(quality: Int): Builder {
             this.mCropQuality = quality.coerceIn(60, 100)
             return this
         }

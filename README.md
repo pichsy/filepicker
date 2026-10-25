@@ -46,7 +46,7 @@
 ```kotlin
 dependencies {
     // 基础组件库 （必须）
-    implementation("com.gitee.pichs:filepicker:7.5.0")
+    implementation("com.gitee.pichs:filepicker:8.0.0")
 
     // 基础组件库 （必须）
     implementation("com.gitee.pichs:xwidget:5.8.1")
@@ -89,7 +89,7 @@ dependencies {
 # libs.version.toml中写法
 [versions]
 xwidget="5.8.1"
-filepicker="7.5.0"
+filepicker="8.0.0"
 brv="1.6.1"
 basepopup="3.2.1"
 glide="4.16.0"
@@ -635,11 +635,7 @@ FilePicker.with(this)
     .setMaxSelectNumber(9)
     // 1) 预览页可编辑（默认 false，必须显式打开）
     .setEditInPreviewEnable(true)
-    // 2) 裁剪参数（可选）
-    .setCropAspectRatio(0f)      // 仅头像模式用：setAvatarCropMode(true) 时才生效
-    .setCropOutputMaxSize(2048)  // 裁剪导出最长边，默认 2048
-    .setCropQuality(90)          // 导出质量 60~100，默认 90
-    .setCropResetText("还原")     // 裁剪页「还原」文案（多语言由接入方传入）
+    // 2) 头像裁剪参数不在这里配：见下方「头像裁剪（独立裁剪页）」
     // 3) 编辑临时缓存目录（可选，默认 Android/data/<包名>/cache/filepicker/）
     .setEditCacheDir(cacheDir.absolutePath)
     .setOnSelectCallback { isUseOriginal, list ->
@@ -664,7 +660,7 @@ FilePicker.with(this)
 
 * 编辑产物发布位置：`Pictures/filepicker/filepicker_edit_yyyyMMdd_HHmmss.jpg`
   （系统相册可见，下次选择可直接再次选中）
-* 头像裁剪：`setCropAspectRatio(1f)`，单选模式下点图片直接进入 1:1 裁剪页
+* 头像裁剪：`setAvatarCropAspectRatio(1f)`，单选模式下点图片直接进入 1:1 裁剪页
 
 ### 注意事项
 
@@ -680,7 +676,7 @@ FilePicker.with(this)
 
 ### ⚠️ 头像裁剪是「霸道」模式（务必先看）
 
-只要调用了 `setCropAspectRatio(>0)`，库会**接管以下参数**（并打 warn 日志），
+只有在 `setAvatarCropMode(true)` 开启后，库才会**接管以下参数**（并打 warn 日志），
 不需要、也无法通过其它参数改变"单张 + 直接裁剪"的行为：
 
 | 你设置的参数 | 头像模式下的实际行为 |
@@ -698,9 +694,9 @@ FilePicker.with(this)
 FilePicker.with(this)
     .setSelectType(FilePickerSelectType.ofImage())
     .setAvatarCropMode(true)     // ← 总开关（默认 false，不开就没有头像裁剪）
-    .setCropAspectRatio(1f)      // 可选：比例，不设默认 1:1
-    .setCropOutputMaxSize(1024)  // 可选：导出最长边（头像 512~1024 足够）
-    .setCropQuality(95)          // 可选：导出质量 60~100
+    .setAvatarCropAspectRatio(1f)      // 可选：比例，不设默认 1:1
+    .setAvatarCropOutputMaxSize(1024)  // 可选：导出最长边（头像 512~1024 足够）
+    .setAvatarCropQuality(95)          // 可选：导出质量 60~100
     .setOnSelectCallback { _, list ->
         val avatar = list.firstOrNull()
         // 返回时 path / uri 已经是裁剪后的成品地址（Pictures/filepicker/xxx.jpg）
@@ -709,8 +705,8 @@ FilePicker.with(this)
     .start()
 ```
 
-其它比例同理：`setCropAspectRatio(4f / 3f)`、`setCropAspectRatio(16f / 9f)`；
-不调用 `setCropAspectRatio` 时头像模式默认 **1:1**。
+其它比例同理：`setAvatarCropAspectRatio(4f / 3f)`、`setAvatarCropAspectRatio(16f / 9f)`；
+不调用 `setAvatarCropAspectRatio` 时头像模式默认 **1:1**。
 
 ### 生命周期与结果
 
@@ -727,9 +723,40 @@ FilePicker.with(this)
 * 头像模式与「预览页编辑」（`setEditInPreviewEnable`）不冲突：多选时仍可编辑；
   但头像模式固定单选，实际只会处理一张。
 * 想保留"先勾选、再确认"的流程但又要裁剪，请用编辑弹窗里的裁剪（`setEditInPreviewEnable(true)`），
-  不要再设置 `setCropAspectRatio`（二者是不同入口）。
+  不要再设置 `setAvatarCropAspectRatio`（二者是不同入口）。
 
 ## 升级日志
+
+### 8.0.0
+
+> **破坏性升级**：头像裁剪改为独立开关控制，大版本号从 7.x 升到 8.x。
+
+#### 破坏性变更（7.5.0 → 8.0.0）
+
+* **头像裁剪新增总开关 `setAvatarCropMode(true)`**（默认 `false`）。
+  * 旧写法 `setAvatarCropAspectRatio(1f)` 单独使用**不再触发头像裁剪**；升级后必须显式开启：
+    ```kotlin
+    .setAvatarCropMode(true)     // 必须
+    .setAvatarCropAspectRatio(1f)      // 可选，不设默认 1:1
+    ```
+  * 开关关闭时，`setAvatarCropAspectRatio` / `setAvatarCropOutputMaxSize` / `setAvatarCropQuality`
+    等裁剪参数**全部不生效**（会打 warn 日志提示），不会静默失效。
+* 头像模式开启后：强制单选 + 单击图片直接进固定比例裁剪页；`setMaxSelectNumber` /
+  `setSingleClickEnable` / `setSelectRules` 由库接管（忽略并打 warn 日志）。
+* 拍照入口不受开关限制；**头像模式下拍完照点确定，也会先进入 1:1 裁剪页**再返回结果。
+* **裁剪相关 API 统一加 `Avatar` 前缀**（旧名保留为 `@Deprecated` 转发，编译会提示替换）：
+  | 旧 API | 新 API |
+  |---|---|
+  | `setCropAspectRatio` | `setAvatarCropAspectRatio` |
+  | `setCropOutputMaxSize` | `setAvatarCropOutputMaxSize` |
+  | `setCropQuality` | `setAvatarCropQuality` |
+  | `setCropResetText` | `setAvatarCropResetText` |
+
+#### 其它
+
+* 头像模式不调用 `setAvatarCropAspectRatio` 时默认 **1:1**；仍支持 `4f/3f`、`16f/9f` 等自定义比例。
+* 演示 demo 已同步改为 `setAvatarCropMode(true).setAvatarCropAspectRatio(1f)`。
+* 升级建议：全局搜索 `setCropAspectRatio`，在其前面补一行 `setAvatarCropMode(true)` 即可。
 
 ### 7.5.0
 

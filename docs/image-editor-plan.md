@@ -131,7 +131,7 @@ EditSession(
 
 | 时机 | 行为 |
 |---|---|
-| 点「完成」 | 导出新图到缓存目录（受 `setCropOutputMaxSize` 限制），作为新的展示内容 |
+| 点「完成」 | 导出新图到缓存目录（受 `setAvatarCropOutputMaxSize` 限制），作为新的展示内容 |
 | 点「取消」 | 不产生文件，回到原图 |
 | 再次编辑 | 以**编辑后的图**为输入（不是原图） |
 | 返回宿主 | `entity.path` 仍是原图，`entity.editedPath` 指向编辑产物 |
@@ -277,7 +277,7 @@ EditSession
 
 ### 4.7 导出（完成，两阶段）
 
-* 按原图尺寸（或 `setCropOutputMaxSize` 上限）建结果 Bitmap；
+* 按原图尺寸（或 `setAvatarCropOutputMaxSize` 上限）建结果 Bitmap；
 * 顺序：裁 base → 涂鸦层（原图分辨率重画路径）→ 马赛克（重算块/模糊）→ 文字 → 贴纸；
 * JPEG q90（透明场景 PNG），EXIF 方向归一化；
 * 大图分块渲染，避免 >100MB 瞬时内存；
@@ -291,7 +291,7 @@ EditSession
 * 裁剪内核：`CropGeometry`（18 条单测）+ `CropView`（固定框 877px 不随图变化 / 自由 8 把手 /
   单指平移 / 双指缩放 / 旋转 / 镜像 / 三分线 / 遮罩 / L 角标 / 底部图标按钮）
   + `CropEngine`（按屏幕采样解码、EXIF 摆正、按原图分辨率导出、JPEG q90）
-* 头像场景：`setCropAspectRatio(1f)` + 单选单击 → 点图直接进 1:1 固定框裁剪 → 确认后返回原图实体（带 `editedPath`）
+* 头像场景：`setAvatarCropAspectRatio(1f)` + 单选单击 → 点图直接进 1:1 固定框裁剪 → 确认后返回原图实体（带 `editedPath`）
 * 预览页「编辑」：`setEditInPreviewEnable(true)` → 工具栏下方「编辑」→ 自由裁剪（旋转/还原）→ 会话级覆盖
 * 已编辑角标：网格左下角 25dp（`filepicker_ic_image_edited`），编辑后自动显示
 * 缓存：默认 `Android/data/<包名>/cache/filepicker/`，可配置 + 全局清理 API
@@ -321,7 +321,7 @@ EditSession
 | 7.8.0（可选） | 滤镜/亮度（微信没有，按需） |
 
 > 注：微信编辑器裁剪**没有比例预设**，之前方案里写的"原图/1:1/4:3…"列表按真实交互删掉；
-> 比例能力保留在 API（`setCropAspectRatio`），只给头像 1:1 用。
+> 比例能力保留在 API（`setAvatarCropAspectRatio`），只给头像 1:1 用。
 
 ## 七、工作量
 

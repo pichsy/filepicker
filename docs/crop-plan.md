@@ -52,7 +52,7 @@
 
 | 项 | 改哪里 |
 |---|---|
-| 开关 | `FilePicker.Builder` 新增 `setCropAspectRatio(CropAspect.SQUARE)`（或 `setAvatarCropEnable(true)`） |
+| 开关 | `FilePicker.Builder` 新增 `setAvatarCropAspectRatio(CropAspect.SQUARE)`（或 `setAvatarCropEnable(true)`） |
 | 入口 | `FilePickerFragment` 里格子的点击回调：单选 + 裁剪开启时，不执行"选中"，直接启动 `FilePickerCropActivity` |
 | 单选判断 | 已有 `FilePickerViewModel.isCanSingleClickSelect()`（容量=1 且 `singleClickEnable`），直接复用这个判定 |
 | 回传 | 裁剪结果包装成 `MediaEntity` → 走原有 `FilePickerCallback`；不新增回调接口 |
@@ -145,7 +145,7 @@ currentFolderDataList[index]（原图实体，身份不变）
 
 | 版本 | 内容 |
 |---|---|
-| **7.5.0** | 裁剪内核 + **方案 B（头像/固定比例单选）**；API：`setCropEnable`、`setCropAspectRatio`、`setCropOnSelect`、`setCropOutputMaxSize`、`setCropUIConfig` |
+| **7.5.0** | 裁剪内核 + **方案 B（头像/固定比例单选）**；API：`setCropEnable`、`setAvatarCropAspectRatio`、`setCropOnSelect`、`setAvatarCropOutputMaxSize`、`setCropUIConfig` |
 | **7.6.0** | **方案 A（预览页「编辑」）**：自由裁剪（8 把手）+ 旋转/还原 + **会话级编辑覆盖**（原图身份不变、相册原图不动、三处显示统一查找） |
 | 7.7.0（可选） | 涂鸦 / 文字 / 马赛克；视频裁剪（时间轴）另立项 |
 
@@ -155,7 +155,7 @@ currentFolderDataList[index]（原图实体，身份不变）
 ## 六·五、实现状态（7.5.0）
 
 * ✅ 裁剪内核（自由 8 把手 / 旋转 / 还原 / 固定比例）
-* ✅ 头像 1:1：`setCropAspectRatio(1f)` + `setMaxSelectNumber(1)` + `setSingleClickEnable(true)`，点图直接裁剪
+* ✅ 头像 1:1：`setAvatarCropAspectRatio(1f)` + `setMaxSelectNumber(1)` + `setSingleClickEnable(true)`，点图直接裁剪
 * ✅ 预览页「编辑」：`setEditInPreviewEnable(true)`
 * ✅ 会话级覆盖（原图身份不变、磁盘原图不动）、25dp 已编辑角标
 * ✅ 缓存目录 `Android/data/<包名>/cache/filepicker/`，可用 `setEditCacheDir(path)` 配置；
