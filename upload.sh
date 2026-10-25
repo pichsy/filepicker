@@ -86,14 +86,14 @@ echo "上传 $ZIP_FILE 到 Sonatype==> https://central.sonatype.com/api/v1/publi
 #  --form "bundle=@$ZIP_FILE" \
 #  https://central.sonatype.com/api/v1/publisher/upload
 # 先输出参数。
-echo curl -X 'POST' \
+echo curl --http1.1 -sS -X 'POST' \
   "https://central.sonatype.com/api/v1/publisher/upload?name=$MODULE_NAME%3A${PUBLISH_VERSION}&publishingType=AUTOMATIC" \
   -H 'accept: text/plain' \
   -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: multipart/form-data' \
   -F "bundle=@$ZIP_FILE;type=application/zip"
 
-curl -X 'POST' \
+curl --http1.1 -sS -X 'POST' \
   "https://central.sonatype.com/api/v1/publisher/upload?name=$MODULE_NAME%3A${PUBLISH_VERSION}&publishingType=AUTOMATIC" \
   -H 'accept: text/plain' \
   -H "Authorization: Bearer $TOKEN" \
