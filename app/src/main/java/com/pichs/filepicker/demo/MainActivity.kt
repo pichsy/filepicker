@@ -209,15 +209,17 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
 
     /** 点结果格：能预览的走预览弹窗，其它（音频/文档/压缩包）给个 toast 说明点了什么 */
     private fun previewItem(item: MediaEntity) {
-        XLog.d("MainActivity", "Clicked on item: ${item.path}")
+        XLog.d("MainActivity", "Clicked on item: ${item.path}, edited: ${item.editedPath}")
+        // 编辑过的显示编辑后的图（会话级覆盖，不改原图）
+        val displayItem = if (item.isEdited()) item.copy(path = item.editedPath, uri = null) else item
         if (item.isImage() || item.isVideo() || item.isGif()) {
             if (item.isVideo()) {
                 VideoPreviewDialog(
-                    context = this, title = item.name, videoUrl = item.path,
+                    context = this, title = item.name, videoUrl = displayItem.path,
                 ).showPopupWindow()
             } else {
                 ImagePreviewDialog(
-                    context = this, title = item.name, url = item.path
+                    context = this, title = item.name, url = displayItem.path
                 ).showPopupWindow()
             }
         } else {
