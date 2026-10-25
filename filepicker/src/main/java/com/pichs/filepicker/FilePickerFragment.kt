@@ -1092,11 +1092,22 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
             Toast.makeText(context, viewModel.uiConfig.atLeastSelectOneToastContent, Toast.LENGTH_SHORT).show()
             return
         }
+        // 返回给调用方时，编辑过的条目**用编辑后的图片作为真实地址**
+        // （editedPath 只是会话内的临时显示地址，点确定/完成后已固化到 Pictures/filepicker，成品就是正式地址）
+        val resultList = ArrayList(selectList.map { entity ->
+            if (viewModel.isEdited(entity)) {
+                val edited = viewModel.editedPathOf(entity)
+                if (!edited.isNullOrEmpty()) {
+                    FilePickerLog.d("FilePickerFragment", "结果用编辑后地址: ${entity.path} -> $edited")
+                    entity.copy(path = edited, uri = null, editedPath = null)
+                } else entity
+            } else entity
+        })
         activity?.apply {
             setResult(RESULT_OK, Intent().apply {
                 FilePickerViewModel.finalSelectedDataList.clear()
-                FilePickerViewModel.finalSelectedDataList.addAll(selectList)
-                putParcelableArrayListExtra("selectedDataList", selectList)
+                FilePickerViewModel.finalSelectedDataList.addAll(resultList)
+                putParcelableArrayListExtra("selectedDataList", resultList)
                 putExtra("isUseOriginal", viewModel.originalCheckedFlow.value)
             })
             // 异步清理编辑临时缓存（中间产物/会话缓存）。
