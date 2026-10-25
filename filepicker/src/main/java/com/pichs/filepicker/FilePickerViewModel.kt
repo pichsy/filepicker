@@ -81,12 +81,15 @@ class FilePickerViewModel : ViewModel() {
 
     /** 该图在本次选择内是否被编辑过 */
     fun isEdited(entity: MediaEntity?): Boolean {
+        // 本次会话里编辑过，或者这个实体带着之前选过时留下的 editedPath（再次选择带入的）
+        if (!entity?.editedPath.isNullOrEmpty()) return true
         val key = entity?.path ?: return false
         return editSessions.containsKey(key)
     }
 
     /** 编辑产物的路径；未编辑返回 null */
     fun editedPathOf(entity: MediaEntity?): String? {
+        entity?.editedPath?.takeIf { it.isNotEmpty() }?.let { return it }
         val key = entity?.path ?: return null
         return editSessions[key]?.editedFile?.absolutePath
     }
@@ -98,6 +101,17 @@ class FilePickerViewModel : ViewModel() {
     fun displayEntity(entity: MediaEntity?): MediaEntity? {
         val edited = editedPathOf(entity) ?: return entity
         return entity?.copy(path = edited, uri = null, dateModified = 0)
+    }
+
+    /** 再次选择时把带进来的 editedPath 登记成会话覆盖（这样预览/再次编辑都从编辑后的图开始） */
+    fun restoreEditsFromEntities(list: List<MediaEntity>) {
+        list.forEach { entity ->
+            val edited = entity.editedPath
+            val key = entity.path
+            if (!edited.isNullOrEmpty() && !key.isNullOrEmpty()) {
+                editSessions[key] = com.pichs.filepicker.crop.EditSession(key, java.io.File(edited))
+            }
+        }
     }
 
     /** 记录一次编辑（覆盖旧产物，删掉旧临时文件） */
