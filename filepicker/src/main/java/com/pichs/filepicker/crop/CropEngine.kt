@@ -119,6 +119,27 @@ object CropEngine {
         }
     }
 
+    /**
+     * 清理编辑缓存，但**保留** [keepPaths] 里的文件（例如结果路径恰好还在缓存里时）。
+     * 用于"返回调用方"时异步清临时文件。
+     */
+    fun clearCacheExcept(context: Context, keepPaths: Collection<String?>): Boolean {
+        return try {
+            val root = cacheRoot(context)
+            val keep = keepPaths.filterNotNull().toSet()
+            if (!root.exists()) return true
+            root.walkBottomUp().forEach { f ->
+                if (f.isFile && keep.none { it == f.absolutePath }) f.delete()
+                else if (f.isDirectory && f != root && f.listFiles().isNullOrEmpty()) f.delete()
+            }
+            FilePickerLog.d(TAG, "清理编辑缓存（保留 ${keep.size} 个结果文件）")
+            true
+        } catch (e: Throwable) {
+            FilePickerLog.e(TAG, "清理编辑缓存失败: ${e.message}")
+            false
+        }
+    }
+
     /** 当前编辑缓存大小（字节） */
     fun cacheSize(context: Context): Long {
         return try {

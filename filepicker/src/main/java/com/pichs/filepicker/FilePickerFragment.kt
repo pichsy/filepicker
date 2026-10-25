@@ -1099,6 +1099,17 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                 putParcelableArrayListExtra("selectedDataList", selectList)
                 putExtra("isUseOriginal", viewModel.originalCheckedFlow.value)
             })
+            // 异步清理编辑临时缓存（中间产物/会话缓存）。
+            // 注意：只清缓存目录，Pictures/filepicker 下的成品永久保留。
+            val appContext = context?.applicationContext
+            if (appContext != null) {
+                val keep = selectList.mapNotNull { it.editedPath }
+                Thread {
+                    val size = com.pichs.filepicker.crop.CropEngine.cacheSize(appContext)
+                    com.pichs.filepicker.crop.CropEngine.clearCacheExcept(appContext, keep)
+                    FilePickerLog.d("FilePickerFragment", "返回调用方：已异步清理编辑缓存 ${size}B，保留${keep.size}个结果")
+                }.start()
+            }
             finish()
         }
     }
