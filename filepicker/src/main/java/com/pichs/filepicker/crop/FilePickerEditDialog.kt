@@ -208,6 +208,8 @@ class FilePickerEditDialog(
                     Toast.makeText(context, "保存失败，请重试", Toast.LENGTH_SHORT).show()
                 } else {
                     FilePickerLog.d(TAG, "编辑导出成功: ${file.absolutePath}")
+                    // 复制一份到系统相册 Pictures/filepicker 并通知媒体库扫描（失败不影响结果）
+                    Thread { CropEngine.publishToGallery(context, file) }.start()
                     finishWithResult(file.absolutePath)
                 }
             }

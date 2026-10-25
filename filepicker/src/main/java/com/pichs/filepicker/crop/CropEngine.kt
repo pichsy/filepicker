@@ -10,6 +10,9 @@ import com.pichs.filepicker.utils.FilePickerLog
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 /**
  * 裁剪的编解码引擎。
@@ -39,6 +42,61 @@ object CropEngine {
 
     /** 编辑产物目录（就是缓存根目录，文件名带时间戳） */
     fun editDir(context: Context): File = cacheRoot(context)
+
+    /** 编辑产物发布到系统相册的目录：Pictures/filepicker（共享存储，相册可见） */
+    const val GALLERY_DIR = "Pictures/filepicker"
+
+    /**
+     * 把编辑结果复制一份到系统相册 `内部存储/Pictures/filepicker/`，并触发媒体库扫描。
+     *
+     * - Android 10+：走 MediaStore 插入（自动进媒体库，无需额外权限）
+     * - Android 9 及以下：写公共 Pictures 目录 + MediaScannerConnection.scanFile 通知扫描
+     *
+     * 返回发布后的 Uri（失败返回 null）。这个是"给用户看的成品"，编辑会话仍用缓存文件。
+     */
+    fun publishToGallery(context: Context, source: File): android.net.Uri? {
+        return try {
+            val name = "filepicker_edit_" + SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date()) + ".jpg"
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                val values = android.content.ContentValues().apply {
+                    put(android.provider.MediaStore.Images.Media.DISPLAY_NAME, name)
+                    put(android.provider.MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+                    put(
+                        android.provider.MediaStore.Images.Media.RELATIVE_PATH,
+                        android.os.Environment.DIRECTORY_PICTURES + "/filepicker",
+                    )
+                    put(android.provider.MediaStore.Images.Media.IS_PENDING, 1)
+                }
+                val resolver = context.contentResolver
+                val uri = resolver.insert(android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values) ?: return null
+                resolver.openOutputStream(uri)?.use { out ->
+                    source.inputStream().use { it.copyTo(out) }
+                }
+                values.clear()
+                values.put(android.provider.MediaStore.Images.Media.IS_PENDING, 0)
+                resolver.update(uri, values, null, null)
+                FilePickerLog.d(TAG, "已发布到相册: $uri")
+                uri
+            } else {
+                @Suppress("DEPRECATION")
+                val dir = File(
+                    android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_PICTURES),
+                    "filepicker",
+                )
+                if (!dir.exists()) dir.mkdirs()
+                val target = File(dir, name)
+                source.inputStream().use { input -> target.outputStream().use { input.copyTo(it) } }
+                android.media.MediaScannerConnection.scanFile(
+                    context, arrayOf(target.absolutePath), arrayOf("image/jpeg"), null,
+                )
+                FilePickerLog.d(TAG, "已发布到相册(扫描): ${target.absolutePath}")
+                android.net.Uri.fromFile(target)
+            }
+        } catch (e: Throwable) {
+            FilePickerLog.e(TAG, "发布到相册失败: ${e.message}")
+            null
+        }
+    }
 
     /**
      * 清理编辑缓存（接入方可自行调用）。
