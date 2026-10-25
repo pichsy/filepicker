@@ -41,6 +41,9 @@ class CropView @JvmOverloads constructor(
     /** 初始显示位图（EXIF 摆正后、未做用户旋转/镜像），"还原"时恢复它 */
     private var sourceBitmap: Bitmap? = null
 
+    /** 原始图片（首次载入、未裁剪前）的短边像素；文字/笔刷比例都相对它，裁剪不影响 */
+    private var imageShortPx = 1f
+
     /** 编辑页加的文字图层（锚点/字号都是相对当前显示图片的比例） */
     private val textLayers = mutableListOf<TextLayer>()
 
@@ -216,6 +219,7 @@ class CropView @JvmOverloads constructor(
     fun setBitmap(bmp: Bitmap, aspect: Float) {
         sourceBitmap = bmp
         bitmap = bmp
+        imageShortPx = min(bmp.width, bmp.height).toFloat().coerceAtLeast(1f)
         aspectRatio = aspect
         rotation = 0
         bakeMatrix.reset()
@@ -469,8 +473,8 @@ class CropView @JvmOverloads constructor(
                 }
             }
             // 画到外面去的部分自然被裁掉（不夹紧、不捋直）
-            // 字号/笔刷半径都是"相对图片短边的比例"，裁剪切掉的是图片边缘，
-            // 比例本身不用改（画布和导出都用同一比例，跟着图走，不会突然变大）
+            // 字号/笔刷半径都相对"原图短边 imageShortPx"，裁剪不改比例、不改字号，
+            // 缩放/裁剪都只是把同一份内容按图片比例展示（文字当作图形整体缩放）
             if (bitmap != sourceBitmap) bitmap?.recycle()
             bitmap = cropped
             sourceBitmap = cropped
@@ -711,6 +715,7 @@ class CropView @JvmOverloads constructor(
         effectsDirty = true
         pendingCrop = null
         bitmap = sourceBitmap
+        sourceBitmap?.let { imageShortPx = min(it.width, it.height).toFloat().coerceAtLeast(1f) }
         if (cropMode) {
             initialized = true
             enterCropViewState()
@@ -864,7 +869,7 @@ class CropView @JvmOverloads constructor(
     /** 把文字图层画到 View 上（坐标随图片缩放/平移） */
     private fun drawTextLayers(canvas: Canvas, bmp: Bitmap) {
         if (textLayers.isEmpty()) return
-        val shortSide = min(bmp.width, bmp.height).toFloat()
+        val shortSide = imageShortPx
         textLayers.forEachIndexed { index, layer ->
             if (layer.hidden) return@forEachIndexed
             textPaint.textSize = max(8f * density, layer.sizeFrac * shortSide * scale)
@@ -1277,7 +1282,7 @@ class CropView @JvmOverloads constructor(
 
     /** 命中测试：返回被点中的文字图层下标（后加的在上层） */
     private fun hitTestText(x: Float, y: Float, bmp: Bitmap): Int {
-        val shortSide = min(bmp.width, bmp.height).toFloat()
+        val shortSide = imageShortPx
         for (i in textLayers.indices.reversed()) {
             val layer = textLayers[i]
             if (layer.hidden) continue
@@ -1421,7 +1426,7 @@ class CropView @JvmOverloads constructor(
         effectsDirty = false
         mosaicBitmap?.recycle()
         smudgeBitmap?.recycle()
-        val shortSide = min(bmp.width, bmp.height).coerceAtLeast(8)
+        val shortSide = imageShortPx.coerceAtLeast(8f)
         val mosaicBlock = (shortSide * 0.035f).toInt().coerceAtLeast(4)
         val mosaicW = max(1, bmp.width / mosaicBlock)
         val mosaicH = max(1, bmp.height / mosaicBlock)
@@ -1443,7 +1448,7 @@ class CropView @JvmOverloads constructor(
         smudgeMask?.recycle()
         pixelMask = Bitmap.createBitmap(bmp.width, bmp.height, Bitmap.Config.ARGB_8888)
         smudgeMask = Bitmap.createBitmap(bmp.width, bmp.height, Bitmap.Config.ARGB_8888)
-        val shortSide = min(bmp.width, bmp.height).toFloat()
+        val shortSide = imageShortPx
         val pixelCanvas = Canvas(pixelMask!!)
         val smudgeCanvas = Canvas(smudgeMask!!)
         val clearPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
