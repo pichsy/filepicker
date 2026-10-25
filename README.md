@@ -673,6 +673,55 @@ FilePicker.with(this)
 * Android 10+ 发布到相册走 MediaStore（无需存储权限）；9 及以下写公共目录并触发媒体扫描。
 * 文字/画笔比例相对**原图短边**：裁剪只裁图片，已有文字/画笔仍可编辑，越界部分自然裁掉。
 
+## 头像裁剪（独立裁剪页）
+
+> 头像场景：单选、点一张图**直接进入 1:1 裁剪页**（独立 Activity），裁剪确认后返回成品图。
+> 不经过编辑弹窗，也不修改相册原图。
+
+### 怎么调
+
+```kotlin
+FilePicker.with(this)
+    .setSelectType(FilePicker.SELECT_TYPE_IMAGE)
+    .setMaxSelectNumber(1)          // 头像 = 单选（容量 1 时自动启用"单击即返回"逻辑）
+    .setCropAspectRatio(1f)         // ← 关键：大于 0 时，单选模式点图直接进固定比例裁剪页
+    .setCropOutputMaxSize(1024)     // 裁剪导出最长边（头像一般 512~1024 就够）
+    .setCropQuality(95)             // 导出质量 60~100
+    .setOnSelectCallback { isUseOriginal, list ->
+        val avatar = list.firstOrNull()
+        // 返回时 path / uri 已经是裁剪后的成品地址（Pictures/filepicker/xxx.jpg）
+        Log.d("avatar", "裁剪结果: ${avatar?.path}")
+    }
+    .start()
+```
+
+也可以保留勾选流程：
+
+```kotlin
+FilePicker.with(this)
+    .setMaxSelectNumber(1)
+    .setSingleClickEnable(true)     // 允许"点一下就直接选中/裁剪"
+    .setCropAspectRatio(1f)
+    .start()
+```
+
+### 生命周期与结果
+
+| 环节 | 说明 |
+|---|---|
+| 入口 | 单选模式（容量=1）下点图片 → `FilePickerCropActivity`（1:1 固定裁剪框） |
+| 裁剪页 UI | 取消 / 旋转 / 镜像 / 还原 / 确认裁剪；固定比例不可拖成其它比例 |
+| 确认裁剪 | 生成成品图 → 发布到系统相册 `Pictures/filepicker/` → 登记媒体库 |
+| 返回结果 | `MediaEntity.path` / `uri` = 裁剪后的成品地址；`editedPath` 仅会话内使用 |
+| 取消 | 关闭裁剪页，不产生任何文件 |
+
+### 注意
+
+* `setCropAspectRatio(1f)` 只影响**单选单击**（头像）流程；多选场景的裁剪仍走
+  「预览 → 编辑 → 裁剪」（自由裁剪，受 `setEditInPreviewEnable(true)` 控制）。
+* 想用别的头像比例（如 4:3、16:9）直接传对应小数：`setCropAspectRatio(4f/3f)`。
+* 需要"先展示裁剪页再确认"的 UI，也可以按 `FilePickerCropActivity.start(...)` 直接启动。
+
 ## 升级日志
 
 ### 7.5.0
