@@ -100,8 +100,8 @@
     <!-- 已编辑：左下角显示"已编辑"角标（和图库网格用的是同一张图） -->
     <com.pichs.xwidget.view.XImageView
         android:id="@+id/iv_edited_badge"
-        android:layout_width="25dp"
-        android:layout_height="25dp"
+        android:layout_width="22dp"
+        android:layout_height="22dp"
         android:layout_marginStart="4dp"
         android:layout_marginBottom="4dp"
         android:src="@drawable/filepicker_ic_image_edited"

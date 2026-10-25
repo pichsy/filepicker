@@ -76,8 +76,8 @@
     <!-- 左下角"已编辑"角标（25dp，仅编辑过的图片显示） -->
     <com.pichs.xwidget.cardview.XCardImageView
         android:id="@+id/iv_edited_badge"
-        android:layout_width="25dp"
-        android:layout_height="25dp"
+        android:layout_width="22dp"
+        android:layout_height="22dp"
         android:layout_marginStart="4dp"
         android:layout_marginBottom="4dp"
         android:src="@drawable/filepicker_ic_image_edited"

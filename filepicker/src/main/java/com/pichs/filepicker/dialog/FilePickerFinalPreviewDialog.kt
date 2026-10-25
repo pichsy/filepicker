@@ -193,6 +193,7 @@ class FilePickerFinalPreviewDialog(
                 val itemEntity = item.mediaEntity
 
                 MediaLoader.loadThumbnail(viewModel.displayEntity(itemEntity), itemBinding.ivCoverImage)
+                itemBinding.ivEditedBadge.isVisible = viewModel.isEdited(itemEntity)
 
                 itemBinding.clSelectDelete.isVisible = viewModel.uiConfig.isShowSelectedListDeleteIcon
                 itemBinding.ivDelete.setImageResource(if (viewModel.uiConfig.selectedListDeleteIconResId != 0) viewModel.uiConfig.selectedListDeleteIconResId else R.drawable.filepicker_ic_delete_item)
