@@ -52,9 +52,9 @@ object CropEngine {
      * - Android 10+：走 MediaStore 插入（自动进媒体库，无需额外权限）
      * - Android 9 及以下：写公共 Pictures 目录 + MediaScannerConnection.scanFile 通知扫描
      *
-     * 返回发布后的 Uri（失败返回 null）。这个是"给用户看的成品"，编辑会话仍用缓存文件。
+     * 返回发布后的文件路径（失败返回 null）。这是"最终成品"路径，结果列表/宿主都用它。
      */
-    fun publishToGallery(context: Context, source: File): android.net.Uri? {
+    fun publishToGallery(context: Context, source: File): String? {
         return try {
             val name = "filepicker_edit_" + SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date()) + ".jpg"
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
@@ -75,8 +75,14 @@ object CropEngine {
                 values.clear()
                 values.put(android.provider.MediaStore.Images.Media.IS_PENDING, 0)
                 resolver.update(uri, values, null, null)
-                FilePickerLog.d(TAG, "已发布到相册: $uri")
-                uri
+                // 解析出真实文件路径（成品给宿主/结果列表用这个路径）
+                var realPath: String? = null
+                resolver.query(uri, arrayOf(android.provider.MediaStore.Images.Media.DATA), null, null, null)?.use { c ->
+                    if (c.moveToFirst()) realPath = c.getString(0)
+                }
+                val result = realPath ?: uri.toString()
+                FilePickerLog.d(TAG, "已发布到相册: $result")
+                result
             } else {
                 @Suppress("DEPRECATION")
                 val dir = File(
@@ -90,7 +96,7 @@ object CropEngine {
                     context, arrayOf(target.absolutePath), arrayOf("image/jpeg"), null,
                 )
                 FilePickerLog.d(TAG, "已发布到相册(扫描): ${target.absolutePath}")
-                android.net.Uri.fromFile(target)
+                target.absolutePath
             }
         } catch (e: Throwable) {
             FilePickerLog.e(TAG, "发布到相册失败: ${e.message}")

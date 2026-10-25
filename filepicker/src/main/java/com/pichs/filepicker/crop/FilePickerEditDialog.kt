@@ -200,6 +200,8 @@ class FilePickerEditDialog(
                 context, uri, path, ratio, transform, outputMaxSize, quality,
                 textLayers, strokes, cropRelative = cropView.cropRelative(),
             )
+            // 成品发布到系统相册 Pictures/filepicker（媒体库可见、下次还能选），结果用发布后的路径
+            val published = if (file != null) CropEngine.publishToGallery(context, file) else null
             handler.post {
                 exporting = false
                 progressBar.visibility = View.GONE
@@ -207,10 +209,8 @@ class FilePickerEditDialog(
                 if (file == null) {
                     Toast.makeText(context, "保存失败，请重试", Toast.LENGTH_SHORT).show()
                 } else {
-                    FilePickerLog.d(TAG, "编辑导出成功: ${file.absolutePath}")
-                    // 复制一份到系统相册 Pictures/filepicker 并通知媒体库扫描（失败不影响结果）
-                    Thread { CropEngine.publishToGallery(context, file) }.start()
-                    finishWithResult(file.absolutePath)
+                    FilePickerLog.d(TAG, "编辑导出成功: ${file.absolutePath} 成品: $published")
+                    finishWithResult(published ?: file.absolutePath)
                 }
             }
         }.start()
