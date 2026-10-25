@@ -607,6 +607,72 @@ val uiConfig = FilePickerUIConfig().apply {
 
 感谢你们的无私奉献，让开发变得更加高效和有趣！
 
+## 图片编辑（7.5.0+）
+
+> 在预览页直接编辑图片：**画笔（涂鸦）/ 文字 / 裁剪 / 马赛克**。
+> 编辑结果**不修改原图**；点「完成」后把最终合并图保存到系统相册 `Pictures/filepicker/`，
+> 返回给调用方的就是编辑后的真实图片地址。
+
+### 开启编辑（开关）
+
+编辑入口**默认关闭**，需要显式打开：
+
+```kotlin
+FilePicker.with(this)
+    .setEditInPreviewEnable(true)   // ← 开关：预览页是否出现「编辑」入口
+    .start()
+```
+
+开启后：
+* 单图预览页右上角出现「编辑」
+* 多选预览页（首页选完 N 张 → 预览）同样出现「编辑」，可逐张编辑
+
+### 完整示例
+
+```kotlin
+FilePicker.with(this)
+    .setSelectType(FilePicker.SELECT_TYPE_IMAGE)
+    .setMaxSelectNumber(9)
+    // 1) 预览页可编辑（默认 false，必须显式打开）
+    .setEditInPreviewEnable(true)
+    // 2) 裁剪参数（可选）
+    .setCropAspectRatio(0f)      // 0 = 自由裁剪；>0 = 固定比例（1f = 头像 1:1）
+    .setCropOutputMaxSize(2048)  // 裁剪导出最长边，默认 2048
+    .setCropQuality(90)          // 导出质量 60~100，默认 90
+    .setCropResetText("还原")     // 裁剪页「还原」文案（多语言由接入方传入）
+    // 3) 编辑临时缓存目录（可选，默认 Android/data/<包名>/cache/filepicker/）
+    .setEditCacheDir(cacheDir.absolutePath)
+    .setOnSelectCallback { isUseOriginal, list ->
+        list.forEach { entity ->
+            // 编辑过的图：entity.editedPath 是编辑产物（会话内预览/角标用）
+            // 点确定返回时：path / uri 已经是编辑后的真实地址（Pictures/filepicker/xxx.jpg）
+            Log.d("picker", "原始: ${entity.path}  编辑产物: ${entity.editedPath}")
+        }
+    }
+    .start()
+```
+
+### 编辑结果说明
+
+| 字段 / API | 含义 |
+|---|---|
+| `MediaEntity.path` / `uri` | 原图地址；**从选择器返回结果时，编辑过的条目已换成编辑后的真实地址** |
+| `MediaEntity.editedPath` | 会话内编辑产物地址（预览、已编辑角标使用），返回结果时清空 |
+| `FilePicker.clearEditCache(context)` | 手动清理编辑临时缓存（返回调用方时库已自动异步清理） |
+| `FilePicker.editCacheSize(context)` | 当前编辑缓存大小（字节） |
+| `FilePicker.editCacheDir(context)` | 编辑缓存目录 |
+
+* 编辑产物发布位置：`Pictures/filepicker/filepicker_edit_yyyyMMdd_HHmmss.jpg`
+  （系统相册可见，下次选择可直接再次选中）
+* 头像裁剪：`setCropAspectRatio(1f)`，单选模式下点图片直接进入 1:1 裁剪页
+
+### 注意事项
+
+* 编辑是**会话级覆盖**：不改原图文件、不覆盖相册原图；「已编辑」角标显示在缩略图左下角（16dp）。
+* 再次进入选择器并传入 `setSelectedList(list)` 时，编辑过的条目以编辑后的图展示。
+* Android 10+ 发布到相册走 MediaStore（无需存储权限）；9 及以下写公共目录并触发媒体扫描。
+* 文字/画笔比例相对**原图短边**：裁剪只裁图片，已有文字/画笔仍可编辑，越界部分自然裁掉。
+
 ## 升级日志
 
 ### 7.5.0
