@@ -219,6 +219,9 @@ class FilePickerCropActivity : Activity() {
         val path = sourcePath
         Thread {
             val file = CropEngine.export(this, uri, path, ratio, transform, outputMaxSize, quality)
+            // 头像成品也发布到系统相册 Pictures/filepicker（和编辑弹窗一致），
+            // 返回给调用方的路径必须是稳定可用的成品，而不是临时缓存文件
+            val published = if (file != null) CropEngine.publishToGallery(this, file) else null
             handler.post {
                 exporting = false
                 progressBar.visibility = View.GONE
@@ -226,7 +229,8 @@ class FilePickerCropActivity : Activity() {
                 if (file == null) {
                     Toast.makeText(this, "保存失败，请重试", Toast.LENGTH_SHORT).show()
                 } else {
-                    finishWithResult(file.absolutePath)
+                    FilePickerLog.d("FilePickerCrop", "头像裁剪成品: ${published ?: file.absolutePath}")
+                    finishWithResult(published ?: file.absolutePath)
                 }
             }
         }.start()
