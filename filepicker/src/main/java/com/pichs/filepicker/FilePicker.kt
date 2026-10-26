@@ -429,11 +429,11 @@ class FilePicker {
          * - 用户取消拍摄 → 落到选择器网格，可继续选图
          * - 不需要再开 `setShowCameraEntry(true)`（入口显不显示不影响直接拉起）
          */
-        /** 拍摄优先：完全不经过图片列表，直接相机 → 编辑/裁剪 → 回调 */
-        var mCaptureFirst: Boolean = false
+        /** 直接相机：完全不经过图片列表，直接相机 → 编辑/裁剪 → 回调 */
+        var mOpenCameraDirect: Boolean = false
 
         /**
-         * 拍摄优先（默认 false）：**不经过图片列表**，进入流程直接拉起系统相机。
+         * 直接相机（默认 false）：**不经过图片列表**，进入流程直接拉起系统相机。
          *
          * - 相机取消 → `onCancel()`（回到调用方界面，不产生文件）
          * - 视频：拍完直接回调视频（无编辑）
@@ -447,8 +447,8 @@ class FilePicker {
          * 注意：该模式走回调式 API（`FilePicker.with(activity/fragment)` +
          * `setOnSelectCallback`），不支持 startActivityForResult 结果返回。
          */
-        fun setCaptureFirst(enable: Boolean): Builder {
-            this.mCaptureFirst = enable
+        fun setOpenCameraDirect(enable: Boolean): Builder {
+            this.mOpenCameraDirect = enable
             return this
         }
 
@@ -708,8 +708,8 @@ class FilePicker {
         doStart(FilePickerActivity::class.java)
     }
 
-    /** 拍摄优先流程：把无界面 [FilePickerCaptureFragment] 挂到调用方，直接拉相机 */
-    private fun startCaptureFirstFlow(bd: Builder) {
+    /** 直接相机流程：把无界面 [FilePickerCaptureFragment] 挂到调用方，直接拉相机 */
+    private fun startOpenCameraDirectFlow(bd: Builder) {
         val hostFragment = bd.getFragment()
         val fm = if (hostFragment != null) {
             hostFragment.childFragmentManager
@@ -719,12 +719,12 @@ class FilePicker {
         if (fm == null) {
             FilePickerLog.e(
                 "FilePicker",
-                "setCaptureFirst(true) 需要已 attach 的 Fragment 或 FragmentActivity（with(activity)/with(fragment)）",
+                "setOpenCameraDirect(true) 需要已 attach 的 Fragment 或 FragmentActivity（with(activity)/with(fragment)）",
             )
             return
         }
         if (fm.findFragmentByTag(com.pichs.filepicker.capture.FilePickerCaptureFragment.tagName()) != null) {
-            FilePickerLog.d("FilePicker", "拍摄优先流程已在运行，忽略重复启动")
+            FilePickerLog.d("FilePicker", "直接相机流程已在运行，忽略重复启动")
             return
         }
         val fragment = com.pichs.filepicker.capture.FilePickerCaptureFragment.newInstance(
@@ -746,7 +746,7 @@ class FilePicker {
                 FilePickerViewModel.clearAll()
             },
         )
-        FilePickerLog.d("FilePicker", "setCaptureFirst: 直接进入拍摄优先流程")
+        FilePickerLog.d("FilePicker", "setOpenCameraDirect: 直接进入直接相机流程")
         fm.beginTransaction()
             .add(fragment, com.pichs.filepicker.capture.FilePickerCaptureFragment.tagName())
             .commitNowAllowingStateLoss()
@@ -754,10 +754,19 @@ class FilePicker {
 
     private fun doStart(clazz: Class<out FragmentActivity>) {
         builder?.let { bd ->
-            // 拍摄优先：不启动选择器 Activity，直接挂一个无界面 Fragment 拉相机
-            if (bd.mCaptureFirst) {
-                startCaptureFirstFlow(bd)
-                return
+            // 直接相机：不启动选择器 Activity，直接挂一个无界面 Fragment 拉相机
+            // 仅对"纯图片 / 纯视频"类型生效；ofAll、音频、文档等类型忽略并走普通选择流程
+            if (bd.mOpenCameraDirect) {
+                val directType = bd.mSelectType
+                if (directType == FilePickerSelectType.IMAGE || directType == FilePickerSelectType.VIDEO) {
+                    startOpenCameraDirectFlow(bd)
+                    return
+                } else {
+                    FilePickerLog.w(
+                        "FilePicker",
+                        "setOpenCameraDirect(true) 仅对 ofImage()/ofVideo() 生效：当前 selectType=$directType，已忽略",
+                    )
+                }
             }
             // 配置自检：头像裁剪会强制单选 + 单击裁剪；其余情况走规则自检
             val selectRulesEngine = bd.normalizeForAvatarCrop()

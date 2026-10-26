@@ -445,15 +445,15 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
                     .setAvatarCropMode(true)
                     .setAvatarCropAspectRatio(1f)
 
-                // 拍摄优先：完全不经过列表
+                // 直接相机：完全不经过列表
                 "captureEdit" -> builder
                     .setSelectType(FilePickerSelectType.ofImage())
-                    .setCaptureFirst(true)
+                    .setOpenCameraDirect(true)
                     .setEditOnClickEnable(true)
 
                 "captureVideo" -> builder
                     .setSelectType(FilePickerSelectType.ofVideo())
-                    .setCaptureFirst(true)
+                    .setOpenCameraDirect(true)
             }
             builder.start()
         }

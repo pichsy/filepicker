@@ -1306,7 +1306,16 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
         if (autoCameraStarted) return
         if (!viewModel.openCameraOnStart.value) return
         autoCameraStarted = true
-        val isVideo = viewModel.selectType.value == FilePickerSelectType.VIDEO
+        // 仅对纯图片 / 纯视频类型生效；ofAll、音频、文档等类型忽略
+        val type = viewModel.selectType.value
+        if (type != FilePickerSelectType.IMAGE && type != FilePickerSelectType.VIDEO) {
+            FilePickerLog.w(
+                "FilePickerFragment",
+                "setOpenCameraOnStart(true) 仅对 ofImage()/ofVideo() 生效：当前 selectType=$type，已忽略",
+            )
+            return
+        }
+        val isVideo = type == FilePickerSelectType.VIDEO
         FilePickerLog.d("FilePickerFragment", "进入即拍照: isVideo=$isVideo")
         view?.postDelayed({
             if (!isAdded || isDetached) return@postDelayed

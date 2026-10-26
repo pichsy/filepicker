@@ -39,7 +39,7 @@
 | 3 | **头像裁剪** | `setAvatarCropMode(true)` + 固定比例，点图直接进 1:1 裁剪页 | [3.2 头像裁剪](#32-头像裁剪独立裁剪页) |
 | 4 | **预览** | 单图预览（可编辑）、多选预览（可逐张编辑）、底部已选缩略图条 | [基本用法](#二基本用法) |
 | 5 | **分类型限量 / 互斥** | 「图片 9 张 + 视频 1 个」「必须选够」「二选一」 | [基本用法 §6](#6-按类型限量图片-n-张--视频-m-个--互斥) |
-| 6 | **相机入口 / 拍摄优先** | 网格内拍照入口；`setOpenCameraOnStart` 起列表后拉相机；`setCaptureFirst` **完全不经过列表** | [3.4 拍摄优先](#34-拍摄优先完全不经过图片列表) |
+| 6 | **相机入口 / 直接相机** | 网格内拍照入口；`setOpenCameraOnStart` 起列表后拉相机；`setOpenCameraDirect` **完全不经过列表**（仅图片/视频） | [3.4 直接相机](#34-直接打开相机完全不经过图片列表) |
 | 7 | **多类型文件** | 音频、文档、PDF、APK、压缩包、自定义后缀 | [基本用法 §3](#3-选择文件音频--文档--压缩包) |
 | 8 | **UI 配置 / 多语言** | 文案、颜色、图标、编辑页完整 i18n | [FilePickerUIConfig](#ui-自定义配置-filepickeruiconfig) |
 | 9 | **编辑产物 / 缓存** | 成品发布到 `Pictures/filepicker/`，返回真实路径；临时缓存返回时异步清理 | [编辑结果说明](#编辑结果说明) |
@@ -598,7 +598,7 @@ FilePicker.with(this)
 * 需要宿主在 Manifest 声明 `CAMERA`（库不声明；宿主声明了但没授权时，库会先申请权限）；
 * 视频确认后返回的是相机产出的视频路径；图片若走了编辑/头像裁剪，返回编辑后成品。
 
-### 3.4 拍摄优先（完全不经过图片列表）
+### 3.4 直接打开相机（完全不经过图片列表）
 
 > 外部 App 点一下按钮 → **直接相机** → 拍完确定直接编辑/返回。
 > 全程不出现图片列表（不会"闪一下主页"），也不需要媒体库读取权限。
@@ -606,7 +606,7 @@ FilePicker.with(this)
 ```kotlin
 FilePicker.with(this)                        // 必须是 FragmentActivity / Fragment
     .setSelectType(FilePickerSelectType.ofImage())   // 视频用 ofVideo()
-    .setCaptureFirst(true)                   // ← 拍摄优先（无列表）
+    .setOpenCameraDirect(true)                   // ← 直接相机（无列表）
     .setEditOnClickEnable(true)              // 可选：拍完直接进编辑弹窗
     // .setAvatarCropMode(true)              // 或：拍完直接进头像裁剪
     .setOnSelectCallback { _, list ->
@@ -632,6 +632,8 @@ FilePicker.with(this)                        // 必须是 FragmentActivity / Fra
 * 该模式走**回调式 API**（`FilePicker.with(activity/fragment)` + `setOnSelectCallback`）；
   不支持 `startActivityForResult` 拿结果。
 * 相机权限：宿主 Manifest 需声明 `CAMERA`（库不声明）；宿主声明了未授权时库会先申请。
+* **仅对 `ofImage()` / `ofVideo()` 生效**：`ofAll()`、音频、文档等类型会**忽略该开关**（打 warn 日志，
+  走普通选择流程），避免出现"选项类型对不上却直接弹相机"的怪行为；
 * 与 `setOpenCameraOnStart(true)` 的区别：后者先起选择器（主页闪一下）再拉相机；本模式彻底无列表。
 
 ## 四、API 文档
@@ -817,7 +819,7 @@ FilePicker.with(this)
 | `setEditInPreviewEnable(enable)`| **预览页编辑开关**（默认 `false`）；开启后单图/多选预览出现「编辑」        |
 | `setEditOnClickEnable(enable)`  | **单图点击直接编辑开关**（默认 `false`）；点图直接弹编辑弹窗，完成即返回、取消继续选 |
 | `setOpenCameraOnStart(enable)`  | **进入即拍开关**（默认 `false`）；先起选择器再拉相机（主页会闪一下） |
-| `setCaptureFirst(enable)`       | **拍摄优先开关**（默认 `false`）；**完全不经过图片列表**，直接相机 → 编辑/裁剪 → 回调 |
+| `setOpenCameraDirect(enable)`       | **直接相机开关**（默认 `false`）；**完全不经过图片列表**，直接相机 → 编辑/裁剪 → 回调；仅 `ofImage()` / `ofVideo()` 生效 |
 | `setEditCacheDir(path)`         | 编辑临时缓存目录（默认 `Android/data/<包名>/cache/filepicker/`） |
 | `start()`                       | 启动选择器                                            |
 

@@ -28,7 +28,7 @@ import kotlinx.coroutines.launch
 import java.io.File
 
 /**
- * 「拍摄优先」流程的无界面 Fragment：**完全不经过图片列表**。
+ * 「直接相机」流程的无界面 Fragment：**完全不经过图片列表**。
  *
  * - attach 到调用方 Activity / Fragment 后，立即申请 CAMERA（宿主声明了才申请）
  * - 直接拉起系统相机（拍照 / 录像）
