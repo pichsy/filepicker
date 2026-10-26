@@ -640,9 +640,11 @@ FilePicker.with(this)
     .setEditCacheDir(cacheDir.absolutePath)
     .setOnSelectCallback { isUseOriginal, list ->
         list.forEach { entity ->
-            // 编辑过的图：entity.editedPath 是编辑产物（会话内预览/角标用）
-            // 点确定返回时：path / uri 已经是编辑后的真实地址（Pictures/filepicker/xxx.jpg）
-            Log.d("picker", "原始: ${entity.path}  编辑产物: ${entity.editedPath}")
+            // 返回结果里的 path / uri 就是最终要用的图片地址：
+            //   - 没编辑过 = 原图
+            //   - 编辑过   = 编辑后的成品（Pictures/filepicker/xxx.jpg）
+            // 会话内的临时字段 editedPath 在返回时已清空，这里不需要（也不应该）读它
+            uploadFile(entity.path)
         }
     }
     .start()
