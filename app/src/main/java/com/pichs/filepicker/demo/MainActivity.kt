@@ -68,6 +68,8 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
         binding.btnTestCameraEdit.fastClick { startQuickTest("cameraEdit") }
         binding.btnTestAvatar.fastClick { startQuickTest("avatar") }
         binding.btnTestVideoCamera.fastClick { startQuickTest("videoCamera") }
+        binding.btnTestCaptureEdit.fastClick { startQuickTest("captureEdit") }
+        binding.btnTestCaptureVideo.fastClick { startQuickTest("captureVideo") }
 
         // 开始按钮点击事件
         binding.btnStart.fastClick {
@@ -453,6 +455,16 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
                 "videoCamera" -> builder
                     .setSelectType(FilePickerSelectType.ofVideo())
                     .setOpenCameraOnStart(true)
+
+                // 拍摄优先：完全不经过列表
+                "captureEdit" -> builder
+                    .setSelectType(FilePickerSelectType.ofImage())
+                    .setCaptureFirst(true)
+                    .setEditOnClickEnable(true)
+
+                "captureVideo" -> builder
+                    .setSelectType(FilePickerSelectType.ofVideo())
+                    .setCaptureFirst(true)
             }
             builder.start()
         }

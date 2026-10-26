@@ -358,6 +358,36 @@
                     android:textSize="13sp" />
             </LinearLayout>
 
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal">
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/btn_test_capture_edit"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/demo_btn_primary_bg"
+                    android:text="直接拍照→编辑（无列表）"
+                    android:textAllCaps="false"
+                    android:textColor="#fff"
+                    android:textSize="13sp" />
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/btn_test_capture_video"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/demo_btn_primary_bg"
+                    android:text="直接录像（无列表）"
+                    android:textAllCaps="false"
+                    android:textColor="#fff"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
             <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btn_start"
                 android:layout_width="match_parent"

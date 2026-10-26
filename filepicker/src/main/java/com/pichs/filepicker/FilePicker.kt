@@ -429,6 +429,29 @@ class FilePicker {
          * - 用户取消拍摄 → 落到选择器网格，可继续选图
          * - 不需要再开 `setShowCameraEntry(true)`（入口显不显示不影响直接拉起）
          */
+        /** 拍摄优先：完全不经过图片列表，直接相机 → 编辑/裁剪 → 回调 */
+        var mCaptureFirst: Boolean = false
+
+        /**
+         * 拍摄优先（默认 false）：**不经过图片列表**，进入流程直接拉起系统相机。
+         *
+         * - 相机取消 → `onCancel()`（回到调用方界面，不产生文件）
+         * - 视频：拍完直接回调视频（无编辑）
+         * - 图片 + [setEditOnClickEnable] → 拍完直接进编辑弹窗
+         * - 图片 + [setAvatarCropMode] → 拍完直接进 1:1 裁剪页
+         * - 图片（无编辑）→ 直接回调原图
+         *
+         * 与 [setOpenCameraOnStart] 的区别：后者会先起选择器（主页闪一下）再拉相机；
+         * 本模式通过无界面 Fragment 直接拉相机，**全程不出现图片列表**。
+         *
+         * 注意：该模式走回调式 API（`FilePicker.with(activity/fragment)` +
+         * `setOnSelectCallback`），不支持 startActivityForResult 结果返回。
+         */
+        fun setCaptureFirst(enable: Boolean): Builder {
+            this.mCaptureFirst = enable
+            return this
+        }
+
         fun setOpenCameraOnStart(enable: Boolean): Builder {
             this.mOpenCameraOnStart = enable
             return this
@@ -685,8 +708,57 @@ class FilePicker {
         doStart(FilePickerActivity::class.java)
     }
 
+    /** 拍摄优先流程：把无界面 [FilePickerCaptureFragment] 挂到调用方，直接拉相机 */
+    private fun startCaptureFirstFlow(bd: Builder) {
+        val hostFragment = bd.getFragment()
+        val fm = if (hostFragment != null) {
+            hostFragment.childFragmentManager
+        } else {
+            bd.getActivity()?.supportFragmentManager
+        }
+        if (fm == null) {
+            FilePickerLog.e(
+                "FilePicker",
+                "setCaptureFirst(true) 需要已 attach 的 Fragment 或 FragmentActivity（with(activity)/with(fragment)）",
+            )
+            return
+        }
+        if (fm.findFragmentByTag(com.pichs.filepicker.capture.FilePickerCaptureFragment.tagName()) != null) {
+            FilePickerLog.d("FilePicker", "拍摄优先流程已在运行，忽略重复启动")
+            return
+        }
+        val fragment = com.pichs.filepicker.capture.FilePickerCaptureFragment.newInstance(
+            selectType = bd.mSelectType,
+            editOnClick = bd.mEditOnClick,
+            avatarCrop = bd.mAvatarCropMode,
+            aspect = bd.effectiveCropAspect(),
+            outputMaxSize = bd.mCropOutputMaxSize,
+            quality = bd.mCropQuality,
+            uiConfig = bd.mUiConfig,
+        )
+        fragment.setCallbacks(
+            onSelected = { list ->
+                bd.mOnSelectCallback?.onSelectedCallback(false, list)
+                FilePickerViewModel.clearAll()
+            },
+            onCancel = {
+                bd.mOnSelectCallback?.onCancel()
+                FilePickerViewModel.clearAll()
+            },
+        )
+        FilePickerLog.d("FilePicker", "setCaptureFirst: 直接进入拍摄优先流程")
+        fm.beginTransaction()
+            .add(fragment, com.pichs.filepicker.capture.FilePickerCaptureFragment.tagName())
+            .commitNowAllowingStateLoss()
+    }
+
     private fun doStart(clazz: Class<out FragmentActivity>) {
         builder?.let { bd ->
+            // 拍摄优先：不启动选择器 Activity，直接挂一个无界面 Fragment 拉相机
+            if (bd.mCaptureFirst) {
+                startCaptureFirstFlow(bd)
+                return
+            }
             // 配置自检：头像裁剪会强制单选 + 单击裁剪；其余情况走规则自检
             val selectRulesEngine = bd.normalizeForAvatarCrop()
             if (bd.getFragment() != null) {
