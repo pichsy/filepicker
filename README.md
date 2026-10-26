@@ -82,7 +82,7 @@
 ```kotlin
 dependencies {
     // 基础组件库 （必须）
-    implementation("com.gitee.pichs:filepicker:8.0.1")
+    implementation("com.gitee.pichs:filepicker:8.1.0")
 
     // 基础组件库 （必须）
     implementation("com.gitee.pichs:xwidget:5.8.1")
@@ -124,7 +124,7 @@ dependencies {
 #### libs.versions.toml 写法
 [versions]
 xwidget="5.8.1"
-filepicker="8.0.1"
+filepicker="8.1.0"
 brv="1.6.1"
 basepopup="3.2.1"
 glide="4.16.0"
@@ -911,6 +911,34 @@ val uiConfig = FilePickerUIConfig().apply {
 感谢你们的无私奉献，让开发变得更加高效和有趣！
 
 ## 版本记录
+
+### 8.1.0
+
+> 新增两个「一步到位」的入口：**单图点击直接编辑**、**直接打开相机（完全不经过图片列表）**。
+> 无破坏性变更，从 8.0.x 升级无需改已有代码。
+
+#### 新增
+
+* **单图点击直接编辑：`setEditOnClickEnable(true)`**
+  * 单选 + 点任意图片直接弹出编辑弹窗（画笔/文字/裁剪/马赛克），不用先勾选、也不用进预览页点「编辑」
+  * 编辑弹窗「完成」→ 生成编辑成品（发布 `Pictures/filepicker/`）并**直接返回**；
+    「取消」/返回键 → 只关闭弹窗，**回到选择器继续选**
+  * 相机拍摄回填同样会进编辑弹窗
+  * 库强制单选 + 单击，`setMaxSelectNumber` / `setSelectRules` 被忽略（warn 日志）
+* **直接打开相机：`setOpenCameraDirect(true)`**
+  * **完全不经过图片列表**：进入流程直接拉起系统相机，没有"主页闪一下"
+  * 内部是**无界面 Fragment**（不新增 Activity、不查媒体库、不需要媒体读取权限）
+  * 相机取消/返回 → `onCancel()` 回到调用方；视频拍完直接回调；
+    图片 + `setEditOnClickEnable(true)` → 拍完直接进编辑弹窗；
+    图片 + `setAvatarCropMode(true)` → 拍完直接进 1:1 裁剪页
+  * **仅对 `ofImage()` / `ofVideo()` 生效**：`ofAll()`、音频、文档等类型会忽略该开关（warn 日志，走普通选择流程）
+  * 走回调式 API（`FilePicker.with(activity/fragment)` + `setOnSelectCallback`），不支持 startActivityForResult 拿结果
+
+#### 其它
+
+* demo 首页底部新增「测试快捷入口」按钮：点击即编辑 / 头像裁剪 / 直接拍照→编辑（无列表）/ 直接录像（无列表）。
+* demo 首页新增「点击图片直接编辑」勾选项。
+* 已移除开发期未发布的 `setOpenCameraOnStart` API（语义与 `setOpenCameraDirect` 重复，且会闪列表）。
 
 ### 8.0.1
 
