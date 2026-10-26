@@ -280,16 +280,6 @@
                 android:textColor="#DDDDDD"
                 android:textSize="14sp" />
 
-            <androidx.appcompat.widget.AppCompatCheckBox
-                android:id="@+id/cb_open_camera"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:buttonTint="#FFFFFF"
-                android:text="进入即拍照/录像（外部直接拉相机）"
-                android:textColor="#DDDDDD"
-                android:textSize="14sp" />
-
             <com.pichs.xwidget.view.XTextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -316,43 +306,13 @@
                     android:textSize="13sp" />
 
                 <androidx.appcompat.widget.AppCompatButton
-                    android:id="@+id/btn_test_camera_edit"
-                    android:layout_width="0dp"
-                    android:layout_height="40dp"
-                    android:layout_marginStart="8dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/demo_btn_secondary_bg"
-                    android:text="拍照 → 编辑"
-                    android:textAllCaps="false"
-                    android:textColor="#fff"
-                    android:textSize="13sp" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:orientation="horizontal">
-
-                <androidx.appcompat.widget.AppCompatButton
                     android:id="@+id/btn_test_avatar"
                     android:layout_width="0dp"
                     android:layout_height="40dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/demo_btn_secondary_bg"
-                    android:text="头像裁剪"
-                    android:textAllCaps="false"
-                    android:textColor="#fff"
-                    android:textSize="13sp" />
-
-                <androidx.appcompat.widget.AppCompatButton
-                    android:id="@+id/btn_test_video_camera"
-                    android:layout_width="0dp"
-                    android:layout_height="40dp"
                     android:layout_marginStart="8dp"
                     android:layout_weight="1"
                     android:background="@drawable/demo_btn_secondary_bg"
-                    android:text="录像 → 直接返回"
+                    android:text="头像裁剪"
                     android:textAllCaps="false"
                     android:textColor="#fff"
                     android:textSize="13sp" />

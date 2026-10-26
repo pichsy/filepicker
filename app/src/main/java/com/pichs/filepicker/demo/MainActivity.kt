@@ -65,9 +65,7 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
 
         // ===== 测试快捷入口：不用勾选，直接以对应模式进选择器 =====
         binding.btnTestEditOnClick.fastClick { startQuickTest("editOnClick") }
-        binding.btnTestCameraEdit.fastClick { startQuickTest("cameraEdit") }
         binding.btnTestAvatar.fastClick { startQuickTest("avatar") }
-        binding.btnTestVideoCamera.fastClick { startQuickTest("videoCamera") }
         binding.btnTestCaptureEdit.fastClick { startQuickTest("captureEdit") }
         binding.btnTestCaptureVideo.fastClick { startQuickTest("captureVideo") }
 
@@ -442,19 +440,10 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
                     .setSelectType(FilePickerSelectType.ofImage())
                     .setEditOnClickEnable(true)
 
-                "cameraEdit" -> builder
-                    .setSelectType(FilePickerSelectType.ofImage())
-                    .setOpenCameraOnStart(true)
-                    .setEditOnClickEnable(true)
-
                 "avatar" -> builder
                     .setSelectType(FilePickerSelectType.ofImage())
                     .setAvatarCropMode(true)
                     .setAvatarCropAspectRatio(1f)
-
-                "videoCamera" -> builder
-                    .setSelectType(FilePickerSelectType.ofVideo())
-                    .setOpenCameraOnStart(true)
 
                 // 拍摄优先：完全不经过列表
                 "captureEdit" -> builder
@@ -477,8 +466,6 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
         val editInPreview = binding.cbEditPreview.isChecked
         // 点击图片直接编辑：单选，点图即弹编辑弹窗，完成后直接返回
         val editOnClick = binding.cbEditOnClick.isChecked
-        // 进入即拍照/录像：直接拉起系统相机
-        val openCameraOnStart = binding.cbOpenCamera.isChecked
         val (rules, useNewModel) = buildSelectRules()
         if (selectedRuleMode != RuleMode.NONE && !useNewModel) {
             Toast.makeText(this, "没填图片/视频数量，按「最大选择数量」执行", Toast.LENGTH_SHORT).show()
@@ -517,9 +504,6 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
         }
         if (editOnClick) {
             builder.setEditOnClickEnable(true)
-        }
-        if (openCameraOnStart) {
-            builder.setOpenCameraOnStart(true)
         }
 
         // 选用新模型：分类型限量 + 互斥；模式为"无"时完全走旧逻辑
