@@ -37,7 +37,9 @@ class FilePickerEditDialog(
     private val outputMaxSize: Int = 2048,
     private val quality: Int = 90,
     private val aspect: Float = 0f,
-    /** 裁剪模式右侧"还原"文案（多语言，来自 uiConfig.cropResetText） */
+    /** UI 配置（文案/颜色等，多语言统一从这里取） */
+    private val uiConfig: com.pichs.filepicker.FilePickerUIConfig? = null,
+    /** 裁剪模式右侧"还原"文案（兼容旧参数；优先取 uiConfig.cropResetText） */
     private val cropResetText: String = "还原",
     private val onResult: (String?) -> Unit,
 ) : BasePopupWindow(context) {
@@ -91,6 +93,13 @@ class FilePickerEditDialog(
 
     private val handler = Handler(Looper.getMainLooper())
 
+    /** 从 uiConfig 取文案；没传 uiConfig 时用默认值 */
+    private fun text(selector: (com.pichs.filepicker.FilePickerUIConfig) -> String, fallback: String): String =
+        uiConfig?.let(selector) ?: fallback
+
+    private val resetTextValue: String
+        get() = uiConfig?.cropResetText ?: cropResetText
+
     init {
         setContentView(R.layout.dialog_filepicker_edit)
     }
@@ -124,9 +133,19 @@ class FilePickerEditDialog(
         setupCropControls(contentView)
 
 
-        contentView.findViewById<View>(R.id.btn_cancel).setOnClickListener {
-            finishWithResult(null)
+        contentView.findViewById<TextView>(R.id.btn_cancel).apply {
+            text = text({ it.editCancelText }, "取消")
+            setOnClickListener { finishWithResult(null) }
         }
+        contentView.findViewById<View>(R.id.btn_undo).contentDescription =
+            text({ it.editUndoLabel }, "撤销")
+        contentView.findViewById<View>(R.id.btn_redo).contentDescription =
+            text({ it.editRedoLabel }, "重做")
+        btnDone.text = text({ it.editDoneText }, "完成")
+        toolDoodle.contentDescription = text({ it.editToolBrushLabel }, "画笔")
+        toolText.contentDescription = text({ it.editToolTextLabel }, "文字")
+        toolCrop.contentDescription = text({ it.editToolCropLabel }, "裁剪")
+        toolMosaic.contentDescription = text({ it.editToolMosaicLabel }, "马赛克")
         toolDoodle.setOnClickListener { switchTool(Tool.DOODLE) }
         // 文字：点一下就在屏幕正中弹透明输入框，不出现二级面板
         toolText.setOnClickListener {
@@ -170,7 +189,7 @@ class FilePickerEditDialog(
                 }
                 if (decoded == null) {
                     progressBar.visibility = View.GONE
-                    Toast.makeText(context, "图片加载失败", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, text({ it.editLoadImageFailedToastContent }, "图片加载失败"), Toast.LENGTH_SHORT).show()
                     finishWithResult(null)
                     return@post
                 }
@@ -207,7 +226,7 @@ class FilePickerEditDialog(
                 progressBar.visibility = View.GONE
                 btnDone.isEnabled = true
                 if (file == null) {
-                    Toast.makeText(context, "保存失败，请重试", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, text({ it.editSaveFailedToastContent }, "保存失败，请重试"), Toast.LENGTH_SHORT).show()
                 } else {
                     FilePickerLog.d(TAG, "编辑导出成功: ${file.absolutePath} 成品: $published")
                     finishWithResult(published ?: file.absolutePath)
@@ -307,8 +326,8 @@ class FilePickerEditDialog(
                 setOnClickListener { onClick() }
             })
         }
-        addCropIcon(R.drawable.filepicker_ic_crop_rotate, "旋转") { cropView.rotate90() }
-        addCropIcon(R.drawable.filepicker_ic_crop_mirror, "镜像") { cropView.mirror() }
+        addCropIcon(R.drawable.filepicker_ic_crop_rotate, text({ it.cropRotateLabel }, "旋转")) { cropView.rotate90() }
+        addCropIcon(R.drawable.filepicker_ic_crop_mirror, text({ it.cropMirrorLabel }, "镜像")) { cropView.mirror() }
         toolsRow.addView(tools)
 
         // 右侧：还原（文字，文案来自 config，默认"还原"）
@@ -317,7 +336,7 @@ class FilePickerEditDialog(
             setTextColor(Color.WHITE)
             textSize = 15f
             setPadding(dp(8), dp(8), dp(8), dp(8))
-            contentDescription = "还原"
+            contentDescription = resetTextValue
             setOnClickListener { cropView.resetCrop() }
         }
         toolsRow.addView(resetText, android.widget.FrameLayout.LayoutParams(
@@ -336,7 +355,7 @@ class FilePickerEditDialog(
             setTextColor(Color.WHITE)
             textSize = 20f
             gravity = android.view.Gravity.CENTER
-            contentDescription = "取消裁剪"
+            contentDescription = text({ it.cropCancelLabel }, "取消裁剪")
             setOnClickListener {
                 cropView.cancelCrop()
                 switchTool(Tool.NONE)
@@ -353,7 +372,7 @@ class FilePickerEditDialog(
             setImageResource(R.drawable.filepicker_ic_crop_confirm)
             setPadding(dp(16), dp(16), dp(16), dp(16))
             scaleType = ImageView.ScaleType.FIT_CENTER
-            contentDescription = "确认裁剪"
+            contentDescription = text({ it.cropConfirmLabel }, "确认裁剪")
             setOnClickListener {
                 cropView.confirmCrop()
                 switchTool(Tool.NONE)
@@ -458,7 +477,7 @@ class FilePickerEditDialog(
 
         // ---- 顶部：取消 / 绿色圆角完成 ----
         val cancel = TextView(context).apply {
-            text = "取消"
+            text = text({ it.editCancelText }, "取消")
             setTextColor(Color.WHITE)
             textSize = 16f
             setPadding(dp(16), dp(12), dp(16), dp(12))
@@ -474,7 +493,7 @@ class FilePickerEditDialog(
         })
 
         val done = TextView(context).apply {
-            text = "完成"
+            text = text({ it.editDoneText }, "完成")
             setTextColor(Color.WHITE)
             textSize = 15f
             setPadding(dp(16), dp(6), dp(16), dp(6))
@@ -533,7 +552,7 @@ class FilePickerEditDialog(
                     setMargins(dp(2), 0, dp(2), 0)
                 }
                 isClickable = true
-                contentDescription = if (textBgMode) "背景模式（已选中）" else "字体颜色模式（未选中）"
+                contentDescription = if (textBgMode) text({ it.editTextBgModeLabel }, "背景模式（已选中）") else text({ it.editTextFontModeLabel }, "字体颜色模式（未选中）")
                 setOnClickListener {
                     textBgMode = !textBgMode
                     applyPreviewStyle()
@@ -570,7 +589,7 @@ class FilePickerEditDialog(
                 val slot = android.widget.FrameLayout(context).apply {
                     layoutParams = LinearLayout.LayoutParams(dp(34), dp(48))
                     isClickable = true
-                    contentDescription = "颜色#%06X".format(0xFFFFFF and color)
+                    contentDescription = text({ it.editColorDotLabelFormat }, "颜色%1\$d").format(0xFFFFFF and color)
                     setOnClickListener {
                         textStyleColor = color
                         applyPreviewStyle()
@@ -789,7 +808,7 @@ class FilePickerEditDialog(
                     layoutParams = LinearLayout.LayoutParams(0, dp(36), 1f).apply {
                         rightMargin = dp(34)
                     }
-                    contentDescription = "画笔粗细"
+                    contentDescription = text({ it.editBrushSizeLabel }, "画笔粗细")
                     setValue(sliderFromBrushFrac(cropView.brushRadiusFracValue()))
                     onValueChanged = { v ->
                         cropView.setBrushRadiusFrac(brushFracFromSlider(v))
@@ -826,6 +845,7 @@ class FilePickerEditDialog(
                 addBigIconButton(
                     R.drawable.filepicker_ic_mosaic_circle,
                     selected = !eraser && mosaicStyle == 0,
+                    desc = text({ it.mosaicPixelLabel }, "像素马赛克"),
                 ) {
                     mosaicStyle = 0
                     mosaicEraserActive = false
@@ -836,6 +856,7 @@ class FilePickerEditDialog(
                 addBigIconButton(
                     R.drawable.filepicker_ic_blur_circle,
                     selected = !eraser && mosaicStyle == 1,
+                    desc = text({ it.mosaicBlurLabel }, "雾化"),
                 ) {
                     mosaicStyle = 1
                     mosaicEraserActive = false
@@ -898,7 +919,12 @@ class FilePickerEditDialog(
     }
 
     /** 大号图标按钮（44dp 热区 / 22dp 视觉，马赛克的两种效果用） */
-    private fun addBigIconButton(iconRes: Int, selected: Boolean = false, onClick: () -> Unit) {
+    private fun addBigIconButton(
+        iconRes: Int,
+        selected: Boolean = false,
+        desc: String = "",
+        onClick: () -> Unit,
+    ) {
         val size = dp(44)
         val image = ImageView(context).apply {
             layoutParams = LinearLayout.LayoutParams(size, size).apply {
@@ -908,6 +934,7 @@ class FilePickerEditDialog(
             scaleType = ImageView.ScaleType.FIT_CENTER
             setImageResource(iconRes)
             setColorFilter(if (selected) 0xFF06B10D.toInt() else Color.WHITE)
+            if (desc.isNotEmpty()) contentDescription = desc
             setOnClickListener { onClick() }
         }
         row().addView(image)
@@ -950,6 +977,7 @@ class FilePickerEditDialog(
             setPadding(dp(7), dp(7), dp(7), dp(7))
             scaleType = ImageView.ScaleType.FIT_CENTER
             setImageResource(R.drawable.filepicker_ic_edit_eraser)
+            contentDescription = text({ it.editEraserLabel }, "橡皮")
             setColorFilter(if (active) 0xFF06B10D.toInt() else Color.WHITE)
             background = if (active) {
                 GradientDrawable().apply {

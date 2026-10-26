@@ -209,7 +209,12 @@ class FilePicker {
             return this
         }
 
-        /** 裁剪模式右侧"还原"文案（多语言适配用；默认"还原"） */
+        /**
+         * 裁剪模式右侧"还原"文案（多语言适配用；默认"还原"）。
+         *
+         * 等价于设置 [FilePickerUIConfig.cropResetText]；想做完整多语言时，
+         * 建议直接用 `FilePickerUIConfig(cropResetText = ...)` 统一配置。
+         */
         fun setAvatarCropResetText(text: String): Builder {
             this.mUiConfig.cropResetText = text
             return this

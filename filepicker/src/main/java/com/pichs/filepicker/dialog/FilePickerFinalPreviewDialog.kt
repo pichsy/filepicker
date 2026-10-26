@@ -498,7 +498,7 @@ class FilePickerFinalPreviewDialog(
             entity = source,
             outputMaxSize = viewModel.cropOutputMaxSize.value,
             quality = viewModel.cropQuality.value,
-            cropResetText = viewModel.uiConfig.cropResetText,
+            uiConfig = viewModel.uiConfig,
         ) { editedPath ->
             if (editedPath.isNullOrEmpty()) {
                 FilePickerLog.d("FilePickerFinalPreviewDialog", "编辑已取消")

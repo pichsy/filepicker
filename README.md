@@ -664,6 +664,52 @@ FilePicker.with(this)
   （系统相册可见，下次选择可直接再次选中）
 * 头像裁剪：`setAvatarCropAspectRatio(1f)`，单选模式下点图片直接进入 1:1 裁剪页
 
+### 多语言（i18n）
+
+编辑/裁剪页的所有文案都在 **`FilePickerUIConfig`** 里，接入方按自己 App 的语言注入即可
+（下面的 `getString(...)` 就是各自 `strings.xml` 里的多语言资源）：
+
+```kotlin
+val uiConfig = FilePickerUIConfig(
+    // 顶栏
+    editCancelText = getString(R.string.picker_cancel),
+    editDoneText = getString(R.string.picker_done),
+    editUndoLabel = getString(R.string.picker_undo),
+    editRedoLabel = getString(R.string.picker_redo),
+    // 主菜单工具名（无障碍/读屏用）
+    editToolBrushLabel = getString(R.string.picker_brush),
+    editToolTextLabel = getString(R.string.picker_text),
+    editToolCropLabel = getString(R.string.picker_crop),
+    editToolMosaicLabel = getString(R.string.picker_mosaic),
+    // 二级面板
+    editBrushSizeLabel = getString(R.string.picker_brush_size),
+    editTextFontModeLabel = getString(R.string.picker_text_font_mode),
+    editTextBgModeLabel = getString(R.string.picker_text_bg_mode),
+    editColorDotLabelFormat = getString(R.string.picker_color_format), // 含 %1$d
+    mosaicPixelLabel = getString(R.string.picker_mosaic_pixel),
+    mosaicBlurLabel = getString(R.string.picker_mosaic_blur),
+    editEraserLabel = getString(R.string.picker_eraser),
+    // 裁剪页
+    cropRotateLabel = getString(R.string.picker_rotate),
+    cropMirrorLabel = getString(R.string.picker_mirror),
+    cropResetText = getString(R.string.picker_reset),        // 「还原」
+    cropCancelLabel = getString(R.string.picker_crop_cancel),
+    cropConfirmLabel = getString(R.string.picker_crop_confirm),
+    // 提示
+    editLoadImageFailedToastContent = getString(R.string.picker_load_failed),
+    editSaveFailedToastContent = getString(R.string.picker_save_failed),
+)
+
+FilePicker.with(this)
+    .setUiConfig(uiConfig)
+    .setEditInPreviewEnable(true)
+    .start()
+```
+
+> `setAvatarCropResetText("还原")` 只是一个便捷方法，内部就是写
+> `uiConfig.cropResetText`；做完整多语言时建议统一用 `FilePickerUIConfig` 配。
+> 这些字段都有中文默认值，不传也能正常用。
+
 ### 注意事项
 
 * 编辑是**会话级覆盖**：不改原图文件、不覆盖相册原图；「已编辑」角标显示在缩略图左下角（16dp）。

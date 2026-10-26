@@ -91,6 +91,71 @@ public data class FilePickerUIConfig(
      */
     var cropResetText: String = "还原",
 
+    // ---------------- 图片编辑页 / 裁剪页文案（多语言适配用） ----------------
+
+    /** 编辑页顶栏「取消」 */
+    var editCancelText: String = "取消",
+
+    /** 编辑页顶栏「完成」 */
+    var editDoneText: String = "完成",
+
+    /** 撤销按钮的无障碍描述 */
+    var editUndoLabel: String = "撤销",
+
+    /** 重做按钮的无障碍描述 */
+    var editRedoLabel: String = "重做",
+
+    /** 主菜单工具名：画笔（无障碍描述） */
+    var editToolBrushLabel: String = "画笔",
+
+    /** 主菜单工具名：文字 */
+    var editToolTextLabel: String = "文字",
+
+    /** 主菜单工具名：裁剪 */
+    var editToolCropLabel: String = "裁剪",
+
+    /** 主菜单工具名：马赛克 */
+    var editToolMosaicLabel: String = "马赛克",
+
+    /** 画笔粗细滑条的无障碍描述 */
+    var editBrushSizeLabel: String = "画笔粗细",
+
+    /** 文字输入模式：字体颜色模式（未选中）无障碍描述 */
+    var editTextFontModeLabel: String = "字体颜色模式（未选中）",
+
+    /** 文字输入模式：背景模式（选中）无障碍描述 */
+    var editTextBgModeLabel: String = "背景模式（已选中）",
+
+    /** 颜色圆点的无障碍描述格式，%1\$d 为颜色值（ARGB） */
+    var editColorDotLabelFormat: String = "颜色%1\$d",
+
+    /** 裁剪页：旋转按钮描述 */
+    var cropRotateLabel: String = "旋转",
+
+    /** 裁剪页：镜像按钮描述 */
+    var cropMirrorLabel: String = "镜像",
+
+    /** 裁剪页：取消裁剪按钮描述 */
+    var cropCancelLabel: String = "取消裁剪",
+
+    /** 裁剪页：确认裁剪按钮描述 */
+    var cropConfirmLabel: String = "确认裁剪",
+
+    /** 马赛克二级菜单：像素马赛克 */
+    var mosaicPixelLabel: String = "像素马赛克",
+
+    /** 马赛克二级菜单：雾化 */
+    var mosaicBlurLabel: String = "雾化",
+
+    /** 马赛克/画笔二级菜单：橡皮 */
+    var editEraserLabel: String = "橡皮",
+
+    /** 编辑页：图片加载失败提示 */
+    var editLoadImageFailedToastContent: String = "图片加载失败",
+
+    /** 编辑页：保存失败提示 */
+    var editSaveFailedToastContent: String = "保存失败，请重试",
+
     /**
      * 至少选择一个 toast
      */
