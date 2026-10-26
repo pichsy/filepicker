@@ -408,6 +408,8 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
         val avatarCrop = binding.cbAvatarCrop.isChecked
         // 预览页「编辑」：预览大图时自由裁剪
         val editInPreview = binding.cbEditPreview.isChecked
+        // 点击图片直接编辑：单选，点图即弹编辑弹窗，完成后直接返回
+        val editOnClick = binding.cbEditOnClick.isChecked
         val (rules, useNewModel) = buildSelectRules()
         if (selectedRuleMode != RuleMode.NONE && !useNewModel) {
             Toast.makeText(this, "没填图片/视频数量，按「最大选择数量」执行", Toast.LENGTH_SHORT).show()
@@ -443,6 +445,9 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
         }
         if (editInPreview) {
             builder.setEditInPreviewEnable(true)
+        }
+        if (editOnClick) {
+            builder.setEditOnClickEnable(true)
         }
 
         // 选用新模型：分类型限量 + 互斥；模式为"无"时完全走旧逻辑

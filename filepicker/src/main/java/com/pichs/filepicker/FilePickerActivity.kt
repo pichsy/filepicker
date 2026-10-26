@@ -110,6 +110,7 @@ class FilePickerActivity : AppCompatActivity() {
         viewModel.cropOutputMaxSize.value = intent.getIntExtra("cropOutputMaxSize", 2048)
         viewModel.cropQuality.value = intent.getIntExtra("cropQuality", 90)
         viewModel.editInPreview.value = intent.getBooleanExtra("editInPreview", false)
+        viewModel.editOnClick.value = intent.getBooleanExtra("editOnClick", false)
         // 编辑缓存目录：宿主传了就用自己的，没传用默认 Android/data/<包名>/cache/filepicker
         com.pichs.filepicker.crop.FilePickerEditCache.customDir =
             intent.getStringExtra("editCacheDir")?.takeIf { it.isNotEmpty() }?.let { java.io.File(it) }

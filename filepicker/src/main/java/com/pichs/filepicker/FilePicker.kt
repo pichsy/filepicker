@@ -397,6 +397,26 @@ class FilePicker {
             return if (mCropAspect > 0f) mCropAspect else 1f
         }
 
+        /** 单图点击直接进入编辑弹窗（默认 false） */
+        var mEditOnClick: Boolean = false
+
+        /**
+         * 单图点击直接编辑开关（默认 false）。
+         *
+         * 开启后：**单选 + 点任意图片直接弹出编辑弹窗**（画笔/文字/裁剪/马赛克），
+         * 不需要先勾选、也不需要再点预览页的「编辑」。
+         *
+         * - 编辑弹窗点「完成」→ 生成编辑后的成品，直接返回给调用方
+         * - 编辑弹窗点「取消」/返回 → 回到选择器继续选（不返回、不产生文件）
+         *
+         * 库会强制单选 + 单击即编辑（`setMaxSelectNumber` / `setSelectRules` 被忽略，打 warn 日志）。
+         * 与 [setAvatarCropMode] 同时开启时，头像裁剪优先。
+         */
+        fun setEditOnClickEnable(enable: Boolean): Builder {
+            this.mEditOnClick = enable
+            return this
+        }
+
         fun setEditInPreviewEnable(enable: Boolean): Builder {
             this.mEditInPreview = enable
             return this
@@ -498,7 +518,32 @@ class FilePicker {
                     )
                 }
                 mCropAspect = 0f
+                if (mEditOnClick) {
+                    if (mMaxSelectNumber != 1) {
+                        FilePickerLog.w(
+                            "FilePicker",
+                            "点击即编辑强制单选：忽略 setMaxSelectNumber(${mMaxSelectNumber})，实际按 1 处理",
+                        )
+                    }
+                    if (mSelectRulesUsed) {
+                        FilePickerLog.w(
+                            "FilePicker",
+                            "点击即编辑忽略 setSelectRules：该模式固定单选，规则配置不生效",
+                        )
+                        mSelectRules = mutableListOf()
+                        mSelectRulesUsed = false
+                    }
+                    mMaxSelectNumber = 1
+                    mSingleClickEnable = true
+                    return null
+                }
                 return buildSelectRulesEngine()
+            }
+            if (mEditOnClick) {
+                FilePickerLog.w(
+                    "FilePicker",
+                    "同时开启头像裁剪与点击编辑：头像裁剪优先，setEditOnClickEnable 本次不生效",
+                )
             }
             // 头像模式：默认 1:1；强制单选 + 单击即裁剪；规则模式让位
             if (mCropAspect <= 0f) mCropAspect = 1f
@@ -645,6 +690,7 @@ class FilePicker {
                             intent.putExtra("cropOutputMaxSize", bd.mCropOutputMaxSize)
                             intent.putExtra("cropQuality", bd.mCropQuality)
                             intent.putExtra("editInPreview", bd.mEditInPreview)
+                            intent.putExtra("editOnClick", bd.mEditOnClick)
                             intent.putExtra("editCacheDir", bd.mEditCacheDir)
                             bd.applySelectRuleExtras(intent, selectRulesEngine)
                             FilePickerViewModel.userUseSelectDataList.clear()
@@ -690,6 +736,7 @@ class FilePicker {
                             intent.putExtra("cropOutputMaxSize", bd.mCropOutputMaxSize)
                             intent.putExtra("cropQuality", bd.mCropQuality)
                             intent.putExtra("editInPreview", bd.mEditInPreview)
+                            intent.putExtra("editOnClick", bd.mEditOnClick)
                             intent.putExtra("editCacheDir", bd.mEditCacheDir)
                         bd.applySelectRuleExtras(intent, selectRulesEngine)
                         FilePickerViewModel.userUseSelectDataList.clear()

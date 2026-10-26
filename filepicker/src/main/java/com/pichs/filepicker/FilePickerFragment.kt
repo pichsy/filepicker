@@ -36,6 +36,7 @@ import com.drake.brv.utils.setup
 import com.google.android.material.tabs.TabLayout
 import com.pichs.filepicker.camera.CameraEntryModel
 import com.pichs.filepicker.crop.FilePickerCropActivity
+import com.pichs.filepicker.crop.FilePickerEditDialog
 import com.pichs.filepicker.camera.FilePickerCaptureHelper
 import com.pichs.filepicker.databinding.FilePickerItemRvAlbumBinding
 import com.pichs.filepicker.databinding.FilePickerItemRvAlbumSelectedBinding
@@ -1052,6 +1053,11 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
             launchAvatarCrop(item)
             return
         }
+        // 单图点击直接编辑：点图就弹编辑弹窗，完成后返回成品；取消则留在选择器继续选
+        if (viewModel.editOnClick.value && item.isImage()) {
+            launchEditDialogForSingleClick(item)
+            return
+        }
         callbackToChooser(arrayListOf(item))
     }
 
@@ -1059,6 +1065,33 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
      * 头像场景：点图直接进固定比例裁剪页。
      * 裁剪结果只挂到原图实体的 [MediaEntity.editedPath] 上（相册原图不动），然后把原图实体返回给宿主。
      */
+    /**
+     * 单图点击直接编辑：弹出和预览页「编辑」相同的编辑弹窗。
+     *
+     * - 编辑弹窗「完成」→ attachEdit + 直接返回（结果 path = 编辑后成品）
+     * - 编辑弹窗「取消」/返回 → 只关闭弹窗，用户继续在选择器里选（不返回）
+     */
+    private fun launchEditDialogForSingleClick(item: MediaEntity) {
+        val ctx = context ?: return
+        val source = viewModel.displayEntity(item) ?: item
+        FilePickerLog.d("FilePickerFragment", "点击即编辑: ${item.path}")
+        FilePickerEditDialog(
+            context = ctx,
+            entity = source,
+            outputMaxSize = viewModel.cropOutputMaxSize.value,
+            quality = viewModel.cropQuality.value,
+            uiConfig = viewModel.uiConfig,
+        ) { editedPath ->
+            if (editedPath.isNullOrEmpty()) {
+                FilePickerLog.d("FilePickerFragment", "点击即编辑已取消，继续选择")
+                return@FilePickerEditDialog
+            }
+            FilePickerLog.d("FilePickerFragment", "点击即编辑完成: ${item.path} -> $editedPath")
+            viewModel.attachEdit(item, editedPath)
+            callbackToChooser(arrayListOf(item))
+        }.showPopupWindow()
+    }
+
     private fun launchAvatarCrop(item: MediaEntity) {
         FilePickerLog.d("FilePickerFragment", "launchAvatarCrop: ${item.path}")
         val aspect = viewModel.cropAspect.value
@@ -1390,6 +1423,8 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
                 // 头像裁剪模式：拍到的这张也要进 1:1 裁剪页，而不是直接返回原图
                 if (viewModel.cropAspect.value > 0f && entity.isImage()) {
                     launchAvatarCrop(entity)
+                } else if (viewModel.editOnClick.value && entity.isImage()) {
+                    launchEditDialogForSingleClick(entity)
                 } else {
                     callbackToChooser(arrayListOf(entity))
                 }

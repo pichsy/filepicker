@@ -270,6 +270,16 @@
                 android:textColor="#DDDDDD"
                 android:textSize="14sp" />
 
+            <androidx.appcompat.widget.AppCompatCheckBox
+                android:id="@+id/cb_edit_on_click"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:buttonTint="#FFFFFF"
+                android:text="点击图片直接编辑（单图，编辑完返回）"
+                android:textColor="#DDDDDD"
+                android:textSize="14sp" />
+
             <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btn_start"
                 android:layout_width="match_parent"
