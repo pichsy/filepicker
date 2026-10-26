@@ -290,6 +290,74 @@
                 android:textColor="#DDDDDD"
                 android:textSize="14sp" />
 
+            <com.pichs.xwidget.view.XTextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:text="测试快捷入口（不用勾选，直接进对应模式）"
+                android:textColor="#9E9E9E"
+                android:textSize="13sp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal">
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/btn_test_edit_on_click"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/demo_btn_secondary_bg"
+                    android:text="点击即编辑"
+                    android:textAllCaps="false"
+                    android:textColor="#fff"
+                    android:textSize="13sp" />
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/btn_test_camera_edit"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/demo_btn_secondary_bg"
+                    android:text="拍照 → 编辑"
+                    android:textAllCaps="false"
+                    android:textColor="#fff"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal">
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/btn_test_avatar"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/demo_btn_secondary_bg"
+                    android:text="头像裁剪"
+                    android:textAllCaps="false"
+                    android:textColor="#fff"
+                    android:textSize="13sp" />
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/btn_test_video_camera"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/demo_btn_secondary_bg"
+                    android:text="录像 → 直接返回"
+                    android:textAllCaps="false"
+                    android:textColor="#fff"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
             <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btn_start"
                 android:layout_width="match_parent"

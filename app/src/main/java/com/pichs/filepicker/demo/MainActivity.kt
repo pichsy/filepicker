@@ -63,6 +63,12 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
             startActivity(Intent(this, SettingsActivity::class.java))
         }
 
+        // ===== 测试快捷入口：不用勾选，直接以对应模式进选择器 =====
+        binding.btnTestEditOnClick.fastClick { startQuickTest("editOnClick") }
+        binding.btnTestCameraEdit.fastClick { startQuickTest("cameraEdit") }
+        binding.btnTestAvatar.fastClick { startQuickTest("avatar") }
+        binding.btnTestVideoCamera.fastClick { startQuickTest("videoCamera") }
+
         // 开始按钮点击事件
         binding.btnStart.fastClick {
             // 获取最大选择数量
@@ -401,6 +407,55 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
         binding.layoutMaxCount.isVisible = !useRules
         binding.layoutImageCount.isVisible = modeSelected
         binding.layoutVideoCount.isVisible = modeSelected
+    }
+
+    /**
+     * 测试快捷入口：直接以指定模式进入选择器，不受首页勾选项影响。
+     *
+     * - editOnClick  : 单图点击 → 直接进编辑弹窗，编辑完成返回
+     * - cameraEdit   : 进入即拍照 → 拍完确定直接进编辑弹窗
+     * - avatar       : 进入即头像裁剪（点图直接 1:1 裁剪）
+     * - videoCamera  : 进入即录像 → 拍完确定直接返回视频（无编辑）
+     */
+    private fun startQuickTest(kind: String) {
+        XXPermissions.with(this).unchecked().permission(
+            Permission.READ_MEDIA_IMAGES,
+            Permission.READ_MEDIA_VIDEO,
+            Permission.READ_MEDIA_AUDIO,
+        ).request { permissions, all ->
+            if (!all) {
+                XXPermissions.startPermissionActivity(this, permissions)
+                return@request
+            }
+            val builder = FilePicker.with(this)
+                .setMaxFileSize(Long.MAX_VALUE)
+                .setSelectedList(selectedDataList)
+                .setOnSelectCallback { _, list ->
+                    XLog.d("MainActivity", "快捷测试结果: ${list.size} 张")
+                    selectedDataList = list
+                    renderResult(list)
+                }
+            when (kind) {
+                "editOnClick" -> builder
+                    .setSelectType(FilePickerSelectType.ofImage())
+                    .setEditOnClickEnable(true)
+
+                "cameraEdit" -> builder
+                    .setSelectType(FilePickerSelectType.ofImage())
+                    .setOpenCameraOnStart(true)
+                    .setEditOnClickEnable(true)
+
+                "avatar" -> builder
+                    .setSelectType(FilePickerSelectType.ofImage())
+                    .setAvatarCropMode(true)
+                    .setAvatarCropAspectRatio(1f)
+
+                "videoCamera" -> builder
+                    .setSelectType(FilePickerSelectType.ofVideo())
+                    .setOpenCameraOnStart(true)
+            }
+            builder.start()
+        }
     }
 
     fun selectFile(type: String, maxSelectCount: Int, maxFileSize: Int, showCameraEntry: Boolean) {
