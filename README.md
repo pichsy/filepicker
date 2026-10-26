@@ -332,7 +332,7 @@ FilePicker.with(this)
 | 图片必须正好 9 张 | `setSelectRules(SelectRule.ofImage(9, 9))` |
 | 视频必须 1 个、图片最多 9 张 | `setSelectRules(SelectRule.ofVideo(1, 1), SelectRule.ofImage(0, 9))` |
 | 图片和视频**只能选其中一类** | 上面的规则 + `.setExclusive(true)` |
-| 合计最多 5 个（不分类，**旧模型**） | `.setMaxSelectNumber(5)`（**配了 `setSelectRules` 后这个数字无效**，合计 = 各规则 `max` 之和） |
+| 合计最多 5 个（不分类，**旧模型**） | `.setMaxSelectNumber(5)`（**配了规则后无效**：不互斥=各 `max` 累加，互斥=取最大 `max`） |
 | GIF 不占图片额度 | `.setGifCountsAsImage(false)` |
 
 > ⚠️ **`setMaxSelectNumber` 是旧模型的"合计上限"**：只要调用了 `setSelectRules(...)`，
