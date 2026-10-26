@@ -417,18 +417,6 @@ class FilePicker {
             return this
         }
 
-        /** 进入选择器后直接拉起系统相机（默认 false） */
-        var mOpenCameraOnStart: Boolean = false
-
-        /**
-         * 进入选择器后**直接拉起系统相机**（默认 false），适合"从外部直接拍照/录像"的场景。
-         *
-         * - 相机类型由 [setSelectType] 决定：视频类型（`VIDEO`）→ 录像；其它类型 → 拍照
-         * - 拍完确定后走正常结果链路：单图模式 + `setEditOnClickEnable(true)` → 进编辑弹窗；
-         *   `setAvatarCropMode(true)` → 进头像裁剪；视频无编辑，直接返回
-         * - 用户取消拍摄 → 落到选择器网格，可继续选图
-         * - 不需要再开 `setShowCameraEntry(true)`（入口显不显示不影响直接拉起）
-         */
         /** 直接相机：完全不经过图片列表，直接相机 → 编辑/裁剪 → 回调 */
         var mOpenCameraDirect: Boolean = false
 
@@ -441,19 +429,11 @@ class FilePicker {
          * - 图片 + [setAvatarCropMode] → 拍完直接进 1:1 裁剪页
          * - 图片（无编辑）→ 直接回调原图
          *
-         * 与 [setOpenCameraOnStart] 的区别：后者会先起选择器（主页闪一下）再拉相机；
-         * 本模式通过无界面 Fragment 直接拉相机，**全程不出现图片列表**。
-         *
          * 注意：该模式走回调式 API（`FilePicker.with(activity/fragment)` +
          * `setOnSelectCallback`），不支持 startActivityForResult 结果返回。
          */
         fun setOpenCameraDirect(enable: Boolean): Builder {
             this.mOpenCameraDirect = enable
-            return this
-        }
-
-        fun setOpenCameraOnStart(enable: Boolean): Builder {
-            this.mOpenCameraOnStart = enable
             return this
         }
 
@@ -558,26 +538,6 @@ class FilePicker {
                     )
                 }
                 mCropAspect = 0f
-                if (mOpenCameraOnStart) {
-                    // 进入即拍照/录像：外部希望"拍完确定就返回"，强制单选 + 单击
-                    if (mMaxSelectNumber != 1) {
-                        FilePickerLog.w(
-                            "FilePicker",
-                            "进入即拍照强制单选：忽略 setMaxSelectNumber(${mMaxSelectNumber})，实际按 1 处理",
-                        )
-                    }
-                    if (mSelectRulesUsed) {
-                        FilePickerLog.w(
-                            "FilePicker",
-                            "进入即拍照忽略 setSelectRules：该模式固定单选，规则配置不生效",
-                        )
-                        mSelectRules = mutableListOf()
-                        mSelectRulesUsed = false
-                    }
-                    mMaxSelectNumber = 1
-                    mSingleClickEnable = true
-                    return null
-                }
                 if (mEditOnClick) {
                     if (mMaxSelectNumber != 1) {
                         FilePickerLog.w(
@@ -809,7 +769,6 @@ class FilePicker {
                             intent.putExtra("cropQuality", bd.mCropQuality)
                             intent.putExtra("editInPreview", bd.mEditInPreview)
                             intent.putExtra("editOnClick", bd.mEditOnClick)
-                            intent.putExtra("openCameraOnStart", bd.mOpenCameraOnStart)
                             intent.putExtra("editCacheDir", bd.mEditCacheDir)
                             bd.applySelectRuleExtras(intent, selectRulesEngine)
                             FilePickerViewModel.userUseSelectDataList.clear()
@@ -856,7 +815,6 @@ class FilePicker {
                             intent.putExtra("cropQuality", bd.mCropQuality)
                             intent.putExtra("editInPreview", bd.mEditInPreview)
                             intent.putExtra("editOnClick", bd.mEditOnClick)
-                            intent.putExtra("openCameraOnStart", bd.mOpenCameraOnStart)
                             intent.putExtra("editCacheDir", bd.mEditCacheDir)
                         bd.applySelectRuleExtras(intent, selectRulesEngine)
                         FilePickerViewModel.userUseSelectDataList.clear()
