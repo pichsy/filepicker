@@ -46,7 +46,7 @@
 ```kotlin
 dependencies {
     // 基础组件库 （必须）
-    implementation("com.gitee.pichs:filepicker:8.0.0")
+    implementation("com.gitee.pichs:filepicker:8.0.1")
 
     // 基础组件库 （必须）
     implementation("com.gitee.pichs:xwidget:5.8.1")
@@ -89,7 +89,7 @@ dependencies {
 # libs.version.toml中写法
 [versions]
 xwidget="5.8.1"
-filepicker="8.0.0"
+filepicker="8.0.1"
 brv="1.6.1"
 basepopup="3.2.1"
 glide="4.16.0"
@@ -774,6 +774,37 @@ FilePicker.with(this)
   不要再设置 `setAvatarCropAspectRatio`（二者是不同入口）。
 
 ## 升级日志
+
+### 8.0.1
+
+> 8.0.0 之后的修复版：头像裁剪返回稳定成品路径、编辑/裁剪页文案全部收进 UIConfig（完整多语言）。
+
+#### 修复
+
+* **头像裁剪返回成品路径**：以前头像裁剪返回的是**临时缓存文件**路径（返回后被异步清理会失效）；
+  现在和编辑弹窗一致，裁剪确认后先把成品发布到系统相册 `Pictures/filepicker/`，
+  返回给调用方的 `MediaEntity.path` 就是稳定可用的成品路径。
+* **文档示例修正**：README 结果回调示例改成使用 `entity.path`。
+  （返回结果里 `editedPath` 已清空，原示例打印 `editedPath` 恒为 null，会误导接入方。）
+
+#### 新增（多语言 i18n）
+
+* 编辑页 / 裁剪页**所有文案**收进 `FilePickerUIConfig`，不再硬编码中文，接入方按自己 App 的语言注入即可：
+  | 分类 | 字段 |
+  |---|---|
+  | 顶栏 | `editCancelText`、`editDoneText`、`editUndoLabel`、`editRedoLabel` |
+  | 主菜单工具名 | `editToolBrushLabel`、`editToolTextLabel`、`editToolCropLabel`、`editToolMosaicLabel` |
+  | 二级面板 | `editBrushSizeLabel`、`editTextFontModeLabel`、`editTextBgModeLabel`、`editColorDotLabelFormat`、`mosaicPixelLabel`、`mosaicBlurLabel`、`editEraserLabel` |
+  | 裁剪页 | `cropRotateLabel`、`cropMirrorLabel`、`cropResetText`、`cropCancelLabel`、`cropConfirmLabel` |
+  | 提示 | `editLoadImageFailedToastContent`、`editSaveFailedToastContent` |
+* 说明：`setAvatarCropResetText("还原")` 只是便捷方法，内部写的就是 `uiConfig.cropResetText`；
+  完整多语言建议统一用 `FilePickerUIConfig` 配置（见 README「多语言（i18n）」小节）。
+* 所有文案字段都有中文默认值，不传也能正常使用。
+
+#### 升级建议
+
+* 从 8.0.0 升级：无 API 变更（仅新增 UIConfig 字段 + 修复头像裁剪返回路径），
+  想做多语言时把 `FilePickerUIConfig` 的文案字段换成自己的 `getString(...)` 即可。
 
 ### 8.0.0
 
