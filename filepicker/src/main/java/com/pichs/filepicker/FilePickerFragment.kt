@@ -92,6 +92,8 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
 
     /** 权限申请期间要记住用户点的是哪半边（拍照 / 录像） */
     private var pendingCaptureIsVideo = false
+    /** "进入即拍照"是否已触发过（避免重建时重复拉起相机） */
+    private var autoCameraStarted = false
 
     /**
      * CAMERA 权限。库自己不声明这个权限，只在**宿主声明了却没授权**时才会走到这里 ——
@@ -141,6 +143,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
 
         // 拍摄途中宿主被回收再回来时，认领回那次未完成的输出（回执已经由 ActivityResult 框架补发）
         restorePendingCapture(savedInstanceState)
+        maybeStartCameraOnLaunch()
 
         if (!isSelectTypeEqualsAll(viewModel.selectType.value) || viewModel.uiConfig.isHideSelectTab) {
             binding.selectTypeTabLayout.isVisible = false
@@ -1296,6 +1299,19 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
             adapter.addHeader(model)
             isCameraEntryAttached = true
         }
+    }
+
+    /** 宿主配置了"进入即拍照/录像"：页面准备好后直接拉起系统相机（只触发一次） */
+    private fun maybeStartCameraOnLaunch() {
+        if (autoCameraStarted) return
+        if (!viewModel.openCameraOnStart.value) return
+        autoCameraStarted = true
+        val isVideo = viewModel.selectType.value == FilePickerSelectType.VIDEO
+        FilePickerLog.d("FilePickerFragment", "进入即拍照: isVideo=$isVideo")
+        view?.postDelayed({
+            if (!isAdded || isDetached) return@postDelayed
+            startCapture(isVideo)
+        }, 250)
     }
 
     private fun startCapture(isVideo: Boolean) {

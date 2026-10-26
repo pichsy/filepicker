@@ -36,7 +36,7 @@
 | 3 | **头像裁剪** | `setAvatarCropMode(true)` + 固定比例，点图直接进 1:1 裁剪页 | [3.2 头像裁剪](#32-头像裁剪独立裁剪页) |
 | 4 | **预览** | 单图预览（可编辑）、多选预览（可逐张编辑）、底部已选缩略图条 | [基本用法](#二基本用法) |
 | 5 | **分类型限量 / 互斥** | 「图片 9 张 + 视频 1 个」「必须选够」「二选一」 | [基本用法 §6](#6-按类型限量图片-n-张--视频-m-个--互斥) |
-| 6 | **相机入口** | 拍照 / 录像后回填（头像模式下拍完直接进裁剪页） | [基本用法 §5](#5-拍照--录像入口默认关闭) |
+| 6 | **相机入口 / 进入即拍** | 网格内拍照入口；或 `setOpenCameraOnStart(true)` 直接拉相机，拍完即返回 | [基本用法 §5](#5-拍照--录像入口默认关闭) |
 | 7 | **多类型文件** | 音频、文档、PDF、APK、压缩包、自定义后缀 | [基本用法 §3](#3-选择文件音频--文档--压缩包) |
 | 8 | **UI 配置 / 多语言** | 文案、颜色、图标、编辑页完整 i18n | [FilePickerUIConfig](#ui-自定义配置-filepickeruiconfig) |
 | 9 | **编辑产物 / 缓存** | 成品发布到 `Pictures/filepicker/`，返回真实路径；临时缓存返回时异步清理 | [编辑结果说明](#编辑结果说明) |
@@ -568,6 +568,33 @@ FilePicker.with(this)
 * 想保留"先勾选、再确认"的流程但又要裁剪，请用编辑弹窗里的裁剪（`setEditInPreviewEnable(true)`），
   不要再设置 `setAvatarCropAspectRatio`（二者是不同入口）。
 
+### 3.3 直接进入拍照 / 录像（外部拉起相机）
+
+> 适合"外部 App 点一下按钮 → 直接拍照/录像 → 拍完确定就拿到结果"的场景，不用先进图库网格。
+
+```kotlin
+FilePicker.with(this)
+    .setSelectType(FilePickerSelectType.ofImage())  // 视频用 ofVideo()
+    .setOpenCameraOnStart(true)      // ← 进入选择器立刻拉起系统相机
+    .setEditOnClickEnable(true)      // 可选：拍完直接进编辑弹窗（图片）
+    .setAvatarCropMode(true)         // 可选：拍完直接进头像裁剪（图片）
+    .start()
+```
+
+| 操作 | 行为 |
+|---|---|
+| 进入选择器 | 自动拉起系统相机（`ofVideo()` → 录像；其它类型 → 拍照） |
+| 拍完点确定（图片） | `setEditOnClickEnable(true)` → 进编辑弹窗；`setAvatarCropMode(true)` → 进头像裁剪；都没开 → **直接返回原图** |
+| 拍完点确定（视频） | 视频没有编辑，**直接返回视频** |
+| 相机里取消 | 落到选择器网格，可继续选图/再拍 |
+| 需要拍照入口 UI | 不用开 `setShowCameraEntry(true)`；该开关只管网格里的入口显不显示 |
+
+约束（库强制，warn 日志提示）：
+
+* 自动**强制单选 + 单击返回**（`setMaxSelectNumber` / `setSelectRules` 被忽略）——"拍完确定就返回"依赖这个；
+* 需要宿主在 Manifest 声明 `CAMERA`（库不声明；宿主声明了但没授权时，库会先申请权限）；
+* 视频确认后返回的是相机产出的视频路径；图片若走了编辑/头像裁剪，返回编辑后成品。
+
 ## 四、API 文档
 
 ### FilePicker
@@ -750,6 +777,7 @@ FilePicker.with(this)
 | `setAvatarCropResetText(t)`     | 裁剪页「还原」文案（等价 `uiConfig.cropResetText`）            |
 | `setEditInPreviewEnable(enable)`| **预览页编辑开关**（默认 `false`）；开启后单图/多选预览出现「编辑」        |
 | `setEditOnClickEnable(enable)`  | **单图点击直接编辑开关**（默认 `false`）；点图直接弹编辑弹窗，完成即返回、取消继续选 |
+| `setOpenCameraOnStart(enable)`  | **进入即拍开关**（默认 `false`）；进选择器直接拉起系统相机，拍完确定即返回（视频直接返回，图片可进编辑） |
 | `setEditCacheDir(path)`         | 编辑临时缓存目录（默认 `Android/data/<包名>/cache/filepicker/`） |
 | `start()`                       | 启动选择器                                            |
 

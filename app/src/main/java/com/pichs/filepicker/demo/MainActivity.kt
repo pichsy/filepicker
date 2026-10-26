@@ -410,6 +410,8 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
         val editInPreview = binding.cbEditPreview.isChecked
         // 点击图片直接编辑：单选，点图即弹编辑弹窗，完成后直接返回
         val editOnClick = binding.cbEditOnClick.isChecked
+        // 进入即拍照/录像：直接拉起系统相机
+        val openCameraOnStart = binding.cbOpenCamera.isChecked
         val (rules, useNewModel) = buildSelectRules()
         if (selectedRuleMode != RuleMode.NONE && !useNewModel) {
             Toast.makeText(this, "没填图片/视频数量，按「最大选择数量」执行", Toast.LENGTH_SHORT).show()
@@ -448,6 +450,9 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
         }
         if (editOnClick) {
             builder.setEditOnClickEnable(true)
+        }
+        if (openCameraOnStart) {
+            builder.setOpenCameraOnStart(true)
         }
 
         // 选用新模型：分类型限量 + 互斥；模式为"无"时完全走旧逻辑

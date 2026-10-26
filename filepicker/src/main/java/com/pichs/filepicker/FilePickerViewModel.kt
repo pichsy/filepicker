@@ -76,6 +76,9 @@ class FilePickerViewModel : ViewModel() {
     /** 单图点击直接进入编辑弹窗 */
     val editOnClick = MutableStateFlow(false)
 
+    /** 进入选择器后直接拉起系统相机 */
+    val openCameraOnStart = MutableStateFlow(false)
+
     /**
      * 本次选择内的编辑覆盖：key = 原图 path。
      * 编辑只是覆盖（原图实体身份不变），所以选中顺序/数量/规则完全不受影响。
