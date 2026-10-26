@@ -25,11 +25,44 @@
 
 * 或者：点击下载 [app-debug.apk](app/release/app-debug.apk)
 
-# 依赖库，都是常用库，强烈建议 项目使用。
+## 功能总览
+
+> 按重要度排序：先"选图"，再"编辑"，再"头像裁剪"，最后是外围能力。
+
+| 优先级 | 能力 | 说明 | 入口 |
+|---|---|---|---|
+| 1 | **图片 / 视频 / 文件选择** | 图库网格、滑动选择、单选/多选、数量与大小限制 | [基本用法](#二基本用法) |
+| 2 | **图片编辑** | 画笔（涂鸦）、文字、裁剪、马赛克；会话级覆盖不改原图，完成后发布相册 | [3.1 图片编辑](#31-图片编辑画笔--文字--裁剪--马赛克) |
+| 3 | **头像裁剪** | `setAvatarCropMode(true)` + 固定比例，点图直接进 1:1 裁剪页 | [3.2 头像裁剪](#32-头像裁剪独立裁剪页) |
+| 4 | **预览** | 单图预览（可编辑）、多选预览（可逐张编辑）、底部已选缩略图条 | [基本用法](#二基本用法) |
+| 5 | **分类型限量 / 互斥** | 「图片 9 张 + 视频 1 个」「必须选够」「二选一」 | [基本用法 §6](#6-按类型限量图片-n-张--视频-m-个--互斥) |
+| 6 | **相机入口** | 拍照 / 录像后回填（头像模式下拍完直接进裁剪页） | [基本用法 §5](#5-拍照--录像入口默认关闭) |
+| 7 | **多类型文件** | 音频、文档、PDF、APK、压缩包、自定义后缀 | [基本用法 §3](#3-选择文件音频--文档--压缩包) |
+| 8 | **UI 配置 / 多语言** | 文案、颜色、图标、编辑页完整 i18n | [FilePickerUIConfig](#ui-自定义配置-filepickeruiconfig) |
+| 9 | **编辑产物 / 缓存** | 成品发布到 `Pictures/filepicker/`，返回真实路径；临时缓存返回时异步清理 | [编辑结果说明](#编辑结果说明) |
+
+<img src="pics/img2.gif" width="220" alt="filepicker 效果演示" />
+
+## 目录
+
+| 章节 | 内容 |
+|---|---|
+| [一、快速接入](#一快速接入) | 依赖版本、Gradle 接入 |
+| [二、基本用法](#二基本用法) | Activity / Fragment 启动、选择文件、拍照、分类型限量 |
+| [三、功能模块](#三功能模块) | 图片编辑（画笔/文字/裁剪/马赛克）、头像裁剪 |
+| [四、API 文档](#四api-文档) | FilePicker、Builder、FilePickerSelectType、FilePickerUIConfig |
+| [五、常见问题与温馨提示](#五常见问题与温馨提示) | 常见坑与建议 |
+| [特别鸣谢](#特别鸣谢) | 依赖的开源库 |
+| [版本记录](#版本记录) | 各版本升级日志 |
+
+## 一、快速接入
+
+### 1.1 依赖与版本
+#### 依赖说明
 
 * 下面的这个三方库，本maven仓库中的aar都过滤掉了。建议自己从下面引用，防止库冲突。
 
-## 最新版本
+#### 版本列表
 
 1. \*\*filepicker\
    \*\* ![](https://img.shields.io/maven-metadata/v.svg?label=maven-central\&metadataUrl=https%3A%2F%2Frepo1.maven.org%2Fmaven2%2Fcom%2Fgitee%2Fpichs%2Ffilepicker%2Fmaven-metadata.xml)
@@ -74,7 +107,6 @@ dependencies {
     implementation("androidx.media3:media3-ui:1.7.1")
 }
 
-
 使用libs.version.toml用户引入方式
 dependencies {
     api(libs.filepicker)
@@ -86,7 +118,7 @@ dependencies {
     api(libs.media3.ui)
 }
 
-# libs.version.toml中写法
+#### libs.versions.toml 写法
 [versions]
 xwidget="5.8.1"
 filepicker="8.0.1"
@@ -116,35 +148,7 @@ glide={group="com.github.bumptech.glide",name="glide",version.ref="glide"}
 
 ```
 
-# 动图效果
-
-<img src="pics/img2.gif" width="220" alt="filepicker 效果演示" />
-
-# FilePicker 文件选择器 - 使用文档
-
-`FilePicker` 是一个支持图片、视频、文件选择的轻量级文件选择器，支持自定义配置、选中列表管理、回调返回选中数据。
-
-***
-
-## 快速入口
-
-* **支持 Activity 和 Fragment 调用**
-
-* **支持多选、最大数量控制、文件大小限制**
-
-* **支持返回原图选项**
-
-* **支持 UI 文案与界面定制**
-
-* **支持滑动选择**
-
-* **支持单选立即返回**
-
-* **支持预选列表**
-
-***
-
-## 基本用法
+## 二、基本用法
 
 ### 1. 在 Activity 中启动
 
@@ -358,7 +362,175 @@ FilePicker.with(this)
 
 ***
 
-## API 文档
+## 三、功能模块
+
+### 3.1 图片编辑（画笔 / 文字 / 裁剪 / 马赛克）
+
+> 在预览页直接编辑图片：**画笔（涂鸦）/ 文字 / 裁剪 / 马赛克**。
+> 编辑结果**不修改原图**；点「完成」后把最终合并图保存到系统相册 `Pictures/filepicker/`，
+> 返回给调用方的就是编辑后的真实图片地址。
+
+#### 开启编辑（开关）
+
+编辑入口**默认关闭**，需要显式打开：
+
+```kotlin
+FilePicker.with(this)
+    .setEditInPreviewEnable(true)   // ← 开关：预览页是否出现「编辑」入口
+    .start()
+```
+
+开启后：
+* 单图预览页右上角出现「编辑」
+* 多选预览页（首页选完 N 张 → 预览）同样出现「编辑」，可逐张编辑
+
+#### 完整示例
+
+```kotlin
+FilePicker.with(this)
+    .setSelectType(FilePickerSelectType.ofImage())
+    .setMaxSelectNumber(9)
+    // 1) 预览页可编辑（默认 false，必须显式打开）
+    .setEditInPreviewEnable(true)
+    // 2) 头像裁剪参数不在这里配：见下方「头像裁剪（独立裁剪页）」
+    // 3) 编辑临时缓存目录（可选，默认 Android/data/<包名>/cache/filepicker/）
+    .setEditCacheDir(cacheDir.absolutePath)
+    .setOnSelectCallback { isUseOriginal, list ->
+        list.forEach { entity ->
+            // 返回结果里的 path / uri 就是最终要用的图片地址：
+            //   - 没编辑过 = 原图
+            //   - 编辑过   = 编辑后的成品（Pictures/filepicker/xxx.jpg）
+            // 会话内的临时字段 editedPath 在返回时已清空，这里不需要（也不应该）读它
+            uploadFile(entity.path)
+        }
+    }
+    .start()
+```
+
+#### 编辑结果说明
+
+| 字段 / API | 含义 |
+|---|---|
+| `MediaEntity.path` / `uri` | 原图地址；**从选择器返回结果时，编辑过的条目已换成编辑后的真实地址** |
+| `MediaEntity.editedPath` | 会话内编辑产物地址（预览、已编辑角标使用），返回结果时清空 |
+| `FilePicker.clearEditCache(context)` | 手动清理编辑临时缓存（返回调用方时库已自动异步清理） |
+| `FilePicker.editCacheSize(context)` | 当前编辑缓存大小（字节） |
+| `FilePicker.editCacheDir(context)` | 编辑缓存目录 |
+
+* 编辑产物发布位置：`Pictures/filepicker/filepicker_edit_yyyyMMdd_HHmmss.jpg`
+  （系统相册可见，下次选择可直接再次选中）
+* 头像裁剪：`setAvatarCropAspectRatio(1f)`，单选模式下点图片直接进入 1:1 裁剪页
+
+#### 多语言（i18n）
+
+编辑/裁剪页的所有文案都在 **`FilePickerUIConfig`** 里，接入方按自己 App 的语言注入即可
+（下面的 `getString(...)` 就是各自 `strings.xml` 里的多语言资源）：
+
+```kotlin
+val uiConfig = FilePickerUIConfig(
+    // 顶栏
+    editCancelText = getString(R.string.picker_cancel),
+    editDoneText = getString(R.string.picker_done),
+    editUndoLabel = getString(R.string.picker_undo),
+    editRedoLabel = getString(R.string.picker_redo),
+    // 主菜单工具名（无障碍/读屏用）
+    editToolBrushLabel = getString(R.string.picker_brush),
+    editToolTextLabel = getString(R.string.picker_text),
+    editToolCropLabel = getString(R.string.picker_crop),
+    editToolMosaicLabel = getString(R.string.picker_mosaic),
+    // 二级面板
+    editBrushSizeLabel = getString(R.string.picker_brush_size),
+    editTextFontModeLabel = getString(R.string.picker_text_font_mode),
+    editTextBgModeLabel = getString(R.string.picker_text_bg_mode),
+    editColorDotLabelFormat = getString(R.string.picker_color_format), // 含 %1$d
+    mosaicPixelLabel = getString(R.string.picker_mosaic_pixel),
+    mosaicBlurLabel = getString(R.string.picker_mosaic_blur),
+    editEraserLabel = getString(R.string.picker_eraser),
+    // 裁剪页
+    cropRotateLabel = getString(R.string.picker_rotate),
+    cropMirrorLabel = getString(R.string.picker_mirror),
+    cropResetText = getString(R.string.picker_reset),        // 「还原」
+    cropCancelLabel = getString(R.string.picker_crop_cancel),
+    cropConfirmLabel = getString(R.string.picker_crop_confirm),
+    // 提示
+    editLoadImageFailedToastContent = getString(R.string.picker_load_failed),
+    editSaveFailedToastContent = getString(R.string.picker_save_failed),
+)
+
+FilePicker.with(this)
+    .setUiConfig(uiConfig)
+    .setEditInPreviewEnable(true)
+    .start()
+```
+
+> `setAvatarCropResetText("还原")` 只是一个便捷方法，内部就是写
+> `uiConfig.cropResetText`；做完整多语言时建议统一用 `FilePickerUIConfig` 配。
+> 这些字段都有中文默认值，不传也能正常用。
+
+#### 注意事项
+
+* 编辑是**会话级覆盖**：不改原图文件、不覆盖相册原图；「已编辑」角标显示在缩略图左下角（16dp）。
+* 再次进入选择器并传入 `setSelectedList(list)` 时，编辑过的条目以编辑后的图展示。
+* Android 10+ 发布到相册走 MediaStore（无需存储权限）；9 及以下写公共目录并触发媒体扫描。
+* 文字/画笔比例相对**原图短边**：裁剪只裁图片，已有文字/画笔仍可编辑，越界部分自然裁掉。
+
+### 3.2 头像裁剪（独立裁剪页）
+
+> 头像场景：**单选、点一张图直接进入 1:1 裁剪页**（独立 Activity），裁剪确认后返回成品图。
+> 不经过编辑弹窗，也不修改相册原图。
+
+#### ⚠️ 头像裁剪是「霸道」模式（务必先看）
+
+只有在 `setAvatarCropMode(true)` 开启后，库才会**接管以下参数**（并打 warn 日志），
+不需要、也无法通过其它参数改变"单张 + 直接裁剪"的行为：
+
+| 你设置的参数 | 头像模式下的实际行为 |
+|---|---|
+| `setMaxSelectNumber(n)` | **强制为 1**（传 0/9/任意值都一样，日志会提示被忽略） |
+| `setSingleClickEnable(false)` | **强制为 true**（点图即进裁剪页） |
+| `setSelectRules(...)` | **不生效**（规则模式让位，日志提示被忽略） |
+| `setEditInPreviewEnable(...)` | 不受影响（多选预览编辑照常，但头像模式只有 1 张） |
+
+原因：头像裁剪的结果是"一张裁剪后的头像"，一次只能处理一张，所以数量/规则参数在这里没有意义。
+
+#### 怎么调（最简写法）
+
+```kotlin
+FilePicker.with(this)
+    .setSelectType(FilePickerSelectType.ofImage())
+    .setAvatarCropMode(true)     // ← 总开关（默认 false，不开就没有头像裁剪）
+    .setAvatarCropAspectRatio(1f)      // 可选：比例，不设默认 1:1
+    .setAvatarCropOutputMaxSize(1024)  // 可选：导出最长边（头像 512~1024 足够）
+    .setAvatarCropQuality(95)          // 可选：导出质量 60~100
+    .setOnSelectCallback { _, list ->
+        val avatar = list.firstOrNull()
+        // 返回时 path / uri 已经是裁剪后的成品地址（Pictures/filepicker/xxx.jpg）
+        Log.d("avatar", "裁剪结果: ${avatar?.path}")
+    }
+    .start()
+```
+
+其它比例同理：`setAvatarCropAspectRatio(4f / 3f)`、`setAvatarCropAspectRatio(16f / 9f)`；
+不调用 `setAvatarCropAspectRatio` 时头像模式默认 **1:1**。
+
+#### 生命周期与结果
+
+| 环节 | 说明 |
+|---|---|
+| 入口 | `setAvatarCropMode(true)` 后，点图 → `FilePickerCropActivity`（固定比例裁剪框） |
+| 裁剪页 UI | 取消 / 旋转 / 镜像 / 还原 / 确认裁剪；比例固定，不能拖成其它比例 |
+| 确认裁剪 | 生成成品图 → 发布到系统相册 `Pictures/filepicker/` → 登记媒体库 |
+| 返回结果 | `MediaEntity.path` / `uri` = 裁剪后的成品地址；`editedPath` 仅会话内使用 |
+| 取消 | 关闭裁剪页，不产生任何文件 |
+
+#### 注意
+
+* 头像模式与「预览页编辑」（`setEditInPreviewEnable`）不冲突：多选时仍可编辑；
+  但头像模式固定单选，实际只会处理一张。
+* 想保留"先勾选、再确认"的流程但又要裁剪，请用编辑弹窗里的裁剪（`setEditInPreviewEnable(true)`），
+  不要再设置 `setAvatarCropAspectRatio`（二者是不同入口）。
+
+## 四、API 文档
 
 ### FilePicker
 
@@ -533,7 +705,28 @@ FilePicker.with(this)
 | `setSelectedPathList(list)`     | 设置已选中的文件路径列表                                     |
 | `setUiConfig(config)`           | 设置自定义UI配置                                        |
 | `setOnSelectCallback(callback)` | 设置选择结果回调                                         |
+| `setAvatarCropMode(enable)`     | **头像裁剪总开关**（默认 `false`）。开启后裁剪相关参数才生效，见「[3.2 头像裁剪](#32-头像裁剪独立裁剪页)」 |
+| `setAvatarCropAspectRatio(a)`   | 头像裁剪比例，`1f` = 1:1（不设默认 1:1）；**需先开 `setAvatarCropMode(true)`** |
+| `setAvatarCropOutputMaxSize(s)` | 头像裁剪导出最长边，默认 2048                             |
+| `setAvatarCropQuality(q)`       | 头像裁剪导出质量 60~100，默认 90                           |
+| `setAvatarCropResetText(t)`     | 裁剪页「还原」文案（等价 `uiConfig.cropResetText`）            |
+| `setEditInPreviewEnable(enable)`| **预览页编辑开关**（默认 `false`）；开启后单图/多选预览出现「编辑」        |
+| `setEditCacheDir(path)`         | 编辑临时缓存目录（默认 `Android/data/<包名>/cache/filepicker/`） |
 | `start()`                       | 启动选择器                                            |
+
+> 头像裁剪的旧方法 `setCropAspectRatio` / `setCropOutputMaxSize` / `setCropQuality` /
+> `setCropResetText` 在 8.0.0 起标注 `@Deprecated`，内部转发到新方法，仍可编译使用。
+
+### 图片编辑 / 头像裁剪 API（8.x）
+
+| 分类 | API / 字段 | 说明 |
+|---|---|---|
+| 编辑开关 | `setEditInPreviewEnable(true)` | 预览页出现「编辑」（单图预览 + 多选预览） |
+| 编辑缓存 | `FilePicker.editCacheDir(ctx)` / `editCacheSize(ctx)` / `clearEditCache(ctx)` | 缓存目录 / 大小 / 手动清理（返回调用方时库已自动异步清理） |
+| 头像裁剪 | `setAvatarCropMode(true)` + `setAvatarCropAspectRatio(1f)` | 强制单选 + 点图直接进裁剪页 |
+| 结果字段 | `MediaEntity.path` / `uri` | **最终地址**：未编辑=原图；编辑/头像裁剪=`Pictures/filepicker/` 成品 |
+| 结果字段 | `MediaEntity.editedPath` | 仅**会话内**预览/角标使用，返回结果时清空，宿主不要读 |
+| 成品发布 | 自动 | 编辑/头像裁剪成品发布到 `Pictures/filepicker/` 并登记媒体库（10+ 走 MediaStore；9 及以下写公共目录 + 扫描） |
 
 ### UI 自定义配置 (FilePickerUIConfig)
 
@@ -576,12 +769,41 @@ val uiConfig = FilePickerUIConfig().apply {
 | `cameraEntryFailedToastContent`          | `String`                  | 相机入口启动失败时的提示        | `"无法启动相机"`          |
 | `cameraEntrySizeLimitToastContent`       | `String`                  | 拍摄产物不符合大小限制时的提示     | `"拍摄的文件不符合大小限制，未加入列表"` |
 | `folderNickNameMap`                      | `HashMap<String, String>` | 文件夹名称映射，用于自定义显示名称 | `emptyHashMap()`    |
+| **编辑页** `editCancelText`               | `String`                  | 编辑页顶栏「取消」          | `"取消"`             |
+| `editDoneText`                           | `String`                  | 编辑页顶栏「完成」          | `"完成"`             |
+| `editUndoLabel` / `editRedoLabel`        | `String`                  | 撤销/重做无障碍描述         | `"撤销"` / `"重做"`     |
+| `editToolBrushLabel` / `editToolTextLabel` / `editToolCropLabel` / `editToolMosaicLabel` | `String` | 工具名（无障碍） | 画笔/文字/裁剪/马赛克 |
+| `editBrushSizeLabel`                     | `String`                  | 画笔粗细滑条描述           | `"画笔粗细"`          |
+| `editTextFontModeLabel` / `editTextBgModeLabel` | `String`           | 文字输入底部 T 按钮两种模式描述  | 见源码默认值 |
+| `editColorDotLabelFormat`                | `String`                  | 颜色点描述格式（`%1$d`=颜色值） | `"颜色%1$d"`         |
+| `mosaicPixelLabel` / `mosaicBlurLabel`   | `String`                  | 马赛克两种效果描述          | `"像素马赛克"` / `"雾化"` |
+| `editEraserLabel`                        | `String`                  | 橡皮按钮描述             | `"橡皮"`             |
+| `editLoadImageFailedToastContent`        | `String`                  | 图片加载失败提示           | `"图片加载失败"`        |
+| `editSaveFailedToastContent`             | `String`                  | 保存失败提示             | `"保存失败，请重试"`      |
+| **裁剪页** `cropRotateLabel` / `cropMirrorLabel` | `String`            | 旋转 / 镜像按钮描述        | `"旋转"` / `"镜像"`     |
+| `cropResetText`                          | `String`                  | 「还原」文案             | `"还原"`             |
+| `cropCancelLabel` / `cropConfirmLabel`   | `String`                  | 取消裁剪 / 确认裁剪按钮描述    | `"取消裁剪"` / `"确认裁剪"` |
 
 ***
 
 </br>
-## !!!温馨提示： 如果UI效果与你的需求差距较大，强烈建议下载源码，自己修改一下。fork代码，自己改。!!!
-</br>
+
+## 五、常见问题与温馨提示
+
+### 常见问题
+
+| 问题 | 处理 |
+|---|---|
+| 编辑了图片，但回调里拿不到"编辑产物"？ | 返回结果里编辑过的条目 **`path` 已经是编辑后成品地址**（`Pictures/filepicker/xxx.jpg`），`editedPath` 会清空。直接用 `entity.path` 即可 |
+| 头像裁剪设了 `setCropAspectRatio` 没反应？ | 8.0.0 起必须开总开关：`setAvatarCropMode(true)`；关闭时裁剪参数不生效（warn 日志） |
+| 编辑/裁剪页文案是中文，能做多语言吗？ | 能。全部文案在 `FilePickerUIConfig`（`editCancelText`…`cropResetText`…），传自己 `getString(...)` 即可 |
+| 头像模式下拍照后没进裁剪页？ | 8.0.0 起已修：拍完点确定会先进 1:1 裁剪页；若仍复现，检查是否开了 `setAvatarCropMode(true)` |
+| 编辑产物在系统相册找不到？ | 位置是 `内部存储/Pictures/filepicker/`（媒体库扫描有延迟，部分机型几秒） |
+
+### 温馨提示
+
+如果 UI 效果与你的需求差距较大，强烈建议**下载源码自己改**（fork 后按需调整），
+比提"能不能再改一点"更省时间；布局/图标/文案都集中在 `filepicker/src/main/res` 里。
 
 ***
 
@@ -607,173 +829,7 @@ val uiConfig = FilePickerUIConfig().apply {
 
 感谢你们的无私奉献，让开发变得更加高效和有趣！
 
-## 图片编辑（7.5.0+）
-
-> 在预览页直接编辑图片：**画笔（涂鸦）/ 文字 / 裁剪 / 马赛克**。
-> 编辑结果**不修改原图**；点「完成」后把最终合并图保存到系统相册 `Pictures/filepicker/`，
-> 返回给调用方的就是编辑后的真实图片地址。
-
-### 开启编辑（开关）
-
-编辑入口**默认关闭**，需要显式打开：
-
-```kotlin
-FilePicker.with(this)
-    .setEditInPreviewEnable(true)   // ← 开关：预览页是否出现「编辑」入口
-    .start()
-```
-
-开启后：
-* 单图预览页右上角出现「编辑」
-* 多选预览页（首页选完 N 张 → 预览）同样出现「编辑」，可逐张编辑
-
-### 完整示例
-
-```kotlin
-FilePicker.with(this)
-    .setSelectType(FilePickerSelectType.ofImage())
-    .setMaxSelectNumber(9)
-    // 1) 预览页可编辑（默认 false，必须显式打开）
-    .setEditInPreviewEnable(true)
-    // 2) 头像裁剪参数不在这里配：见下方「头像裁剪（独立裁剪页）」
-    // 3) 编辑临时缓存目录（可选，默认 Android/data/<包名>/cache/filepicker/）
-    .setEditCacheDir(cacheDir.absolutePath)
-    .setOnSelectCallback { isUseOriginal, list ->
-        list.forEach { entity ->
-            // 返回结果里的 path / uri 就是最终要用的图片地址：
-            //   - 没编辑过 = 原图
-            //   - 编辑过   = 编辑后的成品（Pictures/filepicker/xxx.jpg）
-            // 会话内的临时字段 editedPath 在返回时已清空，这里不需要（也不应该）读它
-            uploadFile(entity.path)
-        }
-    }
-    .start()
-```
-
-### 编辑结果说明
-
-| 字段 / API | 含义 |
-|---|---|
-| `MediaEntity.path` / `uri` | 原图地址；**从选择器返回结果时，编辑过的条目已换成编辑后的真实地址** |
-| `MediaEntity.editedPath` | 会话内编辑产物地址（预览、已编辑角标使用），返回结果时清空 |
-| `FilePicker.clearEditCache(context)` | 手动清理编辑临时缓存（返回调用方时库已自动异步清理） |
-| `FilePicker.editCacheSize(context)` | 当前编辑缓存大小（字节） |
-| `FilePicker.editCacheDir(context)` | 编辑缓存目录 |
-
-* 编辑产物发布位置：`Pictures/filepicker/filepicker_edit_yyyyMMdd_HHmmss.jpg`
-  （系统相册可见，下次选择可直接再次选中）
-* 头像裁剪：`setAvatarCropAspectRatio(1f)`，单选模式下点图片直接进入 1:1 裁剪页
-
-### 多语言（i18n）
-
-编辑/裁剪页的所有文案都在 **`FilePickerUIConfig`** 里，接入方按自己 App 的语言注入即可
-（下面的 `getString(...)` 就是各自 `strings.xml` 里的多语言资源）：
-
-```kotlin
-val uiConfig = FilePickerUIConfig(
-    // 顶栏
-    editCancelText = getString(R.string.picker_cancel),
-    editDoneText = getString(R.string.picker_done),
-    editUndoLabel = getString(R.string.picker_undo),
-    editRedoLabel = getString(R.string.picker_redo),
-    // 主菜单工具名（无障碍/读屏用）
-    editToolBrushLabel = getString(R.string.picker_brush),
-    editToolTextLabel = getString(R.string.picker_text),
-    editToolCropLabel = getString(R.string.picker_crop),
-    editToolMosaicLabel = getString(R.string.picker_mosaic),
-    // 二级面板
-    editBrushSizeLabel = getString(R.string.picker_brush_size),
-    editTextFontModeLabel = getString(R.string.picker_text_font_mode),
-    editTextBgModeLabel = getString(R.string.picker_text_bg_mode),
-    editColorDotLabelFormat = getString(R.string.picker_color_format), // 含 %1$d
-    mosaicPixelLabel = getString(R.string.picker_mosaic_pixel),
-    mosaicBlurLabel = getString(R.string.picker_mosaic_blur),
-    editEraserLabel = getString(R.string.picker_eraser),
-    // 裁剪页
-    cropRotateLabel = getString(R.string.picker_rotate),
-    cropMirrorLabel = getString(R.string.picker_mirror),
-    cropResetText = getString(R.string.picker_reset),        // 「还原」
-    cropCancelLabel = getString(R.string.picker_crop_cancel),
-    cropConfirmLabel = getString(R.string.picker_crop_confirm),
-    // 提示
-    editLoadImageFailedToastContent = getString(R.string.picker_load_failed),
-    editSaveFailedToastContent = getString(R.string.picker_save_failed),
-)
-
-FilePicker.with(this)
-    .setUiConfig(uiConfig)
-    .setEditInPreviewEnable(true)
-    .start()
-```
-
-> `setAvatarCropResetText("还原")` 只是一个便捷方法，内部就是写
-> `uiConfig.cropResetText`；做完整多语言时建议统一用 `FilePickerUIConfig` 配。
-> 这些字段都有中文默认值，不传也能正常用。
-
-### 注意事项
-
-* 编辑是**会话级覆盖**：不改原图文件、不覆盖相册原图；「已编辑」角标显示在缩略图左下角（16dp）。
-* 再次进入选择器并传入 `setSelectedList(list)` 时，编辑过的条目以编辑后的图展示。
-* Android 10+ 发布到相册走 MediaStore（无需存储权限）；9 及以下写公共目录并触发媒体扫描。
-* 文字/画笔比例相对**原图短边**：裁剪只裁图片，已有文字/画笔仍可编辑，越界部分自然裁掉。
-
-## 头像裁剪（独立裁剪页）
-
-> 头像场景：**单选、点一张图直接进入 1:1 裁剪页**（独立 Activity），裁剪确认后返回成品图。
-> 不经过编辑弹窗，也不修改相册原图。
-
-### ⚠️ 头像裁剪是「霸道」模式（务必先看）
-
-只有在 `setAvatarCropMode(true)` 开启后，库才会**接管以下参数**（并打 warn 日志），
-不需要、也无法通过其它参数改变"单张 + 直接裁剪"的行为：
-
-| 你设置的参数 | 头像模式下的实际行为 |
-|---|---|
-| `setMaxSelectNumber(n)` | **强制为 1**（传 0/9/任意值都一样，日志会提示被忽略） |
-| `setSingleClickEnable(false)` | **强制为 true**（点图即进裁剪页） |
-| `setSelectRules(...)` | **不生效**（规则模式让位，日志提示被忽略） |
-| `setEditInPreviewEnable(...)` | 不受影响（多选预览编辑照常，但头像模式只有 1 张） |
-
-原因：头像裁剪的结果是"一张裁剪后的头像"，一次只能处理一张，所以数量/规则参数在这里没有意义。
-
-### 怎么调（最简写法）
-
-```kotlin
-FilePicker.with(this)
-    .setSelectType(FilePickerSelectType.ofImage())
-    .setAvatarCropMode(true)     // ← 总开关（默认 false，不开就没有头像裁剪）
-    .setAvatarCropAspectRatio(1f)      // 可选：比例，不设默认 1:1
-    .setAvatarCropOutputMaxSize(1024)  // 可选：导出最长边（头像 512~1024 足够）
-    .setAvatarCropQuality(95)          // 可选：导出质量 60~100
-    .setOnSelectCallback { _, list ->
-        val avatar = list.firstOrNull()
-        // 返回时 path / uri 已经是裁剪后的成品地址（Pictures/filepicker/xxx.jpg）
-        Log.d("avatar", "裁剪结果: ${avatar?.path}")
-    }
-    .start()
-```
-
-其它比例同理：`setAvatarCropAspectRatio(4f / 3f)`、`setAvatarCropAspectRatio(16f / 9f)`；
-不调用 `setAvatarCropAspectRatio` 时头像模式默认 **1:1**。
-
-### 生命周期与结果
-
-| 环节 | 说明 |
-|---|---|
-| 入口 | `setAvatarCropMode(true)` 后，点图 → `FilePickerCropActivity`（固定比例裁剪框） |
-| 裁剪页 UI | 取消 / 旋转 / 镜像 / 还原 / 确认裁剪；比例固定，不能拖成其它比例 |
-| 确认裁剪 | 生成成品图 → 发布到系统相册 `Pictures/filepicker/` → 登记媒体库 |
-| 返回结果 | `MediaEntity.path` / `uri` = 裁剪后的成品地址；`editedPath` 仅会话内使用 |
-| 取消 | 关闭裁剪页，不产生任何文件 |
-
-### 注意
-
-* 头像模式与「预览页编辑」（`setEditInPreviewEnable`）不冲突：多选时仍可编辑；
-  但头像模式固定单选，实际只会处理一张。
-* 想保留"先勾选、再确认"的流程但又要裁剪，请用编辑弹窗里的裁剪（`setEditInPreviewEnable(true)`），
-  不要再设置 `setAvatarCropAspectRatio`（二者是不同入口）。
-
-## 升级日志
+## 版本记录
 
 ### 8.0.1
 
@@ -805,6 +861,12 @@ FilePicker.with(this)
 
 * 从 8.0.0 升级：无 API 变更（仅新增 UIConfig 字段 + 修复头像裁剪返回路径），
   想做多语言时把 `FilePickerUIConfig` 的文案字段换成自己的 `getString(...)` 即可。
+
+#### 文档
+
+* README 重新按 **功能总览 → 快速接入 → 基本用法 → 功能模块 → API → 常见问题 → 版本记录**
+  的重要度顺序排版；新增「图片编辑 / 头像裁剪 API（8.x）」表格、UIConfig 多语言字段表、
+  常见问题 FAQ（含 `path` / `editedPath` 的取值说明）。
 
 ### 8.0.0
 
