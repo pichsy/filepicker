@@ -139,14 +139,16 @@ abstract class BaseTestFragment : Fragment(R.layout.fragment_test_base) {
         }
         labels.forEachIndexed { index, label ->
             val rb = RadioButton(requireContext()).apply {
+                // RadioGroup 靠 id 管理互斥；不设 id 时会出现「多个同时选中」的问题
+                id = View.generateViewId()
                 text = label
                 tag = index
                 setTextColor(0xFFDDDDDD.toInt())
                 textSize = 13f
                 buttonTintList = android.content.res.ColorStateList.valueOf(0xFFFFFFFF.toInt())
-                if (index == checkedIndex) isChecked = true
             }
             rg.addView(rb)
+            if (index == checkedIndex) rb.isChecked = true
         }
         addView(rg)
         return rg
