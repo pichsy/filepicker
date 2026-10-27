@@ -46,6 +46,43 @@
 
 <img src="pics/img2.gif" width="220" alt="filepicker 效果演示" />
 
+## 功能展示
+
+> 以下截图均来自 demo（`app/`），点击图片可看大图；完整交互直接运行 demo 体验。
+
+### demo 首页：一种能力一个 Tab（互不干涉）
+
+<table>
+<tr><td align="center"><a href="docs/images/demo-tab-basic.jpg"><img src="docs/images/demo-tab-basic.jpg" width="150"/></a><br/>普通选择</td><td align="center"><a href="docs/images/demo-tab-rules.jpg"><img src="docs/images/demo-tab-rules.jpg" width="150"/></a><br/>规则</td><td align="center"><a href="docs/images/demo-tab-files.jpg"><img src="docs/images/demo-tab-files.jpg" width="150"/></a><br/>文件</td><td align="center"><a href="docs/images/demo-tab-avatar.jpg"><img src="docs/images/demo-tab-avatar.jpg" width="150"/></a><br/>头像裁剪</td></tr>
+<tr><td align="center"><a href="docs/images/demo-tab-edit-on-click.jpg"><img src="docs/images/demo-tab-edit-on-click.jpg" width="150"/></a><br/>点击编辑</td><td align="center"><a href="docs/images/demo-tab-edit-preview.jpg"><img src="docs/images/demo-tab-edit-preview.jpg" width="150"/></a><br/>预览编辑</td><td align="center"><a href="docs/images/demo-tab-direct-photo.jpg"><img src="docs/images/demo-tab-direct-photo.jpg" width="150"/></a><br/>拍照直出</td><td align="center"><a href="docs/images/demo-tab-direct-video.jpg"><img src="docs/images/demo-tab-direct-video.jpg" width="150"/></a><br/>录像直出</td></tr>
+</table>
+
+### 图片选择与预览
+
+<table>
+<tr><td align="center"><a href="docs/images/picker-image-grid.jpg"><img src="docs/images/picker-image-grid.jpg" width="150"/></a><br/>多选网格（已选 6 张）</td><td align="center"><a href="docs/images/picker-preview.jpg"><img src="docs/images/picker-preview.jpg" width="150"/></a><br/>大图预览 / 编辑入口</td></tr>
+</table>
+
+### 图片编辑（画笔 / 文字 / 裁剪 / 马赛克）
+
+<table>
+<tr><td align="center"><a href="docs/images/editor-brush.jpg"><img src="docs/images/editor-brush.jpg" width="150"/></a><br/>画笔</td><td align="center"><a href="docs/images/editor-brush-color.jpg"><img src="docs/images/editor-brush-color.jpg" width="150"/></a><br/>画笔颜色/粗细</td><td align="center"><a href="docs/images/editor-text.jpg"><img src="docs/images/editor-text.jpg" width="150"/></a><br/>文字输入</td><td align="center"><a href="docs/images/editor-text-done.jpg"><img src="docs/images/editor-text-done.jpg" width="150"/></a><br/>文字效果</td><td align="center"><a href="docs/images/editor-mosaic.jpg"><img src="docs/images/editor-mosaic.jpg" width="150"/></a><br/>马赛克（像素/模糊）</td></tr>
+</table>
+
+### 头像裁剪
+
+<table>
+<tr><td align="center"><a href="docs/images/demo-tab-avatar.jpg"><img src="docs/images/demo-tab-avatar.jpg" width="150"/></a><br/>头像裁剪参数</td><td align="center"><a href="docs/images/avatar-crop-page.jpg"><img src="docs/images/avatar-crop-page.jpg" width="150"/></a><br/>1:1 裁剪页</td></tr>
+</table>
+
+### 文件选择（音频 / 文档 / PDF / APK / 压缩包 / 自定义后缀）
+
+<table>
+<tr><td align="center"><a href="docs/images/file-list-docs.jpg"><img src="docs/images/file-list-docs.jpg" width="150"/></a><br/>PPTS / TXT / PDF</td><td align="center"><a href="docs/images/file-list-word.jpg"><img src="docs/images/file-list-word.jpg" width="150"/></a><br/>Word 文档</td><td align="center"><a href="docs/images/file-list-pdf.jpg"><img src="docs/images/file-list-pdf.jpg" width="150"/></a><br/>PDF / 文档混排</td></tr>
+</table>
+
+---
+
 ## 目录
 
 | 章节 | 内容 |
