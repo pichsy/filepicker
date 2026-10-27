@@ -1049,7 +1049,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
      * - 否则维持原行为：直接回调选择器。
      */
     private fun handleSingleClick(item: MediaEntity) {
-        if (viewModel.cropAspect.value > 0f && item.isImage()) {
+        if (viewModel.avatarCropMode.value && item.isImage()) {
             launchAvatarCrop(item)
             return
         }
@@ -1095,10 +1095,6 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
     private fun launchAvatarCrop(item: MediaEntity) {
         FilePickerLog.d("FilePickerFragment", "launchAvatarCrop: ${item.path}")
         val aspect = viewModel.cropAspect.value
-        if (aspect <= 0f) {
-            callbackToChooser(arrayListOf(item))
-            return
-        }
         val ctx = context ?: return
         FilePickerCropActivity.start(
             context = ctx,
@@ -1106,6 +1102,9 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
             aspect = aspect,
             outputMaxSize = viewModel.cropOutputMaxSize.value,
             quality = viewModel.cropQuality.value,
+            resizable = viewModel.avatarCropResizable.value,
+            ratioLocked = viewModel.avatarCropRatioLocked.value,
+            frameScale = viewModel.avatarCropFrameScale.value,
             title = "裁剪",
         ) { editedPath ->
             if (editedPath.isNullOrEmpty()) {
@@ -1421,7 +1420,7 @@ class FilePickerFragment : Fragment(), View.OnClickListener {
             // 单击模式的结果恒为 1 张，本来也不存在超上限的问题。
             if (viewModel.isCanSingleClickSelect()) {
                 // 头像裁剪模式：拍到的这张也要进 1:1 裁剪页，而不是直接返回原图
-                if (viewModel.cropAspect.value > 0f && entity.isImage()) {
+                if (viewModel.avatarCropMode.value && entity.isImage()) {
                     launchAvatarCrop(entity)
                 } else if (viewModel.editOnClick.value && entity.isImage()) {
                     launchEditDialogForSingleClick(entity)

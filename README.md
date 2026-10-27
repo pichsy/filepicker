@@ -36,7 +36,7 @@
 |---|---|---|---|
 | 1 | **图片 / 视频 / 文件选择** | 图库网格、滑动选择、单选/多选、数量与大小限制 | [基本用法](#二基本用法) |
 | 2 | **图片编辑** | 画笔（涂鸦）、文字、裁剪、马赛克；会话级覆盖不改原图，完成后发布相册；支持「点击即编辑」 | [3.1 图片编辑](#31-图片编辑画笔--文字--裁剪--马赛克) |
-| 3 | **头像裁剪** | `setAvatarCropMode(true)` + 固定比例，点图直接进 1:1 裁剪页 | [3.2 头像裁剪](#32-头像裁剪独立裁剪页) |
+| 3 | **头像裁剪** | `setAvatarCropMode(true)`；支持固定比例/自由裁剪，框可拖拽、可锁比例、初始大小可调 | [3.2 头像裁剪](#32-头像裁剪独立裁剪页) |
 | 4 | **预览** | 单图预览（可编辑）、多选预览（可逐张编辑）、底部已选缩略图条 | [基本用法](#二基本用法) |
 | 5 | **分类型限量 / 互斥** | 「图片 9 张 + 视频 1 个」「必须选够」「二选一」 | [基本用法 §6](#6-按类型限量图片-n-张--视频-m-个--互斥) |
 | 6 | **相机入口 / 直接相机** | 网格内拍照入口；`setOpenCameraDirect` **完全不经过列表**（仅图片/视频） | [3.3 直接相机](#33-直接打开相机完全不经过图片列表) |
@@ -554,7 +554,32 @@ FilePicker.with(this)
 其它比例同理：`setAvatarCropAspectRatio(4f / 3f)`、`setAvatarCropAspectRatio(16f / 9f)`；
 不调用 `setAvatarCropAspectRatio` 时头像模式默认 **1:1**。
 
-#### 生命周期与结果
+##### 裁剪框大小 / 可拖拽 / 比例锁定（8.2+）
+
+```kotlin
+FilePicker.with(this)
+    .setSelectType(FilePickerSelectType.ofImage())
+    .setAvatarCropMode(true)
+    .setAvatarCropAspectRatio(1f)      // 0 = 自由裁剪；不设置 = 默认 1:1
+    .setAvatarCropResizable(true)      // 框能否拖拽改大小；默认 false
+    .setAvatarCropRatioLocked(false)   // 可拖但不锁比例（自由拉宽拉高）；默认 true
+    .setAvatarCropFrameScale(0.75f)    // 初始框=屏幕短边×0.75（范围 0.05~1）
+    .start()
+```
+
+| `aspect` | `resizable` | `ratioLocked` | 初始框 | 拖拽行为 |
+|---|---|---|---|---|
+| >0（如 1:1） | false（默认） | — | 短边×`frameScale` 居中 | 不能改框，只能平移/双指缩放图片 |
+| >0 | true | **true**（默认） | 同上 | 8 个把手缩放，**比例锁定** |
+| >0 | true | false | 同上 | 8 个把手**自由缩放**（宽高独立，可变形） |
+| 0（自由裁剪） | false | — | 同上 | 不能改框，只能平移/双指缩放图片 |
+| 0（自由裁剪） | true | — | 同上 | 8 个把手自由缩放 |
+
+* `frameScale` 默认 **0.75**（屏幕短边 × 0.75）、范围 **0.05~1**；所有模式初始框都居中
+* `resizable=false` 时**关闭"停手 2 秒自动放大框"**，框不会自己动
+* 以上参数**只作用于头像裁剪页**，编辑弹窗里的裁剪（自由裁剪）完全不受影响
+
+### 生命周期与结果### 生命周期与结果
 
 | 环节 | 说明 |
 |---|---|
@@ -785,7 +810,10 @@ FilePicker.with(this)
 | `setUiConfig(config)`           | 设置自定义UI配置                                        |
 | `setOnSelectCallback(callback)` | 设置选择结果回调                                         |
 | `setAvatarCropMode(enable)`     | **头像裁剪总开关**（默认 `false`）。开启后裁剪相关参数才生效，见「[3.2 头像裁剪](#32-头像裁剪独立裁剪页)」 |
-| `setAvatarCropAspectRatio(a)`   | 头像裁剪比例，`1f` = 1:1（不设默认 1:1）；**需先开 `setAvatarCropMode(true)`** |
+| `setAvatarCropAspectRatio(a)`   | 头像裁剪比例：`0f` = 自由裁剪；`>0` 固定比例（1f=1:1）；不设置默认 1:1；**需先开 `setAvatarCropMode(true)`** |
+| `setAvatarCropResizable(b)`     | 裁剪框能否拖动改大小；默认 `false`（只能平移/缩放图片） |
+| `setAvatarCropRatioLocked(b)`   | 可拖拽时是否锁定比例；默认 `true`（锁比例缩放），`false` = 可随意拉宽拉高（变形） |
+| `setAvatarCropFrameScale(s)`    | 初始裁剪框尺寸占屏幕短边比例；默认 `0.75`，范围 `0.05~1` |
 | `setAvatarCropOutputMaxSize(s)` | 头像裁剪导出最长边，默认 2048                             |
 | `setAvatarCropQuality(q)`       | 头像裁剪导出质量 60~100，默认 90                           |
 | `setAvatarCropResetText(t)`     | 裁剪页「还原」文案（等价 `uiConfig.cropResetText`）            |

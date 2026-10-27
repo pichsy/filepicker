@@ -65,6 +65,15 @@ class FilePickerViewModel : ViewModel() {
     val maxFileSize = MutableStateFlow(0L)
     val minFileSize = MutableStateFlow(0L)
 
+    /** 头像裁剪模式（由总开关控制；与 cropAspect 解耦，aspect=0 也能进裁剪页） */
+    val avatarCropMode = MutableStateFlow(false)
+    /** 头像裁剪框能否拖动改大小 */
+    val avatarCropResizable = MutableStateFlow(false)
+    /** 可拖拽时是否锁定比例 */
+    val avatarCropRatioLocked = MutableStateFlow(true)
+    /** 初始裁剪框尺寸（屏幕短边比例） */
+    val avatarCropFrameScale = MutableStateFlow(0.75f)
+
     /** 裁剪配置：aspect > 0 表示固定比例（头像 1:1）；<= 0 表示自由裁剪 */
     val cropAspect = MutableStateFlow(0f)
     val cropOutputMaxSize = MutableStateFlow(2048)

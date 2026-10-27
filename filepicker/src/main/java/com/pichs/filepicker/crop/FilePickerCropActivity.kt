@@ -38,6 +38,9 @@ class FilePickerCropActivity : Activity() {
         private const val EXTRA_ASPECT = "crop_aspect"
         private const val EXTRA_OUTPUT_MAX = "crop_output_max"
         private const val EXTRA_QUALITY = "crop_quality"
+        private const val EXTRA_RESIZABLE = "crop_resizable"
+        private const val EXTRA_RATIO_LOCKED = "crop_ratio_locked"
+        private const val EXTRA_FRAME_SCALE = "crop_frame_scale"
         private const val EXTRA_TITLE = "crop_title"
 
         const val RESULT_PATH = "crop_result_path"
@@ -52,6 +55,9 @@ class FilePickerCropActivity : Activity() {
          * 启动裁剪页。
          *
          * @param aspect 固定比例（1f = 1:1 头像）；<= 0 表示自由裁剪
+         * @param resizable 裁剪框是否允许拖动改大小；false = 固定大小框，只能平移/缩放图片
+         * @param ratioLocked 可拖拽时是否锁定比例；false = 可随意拉宽拉高（变形）
+         * @param frameScale 初始框尺寸占屏幕短边的比例（0.05~1）
          * @param onResult 裁剪结果文件绝对路径；取消/失败为 null
          */
         fun start(
@@ -60,6 +66,9 @@ class FilePickerCropActivity : Activity() {
             aspect: Float,
             outputMaxSize: Int,
             quality: Int,
+            resizable: Boolean = true,
+            ratioLocked: Boolean = true,
+            frameScale: Float = 0.75f,
             title: String = "裁剪",
             onResult: (String?) -> Unit,
         ) {
@@ -75,6 +84,9 @@ class FilePickerCropActivity : Activity() {
                 putExtra(EXTRA_ASPECT, aspect)
                 putExtra(EXTRA_OUTPUT_MAX, outputMaxSize)
                 putExtra(EXTRA_QUALITY, quality)
+                putExtra(EXTRA_RESIZABLE, resizable)
+                putExtra(EXTRA_RATIO_LOCKED, ratioLocked)
+                putExtra(EXTRA_FRAME_SCALE, frameScale)
                 putExtra(EXTRA_TITLE, title)
                 if (context !is Activity) addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
@@ -98,6 +110,9 @@ class FilePickerCropActivity : Activity() {
     private var sourceUri: Uri? = null
     private var sourcePath: String? = null
     private var aspect = 0f
+    private var cropResizable = true
+    private var cropRatioLocked = true
+    private var cropFrameScale = 0.75f
     private var outputMaxSize = 2048
     private var quality = 90
     private var title = "裁剪"
@@ -164,6 +179,9 @@ class FilePickerCropActivity : Activity() {
         sourceUri = intent.getStringExtra(EXTRA_URI)?.let { Uri.parse(it) }
         sourcePath = intent.getStringExtra(EXTRA_PATH)
         aspect = intent.getFloatExtra(EXTRA_ASPECT, 0f)
+        cropResizable = intent.getBooleanExtra(EXTRA_RESIZABLE, true)
+        cropRatioLocked = intent.getBooleanExtra(EXTRA_RATIO_LOCKED, true)
+        cropFrameScale = intent.getFloatExtra(EXTRA_FRAME_SCALE, 0.75f)
         outputMaxSize = intent.getIntExtra(EXTRA_OUTPUT_MAX, 2048)
         quality = intent.getIntExtra(EXTRA_QUALITY, 90)
         title = intent.getStringExtra(EXTRA_TITLE) ?: "裁剪"
@@ -194,6 +212,9 @@ class FilePickerCropActivity : Activity() {
                     return@post
                 }
                 bitmap = decoded
+                cropView.setCropResizable(cropResizable)
+                cropView.setCropRatioLocked(cropRatioLocked)
+                cropView.setCropFrameScale(cropFrameScale)
                 cropView.setBitmap(decoded, aspect)
                 progressBar.visibility = View.GONE
                 updateResetState()

@@ -107,6 +107,10 @@ class FilePickerActivity : AppCompatActivity() {
         viewModel.slideChooseEnable.value = slideChooseEnable
         viewModel.showCameraEntry.value = showCameraEntry
         viewModel.cropAspect.value = intent.getFloatExtra("cropAspect", 0f)
+        viewModel.avatarCropMode.value = intent.getBooleanExtra("avatarCropMode", false)
+        viewModel.avatarCropResizable.value = intent.getBooleanExtra("avatarCropResizable", false)
+        viewModel.avatarCropRatioLocked.value = intent.getBooleanExtra("avatarCropRatioLocked", true)
+        viewModel.avatarCropFrameScale.value = intent.getFloatExtra("avatarCropFrameScale", 0.75f)
         viewModel.cropOutputMaxSize.value = intent.getIntExtra("cropOutputMaxSize", 2048)
         viewModel.cropQuality.value = intent.getIntExtra("cropQuality", 90)
         viewModel.editInPreview.value = intent.getBooleanExtra("editInPreview", false)

@@ -44,6 +44,9 @@ class CropView @JvmOverloads constructor(
     /** 原始图片（首次载入、未裁剪前）的短边像素；文字/笔刷比例都相对它，裁剪不影响 */
     private var imageShortPx = 1f
 
+    /** 裁剪框是否允许拖动改变大小（默认 true；头像裁剪页由 API 控制，默认 false） */
+    private var frameResizable = true
+
     /** 编辑页加的文字图层（锚点/字号都是相对当前显示图片的比例） */
     private val textLayers = mutableListOf<TextLayer>()
 
@@ -118,6 +121,12 @@ class CropView @JvmOverloads constructor(
 
     /** 裁剪框离屏幕左右边缘的固定间距（横图竖图都不能拖到屏幕边缘） */
     private val cropSideMargin = 22f * resources.displayMetrics.density
+
+    /** 头像裁剪页初始框尺寸占屏幕短边的比例；null = 旧行为（编辑弹窗：自由裁剪=整张图） */
+    private var frameScalePercent: Float? = null
+
+    /** 可拖拽时是否锁定比例（头像页用；false = 可随意拉宽拉高变形） */
+    private var ratioLocked = true
 
     /** 已确认的裁剪区域（相对当前显示图片的归一化坐标；null = 还没裁剪） */
     private var pendingCrop: CropGeometry.RectF2? = null
@@ -507,6 +516,14 @@ class CropView @JvmOverloads constructor(
         invalidate()
     }
 
+    /** 屏幕内的裁剪安全区（不含图片交集）：框放大到超出当前图片显示区时，靠放大图片来覆盖 */
+    private fun cropSafeRect(): RectF = RectF(
+        cropSideMargin,
+        cropContentTop.toFloat(),
+        width - cropSideMargin,
+        height - cropContentBottom.toFloat(),
+    )
+
     /**
      * 裁剪框可活动的安全区域：左右各留 [cropSideMargin]，顶部到状态栏下方一点，
      * 底部到裁剪专属菜单上方；图片比安全区小时取交集。
@@ -567,6 +584,31 @@ class CropView @JvmOverloads constructor(
         pendingCrop?.let { return it }
         return if (cropMode) cropRatio() else CropGeometry.RectF2(0f, 0f, 1f, 1f)
     }
+
+    /** 初始裁剪框尺寸（占屏幕短边比例，0.05~1；头像裁剪页传入） */
+    fun setCropFrameScale(scale: Float) {
+        frameScalePercent = scale.coerceIn(0.05f, 1f)
+        if (initialized) initLayout()
+        invalidate()
+    }
+
+    /** 拖拽改框时是否锁定比例（默认 true） */
+    fun setCropRatioLocked(enable: Boolean) {
+        ratioLocked = enable
+    }
+
+    /** 是否允许拖动裁剪框改大小（false 时只能平移/缩放图片） */
+    fun setCropResizable(enable: Boolean) {
+        if (frameResizable == enable) return
+        frameResizable = enable
+        if (initialized) {
+            if (!frameResizable) cancelIdleAutoFit()
+            initLayout()
+        }
+        invalidate()
+    }
+
+    fun isCropResizable(): Boolean = frameResizable
 
     fun isPaintEraser(): Boolean = paintEraser
 
@@ -912,6 +954,7 @@ class CropView @JvmOverloads constructor(
     // ------------------------------------------------------------------
 
     private fun scheduleIdleAutoFit() {
+        if (!frameResizable || frameScalePercent != null) return
         android.util.Log.d("FilePickerCropView", "安排空闲自动放大 3s")
         cancelIdleAutoFit()
         val runnable = Runnable { autoFitCropFrame() }
@@ -929,7 +972,7 @@ class CropView @JvmOverloads constructor(
      * 同时让框里的内容保持在框中心，动画过渡；和微信停手后的自动回弹一致。
      */
     private fun autoFitCropFrame() {
-        if (!cropMode || !initialized) return
+        if (!cropMode || !initialized || !frameResizable) return
         val bmp = bitmap ?: return
         if (frame.width() <= 1f || frame.height() <= 1f) return
         val safe = cropSafeBounds()
@@ -1021,8 +1064,8 @@ class CropView @JvmOverloads constructor(
         centerY = height / 2f
         val fitScale = min(width.toFloat() / bmp.width, height.toFloat() / bmp.height)
         if (aspectRatio > 0f) {
-            // 固定框：边长 = 屏幕短边 * 0.86，居中；横图竖图框一样大
-            val side = min(width, height) * 0.86f
+            // 固定框：边长 = 屏幕短边 * frameScale（默认 0.6），居中
+            val side = min(width, height) * (frameScalePercent ?: 0.75f)
             val frameW: Float
             val frameH: Float
             if (aspectRatio >= 1f) {
@@ -1042,11 +1085,19 @@ class CropView @JvmOverloads constructor(
             minScale = max(frameW / bmp.width, frameH / bmp.height)
             scale = minScale
         } else {
-            // 自由裁剪：初始框 = 整张图
-            scale = fitScale
-            updateImageRect()
-            frame.set(imageRect)
-            minScale = fitScale
+            if (frameResizable && frameScalePercent == null) {
+                // 编辑弹窗的自由裁剪（旧行为）：初始框 = 整张图
+                scale = fitScale
+                updateImageRect()
+                frame.set(imageRect)
+                minScale = fitScale
+            } else {
+                // 头像页（或不可拖）：居中小框，尺寸 = 屏幕短边 * frameScale
+                val side = min(width, height) * (frameScalePercent ?: 0.75f)
+                frame.set(centerX - side / 2f, centerY - side / 2f, centerX + side / 2f, centerY + side / 2f)
+                minScale = max(side / bmp.width, side / bmp.height)
+                scale = minScale
+            }
         }
         maxScale = minScale * MAX_ZOOM
         updateImageRect()
@@ -1062,12 +1113,19 @@ class CropView @JvmOverloads constructor(
 
     private fun initialFrameFor(bmp: Bitmap): RectF {
         if (aspectRatio > 0f) {
-            val side = min(width, height) * 0.86f
+            val side = min(width, height) * (frameScalePercent ?: 0.75f)
             val fw = if (aspectRatio >= 1f) side * aspectRatio else side
             val fh = if (aspectRatio >= 1f) side else side / aspectRatio
             return RectF(
                 width / 2f - fw / 2f, height / 2f - fh / 2f,
                 width / 2f + fw / 2f, height / 2f + fh / 2f,
+            )
+        }
+        if (!frameResizable || frameScalePercent != null) {
+            val side = min(width, height) * (frameScalePercent ?: 0.75f)
+            return RectF(
+                width / 2f - side / 2f, height / 2f - side / 2f,
+                width / 2f + side / 2f, height / 2f + side / 2f,
             )
         }
         return CropGeometry.fitCenter(bmp.width, bmp.height, width, height).toRectF()
@@ -1108,7 +1166,7 @@ class CropView @JvmOverloads constructor(
                 lastTouchY = event.y
                 lastFocusX = event.x
                 lastFocusY = event.y
-                draggingHandle = if (cropMode && aspectRatio <= 0f) {
+                draggingHandle = if (cropMode && frameResizable) {
                     val hit = CropGeometry.hitTest(frame.toGeometry(), event.x, event.y, touchRadius)
                     if (hit == CropGeometry.Handle.INSIDE) CropGeometry.Handle.NONE else hit
                 } else {
@@ -1533,7 +1591,7 @@ class CropView @JvmOverloads constructor(
     }
 
     private fun resizeFrame(dx: Float, dy: Float) {
-        val bounds = cropSafeBounds().toGeometry()
+        val bounds = cropSafeRect().toGeometry()
         val minSize = 48f * density
         val resized = CropGeometry.resizeFrame(
             frame = frame.toGeometry(),
@@ -1542,10 +1600,31 @@ class CropView @JvmOverloads constructor(
             dy = dy,
             bounds = bounds,
             minSize = minSize,
-            aspect = if (aspectRatio > 0f) aspectRatio else null,
+            aspect = if (aspectRatio > 0f && ratioLocked) aspectRatio else null,
         )
         frame.set(resized.left, resized.top, resized.right, resized.bottom)
-        minScale = computeMinScale()
+        // 固定比例 + 锁定：强制精确锁定比例（CropGeometry 的夹紧可能带来轻微变形）
+        if (aspectRatio > 0f && ratioLocked) {
+            val safe = cropSafeRect()
+            var w = frame.width()
+            var h = frame.height()
+            if (w > 0f && h > 0f) {
+                if (w / h > aspectRatio) w = h * aspectRatio else h = w / aspectRatio
+                val maxW = safe.width()
+                val maxH = safe.height()
+                if (w > maxW || h > maxH) {
+                    val k = min(maxW / w, maxH / h)
+                    w *= k
+                    h *= k
+                }
+                val cx = frame.centerX()
+                val cy = frame.centerY()
+                val l = (cx - w / 2f).coerceIn(safe.left, safe.right - w)
+                val t = (cy - h / 2f).coerceIn(safe.top, safe.bottom - h)
+                frame.set(l, t, l + w, t + h)
+            }
+        }
+        minScale = max(computeMinScale(), max(frame.width() / (bitmap?.width ?: 1), frame.height() / (bitmap?.height ?: 1)))
         if (scale < minScale) {
             scale = minScale
             updateImageRect()
@@ -1623,8 +1702,8 @@ class CropView @JvmOverloads constructor(
         // 框线
         canvas.drawRect(frame, borderPaint)
 
-        // 三分线：自由裁剪才画（和微信编辑器一致；头像裁剪不画）
-        if (aspectRatio <= 0f) {
+        // 三分线：可拖拽时画（和微信编辑器一致）；不可拖拽只画四角
+        if (frameResizable) {
             val thirdW = frame.width() / 3f
             val thirdH = frame.height() / 3f
             for (i in 1..2) {

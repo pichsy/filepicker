@@ -496,8 +496,13 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
             )
 
         if (avatarCrop) {
-            // 头像裁剪：先开总开关，再设比例（不设默认 1:1）
-            builder.setAvatarCropMode(true).setAvatarCropAspectRatio(1f)
+            // 头像裁剪：总开关 + 比例（0=自由裁剪，不设默认 1:1）+ 是否允许拖拽改框
+            val frameScale = binding.etAvatarFrameScale.text.toString().toFloatOrNull() ?: 0.75f
+            builder.setAvatarCropMode(true)
+                .setAvatarCropAspectRatio(if (binding.cbAvatarFree.isChecked) 0f else 1f)
+                .setAvatarCropResizable(binding.cbAvatarResizable.isChecked)
+                .setAvatarCropRatioLocked(!binding.cbAvatarUnlocked.isChecked)
+                .setAvatarCropFrameScale(frameScale)
         }
         if (editInPreview) {
             builder.setEditInPreviewEnable(true)

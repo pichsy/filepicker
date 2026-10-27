@@ -260,6 +260,51 @@
                 android:textSize="14sp" />
 
             <androidx.appcompat.widget.AppCompatCheckBox
+                android:id="@+id/cb_avatar_resizable"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:buttonTint="#FFFFFF"
+                android:text="头像裁剪：允许拖拽改裁剪框大小"
+                android:textColor="#DDDDDD"
+                android:textSize="14sp" />
+
+            <androidx.appcompat.widget.AppCompatCheckBox
+                android:id="@+id/cb_avatar_free"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:buttonTint="#FFFFFF"
+                android:text="头像裁剪：自由比例（0=自由，默认 1:1）"
+                android:textColor="#DDDDDD"
+                android:textSize="14sp" />
+
+            <androidx.appcompat.widget.AppCompatCheckBox
+                android:id="@+id/cb_avatar_unlocked"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:buttonTint="#FFFFFF"
+                android:text="头像裁剪：拖拽时不锁比例（可拉变形）"
+                android:textColor="#DDDDDD"
+                android:textSize="14sp" />
+
+            <EditText
+                android:id="@+id/et_avatar_frame_scale"
+                android:layout_width="220dp"
+                android:layout_height="44dp"
+                android:layout_marginTop="8dp"
+                android:background="#33FFFFFF"
+                android:hint="框大小 0.75（0.05~1）"
+                android:inputType="numberDecimal"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp"
+                android:text="0.75"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#99FFFFFF"
+                android:textSize="14sp" />
+
+            <androidx.appcompat.widget.AppCompatCheckBox
                 android:id="@+id/cb_edit_preview"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"

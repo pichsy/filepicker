@@ -353,7 +353,38 @@ class FilePicker {
         )
         fun setCropResetText(text: String): Builder = setAvatarCropResetText(text)
 
+        /** 是否显式设置过头像裁剪比例（区分"没设置=默认1:1"和"显式 0=自由裁剪"） */
+        private var mAvatarCropAspectSet: Boolean = false
+
+        /** 头像裁剪框是否允许拖动改大小（默认 false：只能平移/缩放图片） */
+        var mAvatarCropResizable: Boolean = false
+
+        /** 头像裁剪框能否拖动改大小；传 false/不传 = 固定大小框 */
+        fun setAvatarCropResizable(enable: Boolean): Builder {
+            this.mAvatarCropResizable = enable
+            return this
+        }
+
+        /** 可拖拽时是否锁定比例（默认 true；false = 可随意拉宽拉高变形） */
+        var mAvatarCropRatioLocked: Boolean = true
+
+        /** 拖拽改框时是否锁比例；不传默认 true */
+        fun setAvatarCropRatioLocked(enable: Boolean): Builder {
+            this.mAvatarCropRatioLocked = enable
+            return this
+        }
+
+        /** 初始裁剪框尺寸：占屏幕短边比例（默认 0.75，范围 0.05~1） */
+        var mAvatarCropFrameScale: Float = 0.75f
+
+        /** 初始裁剪框尺寸，占屏幕短边的比例；默认 0.75，范围 0.05~1 */
+        fun setAvatarCropFrameScale(scale: Float): Builder {
+            this.mAvatarCropFrameScale = scale.coerceIn(0.05f, 1f)
+            return this
+        }
+
         fun setAvatarCropAspectRatio(aspect: Float): Builder {
+            this.mAvatarCropAspectSet = true
             this.mCropAspect = aspect
             return this
         }
@@ -394,7 +425,9 @@ class FilePicker {
         /** 头像模式实际使用的裁剪比例：开关关闭返回 0（不裁剪），开启且未设比例时默认 1:1 */
         internal fun effectiveCropAspect(): Float {
             if (!mAvatarCropMode) return 0f
-            return if (mCropAspect > 0f) mCropAspect else 1f
+            // 没设置 → 默认 1:1；显式设置 0 / 负数 → 自由裁剪
+            if (!mAvatarCropAspectSet) return 1f
+            return mCropAspect.coerceAtLeast(0f)
         }
 
         /** 单图点击直接进入编辑弹窗（默认 false） */
@@ -565,8 +598,9 @@ class FilePicker {
                     "同时开启头像裁剪与点击编辑：头像裁剪优先，setEditOnClickEnable 本次不生效",
                 )
             }
-            // 头像模式：默认 1:1；强制单选 + 单击即裁剪；规则模式让位
-            if (mCropAspect <= 0f) mCropAspect = 1f
+            // 头像模式：未显式设置比例时默认 1:1；显式 0 = 自由裁剪，保持 0
+            if (!mAvatarCropAspectSet) mCropAspect = 1f
+            if (mCropAspect < 0f) mCropAspect = 0f
             if (mMaxSelectNumber != 1) {
                 FilePickerLog.w(
                     "FilePicker",
@@ -694,6 +728,9 @@ class FilePicker {
             aspect = bd.effectiveCropAspect(),
             outputMaxSize = bd.mCropOutputMaxSize,
             quality = bd.mCropQuality,
+            resizable = bd.mAvatarCropResizable,
+            ratioLocked = bd.mAvatarCropRatioLocked,
+            frameScale = bd.mAvatarCropFrameScale,
             uiConfig = bd.mUiConfig,
         )
         fragment.setCallbacks(
@@ -767,6 +804,10 @@ class FilePicker {
                             intent.putExtra("cropAspect", bd.effectiveCropAspect())
                             intent.putExtra("cropOutputMaxSize", bd.mCropOutputMaxSize)
                             intent.putExtra("cropQuality", bd.mCropQuality)
+                            intent.putExtra("avatarCropMode", bd.mAvatarCropMode)
+                            intent.putExtra("avatarCropResizable", bd.mAvatarCropResizable)
+                            intent.putExtra("avatarCropRatioLocked", bd.mAvatarCropRatioLocked)
+                            intent.putExtra("avatarCropFrameScale", bd.mAvatarCropFrameScale)
                             intent.putExtra("editInPreview", bd.mEditInPreview)
                             intent.putExtra("editOnClick", bd.mEditOnClick)
                             intent.putExtra("editCacheDir", bd.mEditCacheDir)
@@ -813,6 +854,10 @@ class FilePicker {
                             intent.putExtra("cropAspect", bd.effectiveCropAspect())
                             intent.putExtra("cropOutputMaxSize", bd.mCropOutputMaxSize)
                             intent.putExtra("cropQuality", bd.mCropQuality)
+                            intent.putExtra("avatarCropMode", bd.mAvatarCropMode)
+                            intent.putExtra("avatarCropResizable", bd.mAvatarCropResizable)
+                            intent.putExtra("avatarCropRatioLocked", bd.mAvatarCropRatioLocked)
+                            intent.putExtra("avatarCropFrameScale", bd.mAvatarCropFrameScale)
                             intent.putExtra("editInPreview", bd.mEditInPreview)
                             intent.putExtra("editOnClick", bd.mEditOnClick)
                             intent.putExtra("editCacheDir", bd.mEditCacheDir)

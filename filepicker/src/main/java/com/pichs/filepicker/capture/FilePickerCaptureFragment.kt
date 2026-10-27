@@ -52,6 +52,9 @@ class FilePickerCaptureFragment : Fragment() {
         private const val ARG_ASPECT = "arg_aspect"
         private const val ARG_OUT_MAX = "arg_out_max"
         private const val ARG_QUALITY = "arg_quality"
+        private const val ARG_RESIZABLE = "arg_resizable"
+        private const val ARG_RATIO_LOCKED = "arg_ratio_locked"
+        private const val ARG_FRAME_SCALE = "arg_frame_scale"
         private const val ARG_UI_CONFIG = "arg_ui_config"
 
         private const val STATE_CAPTURE_URI = "state_capture_uri"
@@ -75,6 +78,9 @@ class FilePickerCaptureFragment : Fragment() {
             aspect: Float,
             outputMaxSize: Int,
             quality: Int,
+            resizable: Boolean,
+            ratioLocked: Boolean,
+            frameScale: Float,
             uiConfig: FilePickerUIConfig?,
         ): FilePickerCaptureFragment = FilePickerCaptureFragment().apply {
             arguments = Bundle().apply {
@@ -84,6 +90,9 @@ class FilePickerCaptureFragment : Fragment() {
                 putFloat(ARG_ASPECT, aspect)
                 putInt(ARG_OUT_MAX, outputMaxSize)
                 putInt(ARG_QUALITY, quality)
+                putBoolean(ARG_RESIZABLE, resizable)
+                putBoolean(ARG_RATIO_LOCKED, ratioLocked)
+                putFloat(ARG_FRAME_SCALE, frameScale)
                 uiConfig?.let { putBundle(ARG_UI_CONFIG, it.toTransportBundle()) }
             }
         }
@@ -110,6 +119,9 @@ class FilePickerCaptureFragment : Fragment() {
     private var aspect = 0f
     private var outputMaxSize = 2048
     private var quality = 90
+    private var resizable = false
+    private var ratioLocked = true
+    private var frameScale = 0.75f
     private var uiConfig: FilePickerUIConfig? = null
 
     private lateinit var captureLauncher: ActivityResultLauncher<Intent>
@@ -130,6 +142,9 @@ class FilePickerCaptureFragment : Fragment() {
         aspect = args?.getFloat(ARG_ASPECT) ?: 0f
         outputMaxSize = args?.getInt(ARG_OUT_MAX) ?: 2048
         quality = args?.getInt(ARG_QUALITY) ?: 90
+        resizable = args?.getBoolean(ARG_RESIZABLE) ?: false
+        ratioLocked = args?.getBoolean(ARG_RATIO_LOCKED) ?: true
+        frameScale = args?.getFloat(ARG_FRAME_SCALE) ?: 0.75f
         uiConfig = FilePickerUIConfig.fromTransportBundle(args?.getBundle(ARG_UI_CONFIG))
 
         captureLauncher = registerForActivityResult(
@@ -289,9 +304,12 @@ class FilePickerCaptureFragment : Fragment() {
         FilePickerCropActivity.start(
             context = act,
             entity = entity,
-            aspect = if (aspect > 0f) aspect else 1f,
+            aspect = aspect,
             outputMaxSize = outputMaxSize,
             quality = quality,
+            resizable = resizable,
+            ratioLocked = ratioLocked,
+            frameScale = frameScale,
             title = "裁剪",
         ) { editedPath ->
             if (finished) return@start
