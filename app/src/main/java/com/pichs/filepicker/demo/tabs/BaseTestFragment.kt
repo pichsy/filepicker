@@ -182,6 +182,120 @@ abstract class BaseTestFragment : Fragment(R.layout.fragment_test_base) {
         return et
     }
 
+    /** 一行标题 + 输入框（输入框 hint 在填入数字后会消失，所以给标题） */
+    protected fun LinearLayout.labeledInput(
+        label: String,
+        hint: String,
+        default: String = "",
+        number: Boolean = true,
+    ): EditText {
+        addView(TextView(requireContext()).apply {
+            text = label
+            setTextColor(0xFFBBBBBB.toInt())
+            textSize = 13f
+        })
+        return input(hint, default, number)
+    }
+
+    /** 可选中的类型 chip 网格（GridLayout，默认 4 列）；选中项通过 [selectedChip] 读 */
+    protected fun LinearLayout.chipGrid(
+        items: List<String>,
+        columns: Int = 4,
+        initial: Int = 0,
+    ): android.widget.GridLayout {
+        val grid = android.widget.GridLayout(requireContext()).apply {
+            columnCount = columns
+            tag = intArrayOf(initial)
+        }
+        val chips = mutableListOf<TextView>()
+        fun styleChip(tv: TextView, selected: Boolean) {
+            tv.background = GradientDrawable().apply {
+                cornerRadius = dp(8).toFloat()
+                setColor(if (selected) 0xFF06B10D.toInt() else 0x22FFFFFF)
+            }
+            tv.setTextColor(if (selected) 0xFFFFFFFF.toInt() else 0xFFDDDDDD.toInt())
+        }
+        fun refresh() {
+            val sel = (grid.tag as IntArray)[0]
+            chips.forEachIndexed { index, tv -> styleChip(tv, index == sel) }
+        }
+        items.forEachIndexed { index, label ->
+            val tv = TextView(requireContext()).apply {
+                text = label
+                gravity = Gravity.CENTER
+                textSize = 12f
+                setPadding(dp(2), dp(10), dp(2), dp(10))
+                setOnClickListener {
+                    (grid.tag as IntArray)[0] = index
+                    refresh()
+                }
+            }
+            styleChip(tv, index == initial)
+            val lp = android.widget.GridLayout.LayoutParams().apply {
+                width = 0
+                columnSpec = android.widget.GridLayout.spec(index % columns, 1f)
+                rowSpec = android.widget.GridLayout.spec(index / columns)
+                setMargins(dp(3), dp(3), dp(3), dp(3))
+            }
+            grid.addView(tv, lp)
+            chips.add(tv)
+        }
+        val lp = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
+        ).apply { topMargin = dp(4) }
+        addView(grid, lp)
+        return grid
+    }
+
+    protected fun selectedChip(grid: android.widget.GridLayout): Int =
+        (grid.tag as? IntArray)?.get(0) ?: 0
+
+    /** 预设 chip（点一下触发回调，不维护选中态；用于「常用后缀」） */
+    protected fun LinearLayout.presetGrid(
+        items: List<String>,
+        columns: Int = 4,
+        onClick: (String) -> Unit,
+    ): android.widget.GridLayout {
+        val grid = android.widget.GridLayout(requireContext()).apply { columnCount = columns }
+        val lp = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
+        ).apply { topMargin = dp(4) }
+        addView(grid, lp)
+        items.forEachIndexed { index, item ->
+            val tv = TextView(requireContext()).apply {
+                text = item
+                gravity = Gravity.CENTER
+                textSize = 12f
+                setPadding(dp(2), dp(8), dp(2), dp(8))
+                background = GradientDrawable().apply {
+                    cornerRadius = dp(8).toFloat()
+                    setColor(0x22FFFFFF)
+                }
+                setTextColor(0xFFDDDDDD.toInt())
+                setOnClickListener { onClick(item) }
+            }
+            val glp = android.widget.GridLayout.LayoutParams().apply {
+                width = 0
+                columnSpec = android.widget.GridLayout.spec(index % columns, 1f)
+                rowSpec = android.widget.GridLayout.spec(index / columns)
+                setMargins(dp(3), dp(3), dp(3), dp(3))
+            }
+            grid.addView(tv, glp)
+        }
+        return grid
+    }
+
+    /** 纯文本说明（多行，灰色） */
+    protected fun LinearLayout.label(text: String) {
+        addView(TextView(requireContext()).apply {
+            this.text = text
+            setTextColor(0xFFAAAAAA.toInt())
+            textSize = 13f
+            setLineSpacing(0f, 1.1f)
+            setPadding(0, dp(4), 0, dp(2))
+        })
+    }
+
     protected fun LinearLayout.space(heightDp: Int = 6) {
         addView(View(requireContext()), LinearLayout.LayoutParams(1, dp(heightDp)))
     }
