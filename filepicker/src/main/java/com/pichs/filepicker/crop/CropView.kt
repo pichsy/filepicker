@@ -954,12 +954,13 @@ class CropView @JvmOverloads constructor(
     // ------------------------------------------------------------------
 
     private fun scheduleIdleAutoFit() {
-        if (!frameResizable || frameScalePercent != null) return
+        // 框不可拖时不自动放大（框不该自己动）；可拖时（编辑弹窗 / 头像页开了可拖）才启用
+        if (!frameResizable) return
         android.util.Log.d("FilePickerCropView", "安排空闲自动放大 3s")
         cancelIdleAutoFit()
         val runnable = Runnable { autoFitCropFrame() }
         idleAutoFit = runnable
-        idleHandler.postDelayed(runnable, 2000)
+        idleHandler.postDelayed(runnable, 1500)
     }
 
     private fun cancelIdleAutoFit() {
@@ -1064,10 +1065,11 @@ class CropView @JvmOverloads constructor(
         centerY = height / 2f
         val fitScale = min(width.toFloat() / bmp.width, height.toFloat() / bmp.height)
         if (aspectRatio > 0f) {
-            // 固定框：边长 = 屏幕短边 * frameScale（默认 0.6），居中
+            // 固定框：短边 = 屏幕短边 * frameScale，按比例算另一边，超出安全区时等比缩小
             val side = min(width, height) * (frameScalePercent ?: 0.75f)
-            val frameW: Float
-            val frameH: Float
+            val safe = cropSafeRect()
+            var frameW: Float
+            var frameH: Float
             if (aspectRatio >= 1f) {
                 frameH = side
                 frameW = side * aspectRatio
@@ -1075,6 +1077,9 @@ class CropView @JvmOverloads constructor(
                 frameW = side
                 frameH = side / aspectRatio
             }
+            val k = min(1f, min(safe.width() / frameW, safe.height() / frameH))
+            frameW *= k
+            frameH *= k
             frame.set(
                 centerX - frameW / 2f,
                 centerY - frameH / 2f,
@@ -1114,8 +1119,12 @@ class CropView @JvmOverloads constructor(
     private fun initialFrameFor(bmp: Bitmap): RectF {
         if (aspectRatio > 0f) {
             val side = min(width, height) * (frameScalePercent ?: 0.75f)
-            val fw = if (aspectRatio >= 1f) side * aspectRatio else side
-            val fh = if (aspectRatio >= 1f) side else side / aspectRatio
+            var fw = if (aspectRatio >= 1f) side * aspectRatio else side
+            var fh = if (aspectRatio >= 1f) side else side / aspectRatio
+            val safe = cropSafeRect()
+            val k = min(1f, min(safe.width() / fw, safe.height() / fh))
+            fw *= k
+            fh *= k
             return RectF(
                 width / 2f - fw / 2f, height / 2f - fh / 2f,
                 width / 2f + fw / 2f, height / 2f + fh / 2f,

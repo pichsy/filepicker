@@ -239,43 +239,161 @@
                     android:textSize="14sp" />
             </LinearLayout>
 
-            <androidx.appcompat.widget.AppCompatCheckBox
-                android:id="@+id/cb_show_camera"
+            <com.pichs.xwidget.view.XTextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
+                android:layout_marginTop="14dp"
+                android:text="测试①：点击直接编辑"
+                android:textColor="#9E9E9E"
+                android:textSize="13sp" />
+
+            <androidx.appcompat.widget.AppCompatCheckBox
+                android:id="@+id/cb_edit_on_click"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
                 android:buttonTint="#FFFFFF"
-                android:text="显示相机入口"
+                android:text="单图点击 → 直接进编辑弹窗（完成返回 / 取消继续选）"
                 android:textColor="#DDDDDD"
                 android:textSize="14sp" />
+
+            <com.pichs.xwidget.view.XTextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:text="测试②：直接打开相机（不经过图片列表）"
+                android:textColor="#9E9E9E"
+                android:textSize="13sp" />
+
+            <androidx.appcompat.widget.AppCompatCheckBox
+                android:id="@+id/cb_open_camera_direct"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:buttonTint="#FFFFFF"
+                android:text="开启直接相机"
+                android:textColor="#DDDDDD"
+                android:textSize="14sp" />
+
+            <RadioGroup
+                android:id="@+id/rg_camera_mode"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <RadioButton
+                    android:id="@+id/rb_camera_edit"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:buttonTint="#FFFFFF"
+                    android:checked="true"
+                    android:text="拍照→编辑"
+                    android:textColor="#DDDDDD"
+                    android:textSize="13sp" />
+
+                <RadioButton
+                    android:id="@+id/rb_camera_photo"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:buttonTint="#FFFFFF"
+                    android:text="仅拍照"
+                    android:textColor="#DDDDDD"
+                    android:textSize="13sp" />
+
+                <RadioButton
+                    android:id="@+id/rb_camera_video"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:buttonTint="#FFFFFF"
+                    android:text="录像"
+                    android:textColor="#DDDDDD"
+                    android:textSize="13sp" />
+            </RadioGroup>
+
+            <com.pichs.xwidget.view.XTextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:text="测试③：头像裁剪（单选，点图/拍照后进裁剪页）"
+                android:textColor="#9E9E9E"
+                android:textSize="13sp" />
 
             <androidx.appcompat.widget.AppCompatCheckBox
                 android:id="@+id/cb_avatar_crop"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
+                android:layout_marginTop="6dp"
                 android:buttonTint="#FFFFFF"
-                android:text="头像裁剪（单选 1:1，点图直接进裁剪页）"
+                android:text="开启头像裁剪"
                 android:textColor="#DDDDDD"
                 android:textSize="14sp" />
+
+            <RadioGroup
+                android:id="@+id/rg_avatar_ratio"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <RadioButton
+                    android:id="@+id/rb_ratio_1_1"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:buttonTint="#FFFFFF"
+                    android:checked="true"
+                    android:text="1:1"
+                    android:textColor="#DDDDDD"
+                    android:textSize="13sp" />
+
+                <RadioButton
+                    android:id="@+id/rb_ratio_1_2"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:buttonTint="#FFFFFF"
+                    android:text="1:2"
+                    android:textColor="#DDDDDD"
+                    android:textSize="13sp" />
+
+                <RadioButton
+                    android:id="@+id/rb_ratio_3_4"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:buttonTint="#FFFFFF"
+                    android:text="3:4"
+                    android:textColor="#DDDDDD"
+                    android:textSize="13sp" />
+
+                <RadioButton
+                    android:id="@+id/rb_ratio_16_9"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:buttonTint="#FFFFFF"
+                    android:text="16:9"
+                    android:textColor="#DDDDDD"
+                    android:textSize="13sp" />
+
+                <RadioButton
+                    android:id="@+id/rb_ratio_free"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:buttonTint="#FFFFFF"
+                    android:text="自由"
+                    android:textColor="#DDDDDD"
+                    android:textSize="13sp" />
+            </RadioGroup>
 
             <androidx.appcompat.widget.AppCompatCheckBox
                 android:id="@+id/cb_avatar_resizable"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="6dp"
                 android:buttonTint="#FFFFFF"
-                android:text="头像裁剪：允许拖拽改裁剪框大小"
-                android:textColor="#DDDDDD"
-                android:textSize="14sp" />
-
-            <androidx.appcompat.widget.AppCompatCheckBox
-                android:id="@+id/cb_avatar_free"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:buttonTint="#FFFFFF"
-                android:text="头像裁剪：自由比例（0=自由，默认 1:1）"
+                android:text="允许拖拽改裁剪框大小"
                 android:textColor="#DDDDDD"
                 android:textSize="14sp" />
 
@@ -283,9 +401,9 @@
                 android:id="@+id/cb_avatar_unlocked"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="4dp"
                 android:buttonTint="#FFFFFF"
-                android:text="头像裁剪：拖拽时不锁比例（可拉变形）"
+                android:text="拖拽时不锁比例（可拉变形）"
                 android:textColor="#DDDDDD"
                 android:textSize="14sp" />
 
@@ -293,7 +411,7 @@
                 android:id="@+id/et_avatar_frame_scale"
                 android:layout_width="220dp"
                 android:layout_height="44dp"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="6dp"
                 android:background="#33FFFFFF"
                 android:hint="框大小 0.75（0.05~1）"
                 android:inputType="numberDecimal"
@@ -305,93 +423,25 @@
                 android:textSize="14sp" />
 
             <androidx.appcompat.widget.AppCompatCheckBox
+                android:id="@+id/cb_show_camera"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:buttonTint="#FFFFFF"
+                android:text="显示相机入口（列表网格里的拍照入口）"
+                android:textColor="#DDDDDD"
+                android:textSize="14sp" />
+
+            <androidx.appcompat.widget.AppCompatCheckBox
                 android:id="@+id/cb_edit_preview"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="6dp"
                 android:buttonTint="#FFFFFF"
                 android:checked="true"
                 android:text="预览页可编辑（画笔/文字/裁剪/马赛克）"
                 android:textColor="#DDDDDD"
                 android:textSize="14sp" />
-
-            <androidx.appcompat.widget.AppCompatCheckBox
-                android:id="@+id/cb_edit_on_click"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:buttonTint="#FFFFFF"
-                android:text="点击图片直接编辑（单图，编辑完返回）"
-                android:textColor="#DDDDDD"
-                android:textSize="14sp" />
-
-            <com.pichs.xwidget.view.XTextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="18dp"
-                android:text="测试快捷入口（不用勾选，直接进对应模式）"
-                android:textColor="#9E9E9E"
-                android:textSize="13sp" />
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:orientation="horizontal">
-
-                <androidx.appcompat.widget.AppCompatButton
-                    android:id="@+id/btn_test_edit_on_click"
-                    android:layout_width="0dp"
-                    android:layout_height="40dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/demo_btn_secondary_bg"
-                    android:text="点击即编辑"
-                    android:textAllCaps="false"
-                    android:textColor="#fff"
-                    android:textSize="13sp" />
-
-                <androidx.appcompat.widget.AppCompatButton
-                    android:id="@+id/btn_test_avatar"
-                    android:layout_width="0dp"
-                    android:layout_height="40dp"
-                    android:layout_marginStart="8dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/demo_btn_secondary_bg"
-                    android:text="头像裁剪"
-                    android:textAllCaps="false"
-                    android:textColor="#fff"
-                    android:textSize="13sp" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:orientation="horizontal">
-
-                <androidx.appcompat.widget.AppCompatButton
-                    android:id="@+id/btn_test_capture_edit"
-                    android:layout_width="0dp"
-                    android:layout_height="40dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/demo_btn_primary_bg"
-                    android:text="直接拍照→编辑（无列表）"
-                    android:textAllCaps="false"
-                    android:textColor="#fff"
-                    android:textSize="13sp" />
-
-                <androidx.appcompat.widget.AppCompatButton
-                    android:id="@+id/btn_test_capture_video"
-                    android:layout_width="0dp"
-                    android:layout_height="40dp"
-                    android:layout_marginStart="8dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/demo_btn_primary_bg"
-                    android:text="直接录像（无列表）"
-                    android:textAllCaps="false"
-                    android:textColor="#fff"
-                    android:textSize="13sp" />
-            </LinearLayout>
 
             <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btn_start"

@@ -63,14 +63,23 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
             startActivity(Intent(this, SettingsActivity::class.java))
         }
 
-        // ===== 测试快捷入口：不用勾选，直接以对应模式进选择器 =====
-        binding.btnTestEditOnClick.fastClick { startQuickTest("editOnClick") }
-        binding.btnTestAvatar.fastClick { startQuickTest("avatar") }
-        binding.btnTestCaptureEdit.fastClick { startQuickTest("captureEdit") }
-        binding.btnTestCaptureVideo.fastClick { startQuickTest("captureVideo") }
-
-        // 开始按钮点击事件
+        // 开始按钮：先看测试选项，命中则按选项进入对应模式；否则走普通选择流程
         binding.btnStart.fastClick {
+            when {
+                binding.cbOpenCameraDirect.isChecked -> {
+                    startDirectCameraTest()
+                    return@fastClick
+                }
+                binding.cbAvatarCrop.isChecked -> {
+                    startAvatarCropTest()
+                    return@fastClick
+                }
+                binding.cbEditOnClick.isChecked -> {
+                    startEditOnClickTest()
+                    return@fastClick
+                }
+            }
+
             // 获取最大选择数量
             val maxSelectCount = binding.etMaxSelectCount.text.toString().toIntOrNull() ?: 0
             // 获取最大文件大小（MB转字节）
@@ -409,74 +418,100 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
         binding.layoutVideoCount.isVisible = modeSelected
     }
 
-    /**
-     * 测试快捷入口：直接以指定模式进入选择器，不受首页勾选项影响。
-     *
-     * - editOnClick  : 单图点击 → 直接进编辑弹窗，编辑完成返回
-     * - cameraEdit   : 进入即拍照 → 拍完确定直接进编辑弹窗
-     * - avatar       : 进入即头像裁剪（点图直接 1:1 裁剪）
-     * - videoCamera  : 进入即录像 → 拍完确定直接返回视频（无编辑）
-     */
-    private fun startQuickTest(kind: String) {
+    // ==================== 测试入口：先选参数，再点「开始」进入 ====================
+
+    /** 申请媒体权限后执行（测试入口统一用） */
+    private fun requestMediaPermissionsThen(block: () -> Unit) {
         XXPermissions.with(this).unchecked().permission(
             Permission.READ_MEDIA_IMAGES,
             Permission.READ_MEDIA_VIDEO,
             Permission.READ_MEDIA_AUDIO,
         ).request { permissions, all ->
-            if (!all) {
-                XXPermissions.startPermissionActivity(this, permissions)
-                return@request
-            }
-            val builder = FilePicker.with(this)
-                .setMaxFileSize(Long.MAX_VALUE)
-                .setSelectedList(selectedDataList)
-                .setOnSelectCallback { _, list ->
-                    XLog.d("MainActivity", "快捷测试结果: ${list.size} 张")
-                    selectedDataList = list
-                    renderResult(list)
+            if (all) block() else XXPermissions.startPermissionActivity(this, permissions)
+        }
+    }
+
+    private fun baseTestBuilder(): FilePicker.Builder = FilePicker.with(this)
+        .setMaxFileSize(Long.MAX_VALUE)
+        .setSelectedList(selectedDataList)
+        .setOnSelectCallback { _, list ->
+            XLog.d("MainActivity", "测试结果: ${list.size} 张")
+            selectedDataList = list
+            renderResult(list)
+        }
+
+    /** 把「头像裁剪」测试选项应用到 Builder 上 */
+    private fun applyAvatarOptions(builder: FilePicker.Builder) {
+        val aspect = when {
+            binding.rbRatio12.isChecked -> 0.5f
+            binding.rbRatio34.isChecked -> 0.75f
+            binding.rbRatio169.isChecked -> 16f / 9f
+            binding.rbRatioFree.isChecked -> 0f
+            else -> 1f
+        }
+        val frameScale = binding.etAvatarFrameScale.text.toString().toFloatOrNull() ?: 0.75f
+        builder.setAvatarCropMode(true)
+            .setAvatarCropAspectRatio(aspect)
+            .setAvatarCropResizable(binding.cbAvatarResizable.isChecked)
+            .setAvatarCropRatioLocked(!binding.cbAvatarUnlocked.isChecked)
+            .setAvatarCropFrameScale(frameScale)
+    }
+
+    /** 测试①：点击图片直接编辑 */
+    private fun startEditOnClickTest() {
+        requestMediaPermissionsThen {
+            baseTestBuilder()
+                .setSelectType(FilePickerSelectType.ofImage())
+                .setEditOnClickEnable(true)
+                .start()
+        }
+    }
+
+    /** 测试③：头像裁剪（点图直接进裁剪页） */
+    private fun startAvatarCropTest() {
+        requestMediaPermissionsThen {
+            val builder = baseTestBuilder()
+                .setSelectType(FilePickerSelectType.ofImage())
+                .setMaxSelectNumber(1)
+            applyAvatarOptions(builder)
+            builder.start()
+        }
+    }
+
+    /** 测试②：直接打开相机（不经过列表） */
+    private fun startDirectCameraTest() {
+        requestMediaPermissionsThen {
+            val videoMode = binding.rbCameraVideo.isChecked
+            val photoOnly = binding.rbCameraPhoto.isChecked
+            val builder = baseTestBuilder().setOpenCameraDirect(true)
+            if (videoMode) {
+                builder.setSelectType(FilePickerSelectType.ofVideo())
+            } else {
+                builder.setSelectType(FilePickerSelectType.ofImage())
+                if (!photoOnly) {
+                    // 拍照→编辑；"仅拍照"不开编辑
+                    builder.setEditOnClickEnable(true)
                 }
-            when (kind) {
-                "editOnClick" -> builder
-                    .setSelectType(FilePickerSelectType.ofImage())
-                    .setEditOnClickEnable(true)
-
-                "avatar" -> builder
-                    .setSelectType(FilePickerSelectType.ofImage())
-                    .setAvatarCropMode(true)
-                    .setAvatarCropAspectRatio(1f)
-
-                // 直接相机：完全不经过列表
-                "captureEdit" -> builder
-                    .setSelectType(FilePickerSelectType.ofImage())
-                    .setOpenCameraDirect(true)
-                    .setEditOnClickEnable(true)
-
-                "captureVideo" -> builder
-                    .setSelectType(FilePickerSelectType.ofVideo())
-                    .setOpenCameraDirect(true)
+                // 拍照后进头像裁剪（如果开了头像裁剪）
+                if (binding.cbAvatarCrop.isChecked) applyAvatarOptions(builder)
             }
             builder.start()
         }
     }
 
     fun selectFile(type: String, maxSelectCount: Int, maxFileSize: Int, showCameraEntry: Boolean) {
-        // 头像裁剪：单选 + 单击即裁剪（1:1 固定框）
-        val avatarCrop = binding.cbAvatarCrop.isChecked
         // 预览页「编辑」：预览大图时自由裁剪
         val editInPreview = binding.cbEditPreview.isChecked
-        // 点击图片直接编辑：单选，点图即弹编辑弹窗，完成后直接返回
-        val editOnClick = binding.cbEditOnClick.isChecked
         val (rules, useNewModel) = buildSelectRules()
         if (selectedRuleMode != RuleMode.NONE && !useNewModel) {
             Toast.makeText(this, "没填图片/视频数量，按「最大选择数量」执行", Toast.LENGTH_SHORT).show()
         }
-        val effectiveMaxCount = if (avatarCrop) 1 else maxSelectCount
-        val builder = FilePicker.with(this).setMaxSelectNumber(effectiveMaxCount)
+        val builder = FilePicker.with(this).setMaxSelectNumber(maxSelectCount)
             .setMaxFileSize(maxFileSize.toLong()).setSelectType(type)
             .setShowCameraEntry(showCameraEntry)
             // 新模型下总容量=1 会自动启用单击返回；为了让规则测试能看到勾选过程，
             // 这里只在旧模型（不限）时打开，和原来 maxSelectNumber!=1 时无效的行为一致
-            .setSingleClickEnable(avatarCrop || !useNewModel)
+            .setSingleClickEnable(!useNewModel)
             .setSelectedList(selectedDataList).setOnSelectCallback { isUseOriginal, list ->
                 XLog.d("FilePicker", "Selected files: ${list.size}")
                 selectedDataList = list
@@ -495,20 +530,8 @@ class MainActivity : BindingActivity<ActivityMainBinding>() {
                 )
             )
 
-        if (avatarCrop) {
-            // 头像裁剪：总开关 + 比例（0=自由裁剪，不设默认 1:1）+ 是否允许拖拽改框
-            val frameScale = binding.etAvatarFrameScale.text.toString().toFloatOrNull() ?: 0.75f
-            builder.setAvatarCropMode(true)
-                .setAvatarCropAspectRatio(if (binding.cbAvatarFree.isChecked) 0f else 1f)
-                .setAvatarCropResizable(binding.cbAvatarResizable.isChecked)
-                .setAvatarCropRatioLocked(!binding.cbAvatarUnlocked.isChecked)
-                .setAvatarCropFrameScale(frameScale)
-        }
         if (editInPreview) {
             builder.setEditInPreviewEnable(true)
-        }
-        if (editOnClick) {
-            builder.setEditOnClickEnable(true)
         }
 
         // 选用新模型：分类型限量 + 互斥；模式为"无"时完全走旧逻辑
