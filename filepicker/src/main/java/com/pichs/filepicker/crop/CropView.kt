@@ -989,30 +989,33 @@ class CropView @JvmOverloads constructor(
         val factor = min(maxW / frame.width(), maxH / frame.height())
         if (factor <= 1.02f) return
 
-        // 框中心在图片里的归一化位置（放大时保持这个中心）
-        val frameCxInBmp = (frame.centerX() - imageRect.left) / imageRect.width()
-        val frameCyInBmp = (frame.centerY() - imageRect.top) / imageRect.height()
-
         val startFrame = RectF(frame)
         val startScale = scale
         val startCx = centerX
         val startCy = centerY
 
-        // 目标框：保持宽高比、居中到屏幕中心
-        val targetW = frame.width() * factor
-        val targetH = frame.height() * factor
+        // 先记录「当前框选中的图片区域」（相对原图 0~1），放大后这块区域的映射必须保持不变
+        val crop = CropGeometry.frameToImageRatio(frame.toGeometry(), imageRect.toGeometry())
+        if (crop.width <= 0f || crop.height <= 0f) return
+
+        // 目标缩放：按 factor 放大；如果已经到最大缩放，就不再放大，
+        // 只把框（连同图片映射）挪回屏幕正中心。
+        val targetScale = (startScale * factor).coerceIn(minScale, maxScale)
+        val scaleFactor = targetScale / startScale
+        // 目标框大小 = 原框 × 缩放倍数：保证框里还是原来那块图片区域
+        val targetW = startFrame.width() * scaleFactor
+        val targetH = startFrame.height() * scaleFactor
         val targetFrame = RectF(
             screenCx - targetW / 2f,
             screenCy - targetH / 2f,
             screenCx + targetW / 2f,
             screenCy + targetH / 2f,
         )
-        val targetScale = (startScale * factor).coerceIn(minScale, maxScale)
-        // 让框里的内容中心仍然对齐框中心
-        val bmpCx = frameCxInBmp * bmp.width
-        val bmpCy = frameCyInBmp * bmp.height
-        val targetCx = targetFrame.centerX() - (bmpCx - bmp.width / 2f) * targetScale
-        val targetCy = targetFrame.centerY() - (bmpCy - bmp.height / 2f) * targetScale
+        // 图片位移：让 crop 区域精确落进 targetFrame（crop.left/top 对应框左上角）
+        val targetLeft = targetFrame.left - crop.left * bmp.width * targetScale
+        val targetTop = targetFrame.top - crop.top * bmp.height * targetScale
+        val targetCx = targetLeft + bmp.width * targetScale / 2f
+        val targetCy = targetTop + bmp.height * targetScale / 2f
 
         autoFitAnimator?.cancel()
         val animator = android.animation.ValueAnimator.ofFloat(0f, 1f)
@@ -1043,7 +1046,11 @@ class CropView @JvmOverloads constructor(
         animator.start()
         android.util.Log.d(
             "FilePickerCropView",
-            "裁剪框空闲自动放大: factor=$factor frame=${frame.width().toInt()}x${frame.height().toInt()}",
+            "裁剪框空闲自动放大: factor=$factor frame=${frame.width().toInt()}x${frame.height().toInt()} " +
+                "startScale=$startScale min=$minScale max=$maxScale targetScale=$targetScale " +
+                "startFrame=${startFrame.left.toInt()},${startFrame.top.toInt()},${startFrame.right.toInt()},${startFrame.bottom.toInt()} " +
+                "targetFrame=${targetFrame.left.toInt()},${targetFrame.top.toInt()},${targetFrame.right.toInt()},${targetFrame.bottom.toInt()} " +
+                "targetCx=$targetCx targetCy=$targetCy crop=${crop.left},${crop.top},${crop.right},${crop.bottom}",
         )
     }
 
@@ -1772,6 +1779,6 @@ class CropView @JvmOverloads constructor(
 
     companion object {
         /** 最大放大倍数（相对"刚好覆盖框"的倍数）：常用机型 3~4 倍 */
-        private const val MAX_ZOOM = 4f
+        private const val MAX_ZOOM = 8f
     }
 }
