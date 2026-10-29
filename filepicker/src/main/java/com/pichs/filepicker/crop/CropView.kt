@@ -987,7 +987,6 @@ class CropView @JvmOverloads constructor(
         val maxW = halfW * 2f
         val maxH = halfH * 2f
         val factor = min(maxW / frame.width(), maxH / frame.height())
-        if (factor <= 1.02f) return
 
         val startFrame = RectF(frame)
         val startScale = scale
@@ -998,11 +997,19 @@ class CropView @JvmOverloads constructor(
         val crop = CropGeometry.frameToImageRatio(frame.toGeometry(), imageRect.toGeometry())
         if (crop.width <= 0f || crop.height <= 0f) return
 
-        // 目标缩放：按 factor 放大；如果已经到最大缩放，就不再放大，
-        // 只把框（连同图片映射）挪回屏幕正中心。
-        val targetScale = (startScale * factor).coerceIn(minScale, maxScale)
-        val scaleFactor = targetScale / startScale
-        // 目标框大小 = 原框 × 缩放倍数：保证框里还是原来那块图片区域
+        // 临界放大倍数 = min(安全区允许的倍数, 图片最大缩放还能放的倍数)
+        // 图片已经到最大缩放时，倍数就是 1：框不再变大，只把中心挪回屏幕正中心。
+        var targetScale = (startScale * factor).coerceIn(minScale, maxScale)
+        var scaleFactor = targetScale / startScale
+        if (scaleFactor <= 1.001f) {
+            targetScale = startScale
+            scaleFactor = 1f
+        }
+        val needRecenter = abs(startFrame.centerX() - screenCx) > 0.5f ||
+            abs(startFrame.centerY() - screenCy) > 0.5f
+        // 既不能放大、框又已经在正中间：什么都不用做
+        if (scaleFactor <= 1.001f && !needRecenter) return
+        // 目标框大小 = 原框 × 实际能放大的倍数：保证框里还是原来那块图片区域
         val targetW = startFrame.width() * scaleFactor
         val targetH = startFrame.height() * scaleFactor
         val targetFrame = RectF(
