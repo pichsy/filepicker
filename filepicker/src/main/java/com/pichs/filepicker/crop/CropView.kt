@@ -105,7 +105,9 @@ class CropView @JvmOverloads constructor(
     private var centerX = 0f
     private var centerY = 0f
     private var minScale = 1f
-    private var maxScale = 4f
+    /** 原图基准缩放：整张图刚好铺进视图的比例；最大缩放 = baseScale * MAX_ZOOM，与框大小无关 */
+    private var baseScale = 1f
+    private var maxScale = 8f
     private var initialized = false
 
     /** 是否处于"裁剪工具"模式：false 时隐藏裁剪框、忽略手势（画笔/文字/马赛克用画布时切换） */
@@ -711,7 +713,7 @@ class CropView @JvmOverloads constructor(
                 if (frame.top < safe.top) frame.top = safe.top
                 if (frame.bottom > safe.bottom) frame.bottom = safe.bottom
                 minScale = min(fit, scale)
-                maxScale = minScale * MAX_ZOOM
+                maxScale = max(baseScale * MAX_ZOOM, minScale)
                 android.util.Log.d(
                     "FilePickerCropView",
                     "进入裁剪: imgScale=$scale frame=${frame.width().toInt()}x${frame.height().toInt()} " +
@@ -720,7 +722,7 @@ class CropView @JvmOverloads constructor(
                 scheduleIdleAutoFit()
             }
             minScale = if (enabled) minScale else computeMinScale()
-            maxScale = minScale * MAX_ZOOM
+            maxScale = max(baseScale * MAX_ZOOM, minScale)
             scale = scale.coerceIn(minScale, maxScale)
             updateImageRect()
             constrain()
@@ -841,7 +843,7 @@ class CropView @JvmOverloads constructor(
             frame.height() / contentInBitmap.height,
         )
         minScale = computeMinScale()
-        maxScale = minScale * MAX_ZOOM
+        maxScale = max(baseScale * MAX_ZOOM, minScale)
         scale = newScale.coerceIn(minScale, maxScale)
         val contentCx = (contentInBitmap.left + contentInBitmap.right) / 2f
         val contentCy = (contentInBitmap.top + contentInBitmap.bottom) / 2f
@@ -1079,6 +1081,7 @@ class CropView @JvmOverloads constructor(
         centerX = width / 2f
         centerY = height / 2f
         val fitScale = min(width.toFloat() / bmp.width, height.toFloat() / bmp.height)
+        baseScale = fitScale
         if (aspectRatio > 0f) {
             // 固定框：短边 = 屏幕短边 * frameScale，按比例算另一边，超出安全区时等比缩小
             val side = min(width, height) * (frameScalePercent ?: 0.75f)
@@ -1119,7 +1122,7 @@ class CropView @JvmOverloads constructor(
                 scale = minScale
             }
         }
-        maxScale = minScale * MAX_ZOOM
+        maxScale = max(baseScale * MAX_ZOOM, minScale)
         updateImageRect()
         constrain()
         initialized = true
@@ -1653,7 +1656,7 @@ class CropView @JvmOverloads constructor(
             scale = minScale
             updateImageRect()
         }
-        maxScale = minScale * MAX_ZOOM
+        maxScale = max(baseScale * MAX_ZOOM, minScale)
         constrain()
         notifyFrameChanged()
         invalidate()
