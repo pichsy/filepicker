@@ -976,13 +976,16 @@ class CropView @JvmOverloads constructor(
         if (!cropMode || !initialized || !frameResizable) return
         val bmp = bitmap ?: return
         if (frame.width() <= 1f || frame.height() <= 1f) return
-        val safe = cropSafeBounds()
-        val availTop = safe.top
-        val availBottom = safe.bottom
-        val availCxSafe = safe.centerX()
-        val availCySafe = safe.centerY()
-        val maxW = safe.width()
-        val maxH = safe.height()
+        // 目标位置固定为「屏幕正中心」：注意不能用 cropSafeBounds() 的中心 —— 它会跟
+        // imageRect 求交，图片一旦被拖动过，中心就偏了，导致自动放大后框不是居中。
+        val safe = cropSafeRect()
+        val screenCx = width / 2f
+        val screenCy = height / 2f
+        // 以屏幕中心为对称中心，能放大的最大宽高（保证不压到裁剪菜单/状态栏）
+        val halfW = min(screenCx - safe.left, safe.right - screenCx).coerceAtLeast(1f)
+        val halfH = min(screenCy - safe.top, safe.bottom - screenCy).coerceAtLeast(1f)
+        val maxW = halfW * 2f
+        val maxH = halfH * 2f
         val factor = min(maxW / frame.width(), maxH / frame.height())
         if (factor <= 1.02f) return
 
@@ -998,13 +1001,11 @@ class CropView @JvmOverloads constructor(
         // 目标框：保持宽高比、居中到屏幕中心
         val targetW = frame.width() * factor
         val targetH = frame.height() * factor
-        val availCx = availCxSafe
-        val availCy = availCySafe
         val targetFrame = RectF(
-            availCx - targetW / 2f,
-            availCy - targetH / 2f,
-            availCx + targetW / 2f,
-            availCy + targetH / 2f,
+            screenCx - targetW / 2f,
+            screenCy - targetH / 2f,
+            screenCx + targetW / 2f,
+            screenCy + targetH / 2f,
         )
         val targetScale = (startScale * factor).coerceIn(minScale, maxScale)
         // 让框里的内容中心仍然对齐框中心
