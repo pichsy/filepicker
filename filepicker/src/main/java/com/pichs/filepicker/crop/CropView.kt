@@ -978,14 +978,12 @@ class CropView @JvmOverloads constructor(
         if (!cropMode || !initialized || !frameResizable) return
         val bmp = bitmap ?: return
         if (frame.width() <= 1f || frame.height() <= 1f) return
-        // 目标位置固定为「屏幕正中心」：注意不能用 cropSafeBounds() 的中心 —— 它会跟
-        // imageRect 求交，图片一旦被拖动过，中心就偏了，导致自动放大后框不是居中。
+        // 目标位置 = 「限定区域（状态栏下 + 操作栏上）」这个矩形的中心
         val safe = cropSafeRect()
-        val screenCx = width / 2f
-        val screenCy = height / 2f
-        // 以屏幕中心为对称中心，能放大的最大宽高（保证不压到裁剪菜单/状态栏）
-        val halfW = min(screenCx - safe.left, safe.right - screenCx).coerceAtLeast(1f)
-        val halfH = min(screenCy - safe.top, safe.bottom - screenCy).coerceAtLeast(1f)
+        val screenCx = safe.centerX()
+        val screenCy = safe.centerY()
+        val halfW = (safe.width() / 2f).coerceAtLeast(1f)
+        val halfH = (safe.height() / 2f).coerceAtLeast(1f)
         val maxW = halfW * 2f
         val maxH = halfH * 2f
         val factor = min(maxW / frame.width(), maxH / frame.height())
@@ -1080,6 +1078,14 @@ class CropView @JvmOverloads constructor(
         if (width <= 0 || height <= 0) return
         centerX = width / 2f
         centerY = height / 2f
+        // 裁剪框居中位置 = 限定区域矩形的中心（不是整个屏幕的中心）
+        var frameCx = centerX
+        var frameCy = centerY
+        if (cropMode) {
+            val safe0 = cropSafeRect()
+            frameCx = safe0.centerX()
+            frameCy = safe0.centerY()
+        }
         val fitScale = min(width.toFloat() / bmp.width, height.toFloat() / bmp.height)
         baseScale = fitScale
         if (aspectRatio > 0f) {
@@ -1096,16 +1102,16 @@ class CropView @JvmOverloads constructor(
                 frameH = side / aspectRatio
             }
             // 以屏幕中心为对称中心算可用宽高（上下/左右都留够），避免压到状态栏或底部操作栏
-            val halfW = min(centerX - safe.left, safe.right - centerX).coerceAtLeast(1f)
-            val halfH = min(centerY - safe.top, safe.bottom - centerY).coerceAtLeast(1f)
+            val halfW = min(frameCx - safe.left, safe.right - frameCx).coerceAtLeast(1f)
+            val halfH = min(frameCy - safe.top, safe.bottom - frameCy).coerceAtLeast(1f)
             val k = min(1f, min((halfW * 2f) / frameW, (halfH * 2f) / frameH))
             frameW *= k
             frameH *= k
             frame.set(
-                centerX - frameW / 2f,
-                centerY - frameH / 2f,
-                centerX + frameW / 2f,
-                centerY + frameH / 2f,
+                frameCx - frameW / 2f,
+                frameCy - frameH / 2f,
+                frameCx + frameW / 2f,
+                frameCy + frameH / 2f,
             )
             // 图片必须覆盖框：缩放到"短边 ≥ 框边"（横图按高、竖图按宽）
             minScale = max(frameW / bmp.width, frameH / bmp.height)
@@ -1120,13 +1126,13 @@ class CropView @JvmOverloads constructor(
             } else {
                 // 头像页（或不可拖）：居中小框，尺寸 = 屏幕短边 * frameScale
                 val safe = cropSafeRect()
-                val halfW = min(centerX - safe.left, safe.right - centerX).coerceAtLeast(1f)
-                val halfH = min(centerY - safe.top, safe.bottom - centerY).coerceAtLeast(1f)
+                val halfW = min(frameCx - safe.left, safe.right - frameCx).coerceAtLeast(1f)
+                val halfH = min(frameCy - safe.top, safe.bottom - frameCy).coerceAtLeast(1f)
                 val side = min(
                     min(width, height) * (frameScalePercent ?: 0.75f),
                     min(halfW, halfH) * 2f,
                 )
-                frame.set(centerX - side / 2f, centerY - side / 2f, centerX + side / 2f, centerY + side / 2f)
+                frame.set(frameCx - side / 2f, frameCy - side / 2f, frameCx + side / 2f, frameCy + side / 2f)
                 minScale = max(side / bmp.width, side / bmp.height)
                 scale = minScale
             }
@@ -1149,23 +1155,29 @@ class CropView @JvmOverloads constructor(
             var fw = if (aspectRatio >= 1f) side * aspectRatio else side
             var fh = if (aspectRatio >= 1f) side else side / aspectRatio
             val safe = cropSafeRect()
-            val cx = width / 2f
-            val cy = height / 2f
-            val halfW = min(cx - safe.left, safe.right - cx).coerceAtLeast(1f)
-            val halfH = min(cy - safe.top, safe.bottom - cy).coerceAtLeast(1f)
+            val cx = safe.centerX()
+            val cy = safe.centerY()
+            val halfW = (safe.width() / 2f).coerceAtLeast(1f)
+            val halfH = (safe.height() / 2f).coerceAtLeast(1f)
             val k = min(1f, min((halfW * 2f) / fw, (halfH * 2f) / fh))
             fw *= k
             fh *= k
             return RectF(
-                width / 2f - fw / 2f, height / 2f - fh / 2f,
-                width / 2f + fw / 2f, height / 2f + fh / 2f,
+                cx - fw / 2f, cy - fh / 2f,
+                cx + fw / 2f, cy + fh / 2f,
             )
         }
         if (!frameResizable || frameScalePercent != null) {
-            val side = min(width, height) * (frameScalePercent ?: 0.75f)
+            val safe = cropSafeRect()
+            val cx = safe.centerX()
+            val cy = safe.centerY()
+            val side = min(
+                min(width, height) * (frameScalePercent ?: 0.75f),
+                min(safe.width(), safe.height()),
+            )
             return RectF(
-                width / 2f - side / 2f, height / 2f - side / 2f,
-                width / 2f + side / 2f, height / 2f + side / 2f,
+                cx - side / 2f, cy - side / 2f,
+                cx + side / 2f, cy + side / 2f,
             )
         }
         return CropGeometry.fitCenter(bmp.width, bmp.height, width, height).toRectF()
