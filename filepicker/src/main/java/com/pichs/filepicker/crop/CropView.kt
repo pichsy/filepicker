@@ -1095,7 +1095,10 @@ class CropView @JvmOverloads constructor(
                 frameW = side
                 frameH = side / aspectRatio
             }
-            val k = min(1f, min(safe.width() / frameW, safe.height() / frameH))
+            // 以屏幕中心为对称中心算可用宽高（上下/左右都留够），避免压到状态栏或底部操作栏
+            val halfW = min(centerX - safe.left, safe.right - centerX).coerceAtLeast(1f)
+            val halfH = min(centerY - safe.top, safe.bottom - centerY).coerceAtLeast(1f)
+            val k = min(1f, min((halfW * 2f) / frameW, (halfH * 2f) / frameH))
             frameW *= k
             frameH *= k
             frame.set(
@@ -1116,7 +1119,13 @@ class CropView @JvmOverloads constructor(
                 minScale = fitScale
             } else {
                 // 头像页（或不可拖）：居中小框，尺寸 = 屏幕短边 * frameScale
-                val side = min(width, height) * (frameScalePercent ?: 0.75f)
+                val safe = cropSafeRect()
+                val halfW = min(centerX - safe.left, safe.right - centerX).coerceAtLeast(1f)
+                val halfH = min(centerY - safe.top, safe.bottom - centerY).coerceAtLeast(1f)
+                val side = min(
+                    min(width, height) * (frameScalePercent ?: 0.75f),
+                    min(halfW, halfH) * 2f,
+                )
                 frame.set(centerX - side / 2f, centerY - side / 2f, centerX + side / 2f, centerY + side / 2f)
                 minScale = max(side / bmp.width, side / bmp.height)
                 scale = minScale
@@ -1140,7 +1149,11 @@ class CropView @JvmOverloads constructor(
             var fw = if (aspectRatio >= 1f) side * aspectRatio else side
             var fh = if (aspectRatio >= 1f) side else side / aspectRatio
             val safe = cropSafeRect()
-            val k = min(1f, min(safe.width() / fw, safe.height() / fh))
+            val cx = width / 2f
+            val cy = height / 2f
+            val halfW = min(cx - safe.left, safe.right - cx).coerceAtLeast(1f)
+            val halfH = min(cy - safe.top, safe.bottom - cy).coerceAtLeast(1f)
+            val k = min(1f, min((halfW * 2f) / fw, (halfH * 2f) / fh))
             fw *= k
             fh *= k
             return RectF(

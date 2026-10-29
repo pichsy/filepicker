@@ -156,9 +156,24 @@ class FilePickerCropActivity : Activity() {
         }
 
         cropView.onFrameChanged = { updateResetState() }
+        // 裁剪框活动区域：顶部不能压到状态栏，底部不能压到「确定」操作栏
+        cropView.post { applyCropContentInsets() }
         progressBar.visibility = View.VISIBLE
         loadBitmapAsync()
     }
+
+    /** 把状态栏 / 底部操作栏的高度告诉 CropView，限定裁剪框的上下范围 */
+    private fun applyCropContentInsets() {
+        val res = resources
+        val statusBarRes = res.getIdentifier("status_bar_height", "dimen", "android")
+        val statusBar = if (statusBarRes > 0) res.getDimensionPixelSize(statusBarRes) else dp(24)
+        val bottomBarTop = bottomBar.top
+        val bottomInset = (cropView.height - bottomBarTop).coerceAtLeast(0) + dp(8)
+        cropView.setCropContentInsets(statusBar + dp(8), bottomInset)
+        FilePickerLog.d(TAG, "裁剪区域限定: top=${statusBar + dp(8)} bottom=$bottomInset view=${cropView.width}x${cropView.height} barTop=$bottomBarTop")
+    }
+
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     /** 内容铺满全屏，底部操作栏按导航栏高度让位（否则"确定"会被导航条压住） */
     private fun applySystemBarInsets() {
